@@ -9,7 +9,7 @@ RUN npm run build
 
 # Static files für standalone kopieren
 RUN cp -r .next/static .next/standalone/.next/static
-RUN cp -r public .next/standalone/public
+RUN mkdir -p .next/standalone/public
 
 RUN chown -R node:node /app
 USER node
