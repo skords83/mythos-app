@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import { 
   Project, Chapter, Character, Place, Note, QuickCardState,
-  ThemeToggle, RichTextEditor,
+  ThemeToggle, RichTextEditor, CharacterListItem,
   FocusToggle,
   NavItem,
   ProjectCard,
@@ -809,9 +809,9 @@ export default function Page() {
                     <Plus size={18} />
                   </button>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-1">
                   {characters.map((char) => (
-                    <CharacterCard key={char.id} character={char} onDelete={() => deleteCharacter(char.id)} />
+                    <CharacterListItem key={char.id} character={char} />
                   ))}
                   {characters.length === 0 && (
                     <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">Noch keine Charaktere</p>
