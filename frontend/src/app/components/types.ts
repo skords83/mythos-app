@@ -52,3 +52,9 @@ export interface Note {
   createdAt: string
   updatedAt: string
 }
+
+export interface QuickCardState {
+  character: Character | null
+  position: { x: number, y: number }
+  visible: boolean
+}
