@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import { 
   Project, Chapter, Character, Place, Note, QuickCardState,
-  ThemeToggle,
+  ThemeToggle, RichTextEditor,
   FocusToggle,
   NavItem,
   ProjectCard,
@@ -254,6 +254,13 @@ export default function Page() {
     }
   }
 
+  // Helper to strip HTML tags for word count
+  const stripHtml = (html: string) => {
+    const tmp = document.createElement('div')
+    tmp.innerHTML = html
+    return tmp.textContent || tmp.innerText || ''
+  }
+
   // saveChapter uses refs to always have fresh values (stale closure fix)
   const saveChapter = useCallback(async (chapterOverride?: Chapter) => {
     const chapter = chapterOverride ?? selectedChapterRef.current
@@ -262,7 +269,8 @@ export default function Page() {
 
     setIsSaving(true)
     try {
-      const wordCount = content.trim().split(/\s+/).filter(w => w.length > 0).length
+      const textContent = stripHtml(content)
+      const wordCount = textContent.trim().split(/\s+/).filter(w => w.length > 0).length
       await fetch(`/api/chapters/${chapter.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -624,15 +632,10 @@ export default function Page() {
                     }}
                     className="w-full text-3xl font-serif font-bold bg-transparent border-none outline-none placeholder-gray-400 dark:placeholder-gray-600 text-gray-800 dark:text-gray-100 mb-8"
                   />
-                  <textarea
+                  <RichTextEditor
+                    content={editorContent}
+                    onChange={setEditorContent}
                     placeholder="Beginne zu schreiben... (Klicke auf Charakternamen für Quick-Card)"
-                    value={editorContent}
-                    onMouseUp={handleTextSelection}
-                    onKeyUp={handleTextSelection}
-                    onChange={(e) => setEditorContent(e.target.value)}
-                    onClick={handleEditorClick}
-                    className="editor-content w-full min-h-[600px] bg-transparent border-none outline-none resize-none placeholder-gray-400 dark:placeholder-gray-600 text-gray-800 dark:text-gray-100"
-                    spellCheck={false}
                   />
                 </>
               ) : (
