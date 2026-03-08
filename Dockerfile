@@ -5,6 +5,7 @@ COPY frontend/package*.json ./
 RUN npm install
 COPY frontend/ ./
 RUN npx prisma generate
+RUN npx prisma db push --accept-data-loss
 RUN npm run build
 
 # Static files für standalone kopieren
