@@ -4,6 +4,7 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import { Bold, Italic, List, Quote, Heading1, Heading2, Undo, Redo } from 'lucide-react'
+import { useEffect } from 'react'
 
 interface RichTextEditorProps {
   content: string
@@ -19,7 +20,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
         placeholder,
       }),
     ],
-    content,
+    content: content || '',
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML())
     },
@@ -29,6 +30,12 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
       },
     },
   })
+
+  useEffect(() => {
+    if (editor && content !== editor.getHTML()) {
+      editor.commands.setContent(content || '')
+    }
+  }, [content, editor])
 
   if (!editor) {
     return null
