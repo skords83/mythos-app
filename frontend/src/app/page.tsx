@@ -1716,10 +1716,12 @@ export default function Home() {
                       chapter={chapter}
                       active={selectedChapter?.id === chapter.id}
                       onClick={() => {
-                        if (selectedChapter && selectedChapter.id !== chapter.id) {
-                          saveChapter()
+                        if (selectedChapter?.id !== chapter.id) {
+                          if (selectedChapter) {
+                            saveChapter()
+                          }
+                          setSelectedChapter(chapter)
                         }
-                        setSelectedChapter(chapter)
                       }}
                     />
                   ))}
