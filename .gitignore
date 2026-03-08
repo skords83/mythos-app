@@ -1,0 +1,16 @@
+node_modules/
+.next/
+.prisma/
+*.lock
+package-lock.json
+yarn.lock
+pubspec.lock
+.dart_tool/
+build/
+.idea/
+.vscode/
+*.iml
+.env
+.env.local
+*.log
+.DS_Store
