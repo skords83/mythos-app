@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
   Book, 
@@ -191,25 +191,32 @@ function ProjectCard({ project, onClick, onDelete }: {
 }
 
 // Chapter List Item
-function ChapterItem({ chapter, active, onClick }: { 
+function ChapterItem({ chapter, active, onClick, onDelete }: { 
   chapter: Chapter, 
   active: boolean,
-  onClick: () => void 
+  onClick: () => void,
+  onDelete: (e: React.MouseEvent) => void
 }) {
   return (
-    <button
-      onClick={onClick}
-      className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
-        active 
-          ? 'bg-[#4A7C59]/10 text-[#4A7C59] border-l-4 border-[#4A7C59]' 
-          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-      }`}
-    >
-      <div className="font-medium truncate">{chapter.title}</div>
-      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-        {chapter.wordCount} Wörter
-      </div>
-    </button>
+    <div className={`group relative w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center justify-between ${
+      active 
+        ? 'bg-[#4A7C59]/10 text-[#4A7C59] border-l-4 border-[#4A7C59]' 
+        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+    }`}>
+      <button onClick={onClick} className="flex-1 text-left min-w-0">
+        <div className="font-medium truncate">{chapter.title}</div>
+        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          {chapter.wordCount} Wörter
+        </div>
+      </button>
+      <button
+        onClick={onDelete}
+        className="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-1"
+        title="Kapitel löschen"
+      >
+        <Trash2 size={14} />
+      </button>
+    </div>
   )
 }
 
@@ -1069,6 +1076,17 @@ export default function Home() {
     position: { x: 0, y: 0 },
     visible: false
   })
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+
+  // Refs to always have current values in callbacks (stale closure fix)
+  const editorContentRef = useRef(editorContent)
+  const selectedChapterRef = useRef(selectedChapter)
+  const chaptersRef = useRef(chapters)
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => { editorContentRef.current = editorContent }, [editorContent])
+  useEffect(() => { selectedChapterRef.current = selectedChapter }, [selectedChapter])
+  useEffect(() => { chaptersRef.current = chapters }, [chapters])
 
   useEffect(() => {
     if (!isCheckingAuth) {
@@ -1223,58 +1241,64 @@ export default function Home() {
     }
   }
 
-  const saveChapter = async (chapterToSave?: Chapter | React.MouseEvent) => {
-    if (chapterToSave && 'id' in chapterToSave) {
-      const ch = chapterToSave as Chapter
-      setIsSaving(true)
-      try {
-        const wordCount = editorContent.trim().split(/\s+/).filter(w => w.length > 0).length
-        await fetch(`/api/chapters/${ch.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            title: ch.title,
-            content: editorContent,
-            wordCount 
-          })
-        })
-        setChapters(chapters.map(c => 
-          c.id === ch.id 
-            ? { ...c, title: ch.title, content: editorContent, wordCount }
-            : c
-        ))
-      } catch (error) {
-        console.error('Error saving chapter:', error)
-      } finally {
-        setIsSaving(false)
-      }
-      return
-    }
-    
-    const chapter = selectedChapter
+  // saveChapter uses refs to always have fresh values (stale closure fix)
+  const saveChapter = useCallback(async (chapterOverride?: Chapter) => {
+    const chapter = chapterOverride ?? selectedChapterRef.current
+    const content = editorContentRef.current
     if (!chapter) return
+
     setIsSaving(true)
     try {
-      const wordCount = editorContent.trim().split(/\s+/).filter(w => w.length > 0).length
+      const wordCount = content.trim().split(/\s+/).filter(w => w.length > 0).length
       await fetch(`/api/chapters/${chapter.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          title: chapter.title,
-          content: editorContent,
-          wordCount 
-        })
+        body: JSON.stringify({ title: chapter.title, content, wordCount })
       })
-      setChapters(chapters.map(ch => 
-        ch.id === chapter.id 
-          ? { ...ch, title: chapter.title, content: editorContent, wordCount }
-          : ch
+      setChapters(prev => prev.map(ch =>
+        ch.id === chapter.id ? { ...ch, title: chapter.title, content, wordCount } : ch
       ))
-      setSelectedChapter({ ...chapter, content: editorContent, wordCount })
+      if (!chapterOverride) {
+        setSelectedChapter(prev => prev ? { ...prev, content, wordCount } : prev)
+      }
+      setAutoSaveStatus('saved')
+      setTimeout(() => setAutoSaveStatus('idle'), 2000)
     } catch (error) {
       console.error('Error saving chapter:', error)
     } finally {
       setIsSaving(false)
+    }
+  }, [])
+
+  // Autosave: debounce 2s after last change
+  useEffect(() => {
+    if (!selectedChapter) return
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
+    setAutoSaveStatus('idle')
+    autoSaveTimer.current = setTimeout(() => {
+      setAutoSaveStatus('saving')
+      saveChapter()
+    }, 2000)
+    return () => {
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
+    }
+  }, [editorContent, selectedChapter?.id])
+
+  const deleteChapter = async (chapterId: string) => {
+    if (!confirm('Möchtest du dieses Kapitel wirklich löschen?')) return
+    try {
+      await fetch(`/api/chapters/${chapterId}`, { method: 'DELETE' })
+      const remaining = chapters.filter(ch => ch.id !== chapterId)
+      setChapters(remaining)
+      if (selectedChapter?.id === chapterId) {
+        setSelectedChapter(remaining.length > 0 ? remaining[0] : null)
+        setEditorContent(remaining.length > 0
+          ? (typeof remaining[0].content === 'string' ? remaining[0].content : '')
+          : ''
+        )
+      }
+    } catch (error) {
+      console.error('Error deleting chapter:', error)
     }
   }
 
@@ -1557,12 +1581,12 @@ export default function Home() {
             <ThemeToggle />
             {activeTab === 'manuscript' && (
               <button
-                onClick={saveChapter}
+                onClick={() => saveChapter()}
                 disabled={isSaving || !selectedChapter}
                 className="px-4 py-2 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6349] transition-colors text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save size={16} />
-                {isSaving ? 'Speichern...' : 'Speichern'}
+                {isSaving ? 'Speichern...' : autoSaveStatus === 'saved' ? '✓ Gespeichert' : 'Speichern'}
               </button>
             )}
           </div>
@@ -1744,12 +1768,15 @@ export default function Home() {
                       chapter={chapter}
                       active={selectedChapter?.id === chapter.id}
                       onClick={async () => {
-                        const currentChapter = selectedChapter
-                        if (currentChapter && currentChapter.id !== chapter.id) {
-                          await saveChapter(currentChapter)
+                        if (selectedChapterRef.current && selectedChapterRef.current.id !== chapter.id) {
+                          await saveChapter(selectedChapterRef.current)
                         }
                         setSelectedChapter(chapter)
-                        setEditorContent(chapter.content || '')
+                        setEditorContent(typeof chapter.content === 'string' ? chapter.content : '')
+                      }}
+                      onDelete={(e) => {
+                        e.stopPropagation()
+                        deleteChapter(chapter.id)
                       }}
                     />
                   ))}
