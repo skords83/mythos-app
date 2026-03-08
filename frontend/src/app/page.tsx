@@ -639,13 +639,10 @@ function CharacterQuickCard({ state, onClose }: {
 
   return (
     <>
-      {/* Backdrop to close on click outside */}
       <div 
         className="fixed inset-0 z-40"
         onClick={onClose}
       />
-      
-      {/* Quick Card */}
       <div
         className="fixed z-50 bg-white dark:bg-[#262626] rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4 w-72 animate-fade-in"
         style={{
@@ -653,7 +650,6 @@ function CharacterQuickCard({ state, onClose }: {
           top: Math.min(state.position.y, window.innerHeight - 250)
         }}
       >
-        {/* Header with Avatar */}
         <div className="flex items-start gap-3 mb-3">
           <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#4A7C59] to-[#6B9E7C] flex items-center justify-center text-white text-xl font-bold flex-shrink-0 shadow-md">
             {state.character.name.charAt(0)}
@@ -671,8 +667,6 @@ function CharacterQuickCard({ state, onClose }: {
             ×
           </button>
         </div>
-
-        {/* Content */}
         <div className="space-y-3">
           {state.character.description && (
             <div>
@@ -684,7 +678,6 @@ function CharacterQuickCard({ state, onClose }: {
               </p>
             </div>
           )}
-          
           {state.character.motivation && (
             <div>
               <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
@@ -696,8 +689,6 @@ function CharacterQuickCard({ state, onClose }: {
             </div>
           )}
         </div>
-
-        {/* Footer hint */}
         <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
           <p className="text-xs text-gray-400 text-center">
             Klicke auf "Charaktere" für mehr Details
@@ -877,7 +868,6 @@ function EditProjectModal({ isOpen, onClose, project, onUpdate, onDelete }: {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
       <div className="bg-white dark:bg-[#262626] rounded-xl shadow-xl w-full max-w-md overflow-hidden">
-        {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <h2 className="text-xl font-serif font-bold text-gray-900 dark:text-gray-100">
             Projekteinstellungen
@@ -889,8 +879,6 @@ function EditProjectModal({ isOpen, onClose, project, onUpdate, onDelete }: {
             ×
           </button>
         </div>
-
-        {/* Tabs */}
         <div className="flex border-b border-gray-200 dark:border-gray-700">
           <button
             onClick={() => setActiveTab('general')}
@@ -913,8 +901,6 @@ function EditProjectModal({ isOpen, onClose, project, onUpdate, onDelete }: {
             Gefahrenzone
           </button>
         </div>
-
-        {/* Content */}
         <div className="p-6">
           {activeTab === 'general' ? (
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -1042,10 +1028,8 @@ export default function Home() {
         const data = await res.json()
         
         if (data.user) {
-          // User is logged in, check for selected project
           const storedProjectId = localStorage.getItem('selectedProjectId')
           if (storedProjectId) {
-            // Stay on this page, the project will be loaded
             setIsCheckingAuth(false)
           } else {
             router.replace('/dashboard')
@@ -1060,6 +1044,7 @@ export default function Home() {
 
     checkAuth()
   }, [])
+
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [chapters, setChapters] = useState<Chapter[]>([])
@@ -1079,22 +1064,18 @@ export default function Home() {
   const [isSaving, setIsSaving] = useState(false)
   const [places, setPlaces] = useState<Place[]>([])
   const [notes, setNotes] = useState<Note[]>([])
-  
-  // Character Quick-Card state
   const [quickCard, setQuickCard] = useState<QuickCardState>({
     character: null,
     position: { x: 0, y: 0 },
     visible: false
   })
 
-  // Load projects after auth check
   useEffect(() => {
     if (!isCheckingAuth) {
       loadProjects()
     }
   }, [isCheckingAuth])
 
-  // Load chapters, characters and places when project is selected
   useEffect(() => {
     if (selectedProject) {
       loadChapters(selectedProject.id)
@@ -1103,7 +1084,6 @@ export default function Home() {
     }
   }, [selectedProject])
 
-  // Load chapter content and notes when chapter is selected
   useEffect(() => {
     if (selectedChapter) {
       setEditorContent(typeof selectedChapter.content === 'string' ? selectedChapter.content : '')
@@ -1114,16 +1094,12 @@ export default function Home() {
   const loadProjects = async () => {
     try {
       const response = await fetch('/api/projects')
-      
       if (response.status === 401) {
         router.push('/login')
         return
       }
-      
       const data = await response.json()
       setProjects(data)
-      
-      // Check if a project was selected from dashboard
       const storedProjectId = localStorage.getItem('selectedProjectId')
       if (storedProjectId) {
         const selectedProj = data.find((p: Project) => p.id === storedProjectId)
@@ -1134,13 +1110,11 @@ export default function Home() {
         }
         localStorage.removeItem('selectedProjectId')
       } else if (data.length > 0 && !selectedProject) {
-        // Auto-select first project if available
         setSelectedProject(data[0])
       }
       setIsLoading(false)
     } catch (error) {
       console.error('Error loading projects:', error)
-      setIsLoading(false)
       setIsLoading(false)
     }
   }
@@ -1187,17 +1161,11 @@ export default function Home() {
       const newProject = await response.json()
       setProjects([newProject, ...projects])
       setSelectedProject(newProject)
-      
-      // Create first chapter automatically
       await fetch('/api/chapters', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          title: 'Kapitel 1', 
-          projectId: newProject.id 
-        })
+        body: JSON.stringify({ title: 'Kapitel 1', projectId: newProject.id })
       })
-      
       loadChapters(newProject.id)
     } catch (error) {
       console.error('Error creating project:', error)
@@ -1212,11 +1180,7 @@ export default function Home() {
         body: JSON.stringify({ title, description, wordGoal })
       })
       const updatedProject = await response.json()
-      
-      // Update projects list
       setProjects(projects.map(p => p.id === id ? updatedProject : p))
-      
-      // Update selected project if it's the current one
       if (selectedProject?.id === id) {
         setSelectedProject(updatedProject)
       }
@@ -1242,7 +1206,6 @@ export default function Home() {
 
   const createChapter = async () => {
     if (!selectedProject) return
-    
     try {
       const response = await fetch('/api/chapters', {
         method: 'POST',
@@ -1262,24 +1225,21 @@ export default function Home() {
 
   const saveChapter = async () => {
     if (!selectedChapter) return
-    
     setIsSaving(true)
     try {
       const wordCount = editorContent.trim().split(/\s+/).filter(w => w.length > 0).length
-      
       await fetch(`/api/chapters/${selectedChapter.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
+          title: selectedChapter.title,  // FIX: Titel wird jetzt mitgespeichert
           content: editorContent,
           wordCount 
         })
       })
-      
-      // Update local state
       setChapters(chapters.map(ch => 
         ch.id === selectedChapter.id 
-          ? { ...ch, content: editorContent, wordCount }
+          ? { ...ch, title: selectedChapter.title, content: editorContent, wordCount }
           : ch
       ))
       setSelectedChapter({ ...selectedChapter, content: editorContent, wordCount })
@@ -1292,17 +1252,11 @@ export default function Home() {
 
   const addCharacter = async (name: string, description: string, motivation: string) => {
     if (!selectedProject) return
-    
     try {
       const response = await fetch('/api/characters', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          name, 
-          description, 
-          motivation,
-          projectId: selectedProject.id 
-        })
+        body: JSON.stringify({ name, description, motivation, projectId: selectedProject.id })
       })
       const newCharacter = await response.json()
       setCharacters([newCharacter, ...characters])
@@ -1313,7 +1267,6 @@ export default function Home() {
 
   const deleteCharacter = async (characterId: string) => {
     if (!confirm('Möchtest du diesen Charakter wirklich löschen?')) return
-
     try {
       await fetch(`/api/characters/${characterId}`, { method: 'DELETE' })
       setCharacters(characters.filter(c => c.id !== characterId))
@@ -1334,19 +1287,11 @@ export default function Home() {
 
   const addPlace = async (name: string, description: string, location: string, climate: string, importance: string) => {
     if (!selectedProject) return
-
     try {
       const response = await fetch('/api/places', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          description,
-          location,
-          climate,
-          importance,
-          projectId: selectedProject.id
-        })
+        body: JSON.stringify({ name, description, location, climate, importance, projectId: selectedProject.id })
       })
       const newPlace = await response.json()
       setPlaces([newPlace, ...places])
@@ -1357,7 +1302,6 @@ export default function Home() {
 
   const deletePlace = async (placeId: string) => {
     if (!confirm('Möchtest du diesen Ort wirklich löschen?')) return
-
     try {
       await fetch(`/api/places/${placeId}`, { method: 'DELETE' })
       setPlaces(places.filter(p => p.id !== placeId))
@@ -1408,7 +1352,6 @@ export default function Home() {
 
   const deleteNote = async (noteId: string) => {
     if (!confirm('Möchtest du diese Notiz wirklich löschen?')) return
-
     try {
       await fetch(`/api/notes/${noteId}`, { method: 'DELETE' })
       setNotes(notes.filter(n => n.id !== noteId))
@@ -1422,43 +1365,25 @@ export default function Home() {
     setShowToolbar(!!(selection && selection.toString().length > 0))
   }
 
-  // Handle editor click to detect character names
   const handleEditorClick = (e: React.MouseEvent<HTMLTextAreaElement>) => {
     const textarea = e.currentTarget
     const text = textarea.value
-    
-    // Get cursor position from click
-    const rect = textarea.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-    
-    // Calculate approximate character position (simplified)
-    const lines = text.substring(0, textarea.selectionStart).split('\n')
-    const currentLine = lines.length - 1
-    const currentChar = lines[lines.length - 1].length
-    
-    // Get word at cursor position
     const wordRegex = /\b\w+\b/g
     let match
     let clickedWord: string | null = null
-    
     while ((match = wordRegex.exec(text)) !== null) {
       const wordStart = match.index
       const wordEnd = match.index + match[0].length
-      
       if (textarea.selectionStart >= wordStart && textarea.selectionStart <= wordEnd) {
         clickedWord = match[0]
         break
       }
     }
-    
     if (clickedWord) {
-      // Check if clicked word matches any character name (case-insensitive)
       const matchedCharacter = characters.find(char => 
         char.name.toLowerCase() === clickedWord?.toLowerCase() ||
         char.name.split(' ').some(part => part.toLowerCase() === clickedWord?.toLowerCase())
       )
-      
       if (matchedCharacter) {
         setQuickCard({
           character: matchedCharacter,
@@ -1466,7 +1391,6 @@ export default function Home() {
           visible: true
         })
       } else {
-        // Close quick card if clicking elsewhere
         setQuickCard(prev => ({ ...prev, visible: false }))
       }
     } else {
@@ -1474,10 +1398,8 @@ export default function Home() {
     }
   }
 
-  // Calculate total word count for current project
   const totalWordCount = Array.isArray(chapters) ? chapters.reduce((sum, ch) => sum + (ch.wordCount || 0), 0) : 0
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#F5F5F5] dark:bg-[#1A1A1B] flex items-center justify-center">
@@ -1486,7 +1408,6 @@ export default function Home() {
     )
   }
 
-  // Project selection view
   if (!selectedProject) {
     return (
       <div className="min-h-screen bg-[#F5F5F5] dark:bg-[#1A1A1B] p-8">
@@ -1497,7 +1418,6 @@ export default function Home() {
             </h1>
             <ThemeToggle />
           </header>
-          
           <div className="text-center py-12">
             <Book size={64} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
             <h2 className="text-2xl font-serif text-gray-700 dark:text-gray-300 mb-2">
@@ -1515,7 +1435,6 @@ export default function Home() {
             </button>
           </div>
         </div>
-        
         <CreateProjectModal
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
@@ -1531,7 +1450,6 @@ export default function Home() {
       <aside 
         className={`${focusMode ? 'w-0 opacity-0 overflow-hidden' : leftSidebarOpen ? 'w-64' : 'w-16'} bg-white/80 dark:bg-[#262626]/80 backdrop-blur-md border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300`}
       >
-        {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           {leftSidebarOpen ? (
             <div className="flex items-center justify-between">
@@ -1573,84 +1491,36 @@ export default function Home() {
           )}
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 p-3 space-y-2">
-          <NavItem 
-            icon={Book} 
-            label="Manuskript" 
-            active={activeTab === 'manuscript'} 
-            onClick={() => setActiveTab('manuscript')}
-            collapsed={!leftSidebarOpen}
-          />
-          <NavItem 
-            icon={Users} 
-            label="Charaktere" 
-            active={activeTab === 'characters'} 
-            onClick={() => setActiveTab('characters')}
-            collapsed={!leftSidebarOpen}
-          />
-          <NavItem 
-            icon={MapPin} 
-            label="Orte" 
-            active={activeTab === 'places'} 
-            onClick={() => setActiveTab('places')}
-            collapsed={!leftSidebarOpen}
-          />
-          <NavItem
-            icon={StickyNote}
-            label="Notizen"
-            active={activeTab === 'notes'}
-            onClick={() => setActiveTab('notes')}
-            collapsed={!leftSidebarOpen}
-          />
+          <NavItem icon={Book} label="Manuskript" active={activeTab === 'manuscript'} onClick={() => setActiveTab('manuscript')} collapsed={!leftSidebarOpen} />
+          <NavItem icon={Users} label="Charaktere" active={activeTab === 'characters'} onClick={() => setActiveTab('characters')} collapsed={!leftSidebarOpen} />
+          <NavItem icon={MapPin} label="Orte" active={activeTab === 'places'} onClick={() => setActiveTab('places')} collapsed={!leftSidebarOpen} />
+          <NavItem icon={StickyNote} label="Notizen" active={activeTab === 'notes'} onClick={() => setActiveTab('notes')} collapsed={!leftSidebarOpen} />
         </nav>
 
-        {/* Word Progress */}
         {leftSidebarOpen && selectedProject && (
           <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-            <WordProgress 
-              current={totalWordCount} 
-              goal={selectedProject.wordGoal} 
-            />
+            <WordProgress current={totalWordCount} goal={selectedProject.wordGoal} />
           </div>
         )}
       </aside>
 
-      {/* Main Content - Editor */}
+      {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
-        {/* Top Bar */}
         <header className="h-16 bg-white/50 dark:bg-[#262626]/50 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6">
           <div className="flex items-center gap-4">
             {activeTab === 'manuscript' && selectedChapter && (
               <>
-                <h2 className="text-lg font-serif text-gray-800 dark:text-gray-200">
-                  {selectedChapter.title}
-                </h2>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {selectedChapter.wordCount || 0} Wörter
-                </span>
+                <h2 className="text-lg font-serif text-gray-800 dark:text-gray-200">{selectedChapter.title}</h2>
+                <span className="text-sm text-gray-500 dark:text-gray-400">{selectedChapter.wordCount || 0} Wörter</span>
               </>
             )}
             {activeTab === 'manuscript' && !selectedChapter && (
-              <span className="text-gray-500 dark:text-gray-400">
-                Kein Kapitel ausgewählt
-              </span>
+              <span className="text-gray-500 dark:text-gray-400">Kein Kapitel ausgewählt</span>
             )}
-            {activeTab === 'characters' && (
-              <h2 className="text-lg font-serif text-gray-800 dark:text-gray-200">
-                Charakter-Verwaltung
-              </h2>
-            )}
-            {activeTab === 'places' && (
-              <h2 className="text-lg font-serif text-gray-800 dark:text-gray-200">
-                Orte
-              </h2>
-            )}
-            {activeTab === 'notes' && (
-              <h2 className="text-lg font-serif text-gray-800 dark:text-gray-200">
-                Notizen
-              </h2>
-            )}
+            {activeTab === 'characters' && <h2 className="text-lg font-serif text-gray-800 dark:text-gray-200">Charakter-Verwaltung</h2>}
+            {activeTab === 'places' && <h2 className="text-lg font-serif text-gray-800 dark:text-gray-200">Orte</h2>}
+            {activeTab === 'notes' && <h2 className="text-lg font-serif text-gray-800 dark:text-gray-200">Notizen</h2>}
           </div>
           <div className="flex items-center gap-3">
             {activeTab === 'manuscript' && (
@@ -1670,16 +1540,12 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Content Area */}
         <div className="flex-1 overflow-auto">
           {activeTab === 'manuscript' && (
             <div className="max-w-3xl mx-auto px-8 py-12 relative">
-              {/* Floating Toolbar */}
               <FloatingToolbar visible={showToolbar} />
-
               {selectedChapter ? (
                 <>
-                  {/* Title Input */}
                   <input
                     type="text"
                     placeholder="Kapiteltitel..."
@@ -1693,8 +1559,6 @@ export default function Home() {
                     }}
                     className="w-full text-3xl font-serif font-bold bg-transparent border-none outline-none placeholder-gray-400 dark:placeholder-gray-600 text-gray-800 dark:text-gray-100 mb-8"
                   />
-
-                  {/* Editor Content */}
                   <textarea
                     placeholder="Beginne zu schreiben... (Klicke auf Charakternamen für Quick-Card)"
                     value={editorContent}
@@ -1723,9 +1587,7 @@ export default function Home() {
           {activeTab === 'characters' && (
             <div className="max-w-4xl mx-auto px-8 py-12">
               <div className="flex items-center justify-between mb-8">
-                <h2 className="text-3xl font-serif font-bold text-gray-800 dark:text-gray-100">
-                  Charaktere
-                </h2>
+                <h2 className="text-3xl font-serif font-bold text-gray-800 dark:text-gray-100">Charaktere</h2>
                 <button
                   onClick={() => setShowCharacterModal(true)}
                   className="px-4 py-2 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6349] transition-colors flex items-center gap-2"
@@ -1736,20 +1598,13 @@ export default function Home() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {characters.map((char) => (
-                  <CharacterCard
-                    key={char.id}
-                    character={char}
-                    onDelete={() => deleteCharacter(char.id)}
-                  />
+                  <CharacterCard key={char.id} character={char} onDelete={() => deleteCharacter(char.id)} />
                 ))}
                 {characters.length === 0 && (
                   <div className="col-span-2 text-center py-12 text-gray-500 dark:text-gray-400">
                     <Users size={48} className="mx-auto mb-4 text-gray-300 dark:text-gray-600" />
                     <p>Noch keine Charaktere vorhanden.</p>
-                    <button
-                      onClick={() => setShowCharacterModal(true)}
-                      className="mt-4 px-4 py-2 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6349] transition-colors"
-                    >
+                    <button onClick={() => setShowCharacterModal(true)} className="mt-4 px-4 py-2 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6349] transition-colors">
                       Ersten Charakter erstellen
                     </button>
                   </div>
@@ -1761,9 +1616,7 @@ export default function Home() {
           {activeTab === 'places' && (
             <div className="max-w-4xl mx-auto px-8 py-12">
               <div className="flex items-center justify-between mb-8">
-                <h2 className="text-3xl font-serif font-bold text-gray-800 dark:text-gray-100">
-                  Orte
-                </h2>
+                <h2 className="text-3xl font-serif font-bold text-gray-800 dark:text-gray-100">Orte</h2>
                 <button
                   onClick={() => setShowPlaceModal(true)}
                   className="px-4 py-2 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6349] transition-colors flex items-center gap-2"
@@ -1774,20 +1627,13 @@ export default function Home() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {places.map((place) => (
-                  <PlaceCard
-                    key={place.id}
-                    place={place}
-                    onDelete={() => deletePlace(place.id)}
-                  />
+                  <PlaceCard key={place.id} place={place} onDelete={() => deletePlace(place.id)} />
                 ))}
                 {places.length === 0 && (
                   <div className="col-span-2 text-center py-12 text-gray-500 dark:text-gray-400">
                     <MapPin size={48} className="mx-auto mb-4 text-gray-300 dark:text-gray-600" />
                     <p>Noch keine Orte vorhanden.</p>
-                    <button
-                      onClick={() => setShowPlaceModal(true)}
-                      className="mt-4 px-4 py-2 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6349] transition-colors"
-                    >
+                    <button onClick={() => setShowPlaceModal(true)} className="mt-4 px-4 py-2 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6349] transition-colors">
                       Ersten Ort erstellen
                     </button>
                   </div>
@@ -1799,9 +1645,7 @@ export default function Home() {
           {activeTab === 'notes' && (
             <div className="max-w-4xl mx-auto px-8 py-12">
               <div className="flex items-center justify-between mb-8">
-                <h2 className="text-3xl font-serif font-bold text-gray-800 dark:text-gray-100">
-                  Notizen
-                </h2>
+                <h2 className="text-3xl font-serif font-bold text-gray-800 dark:text-gray-100">Notizen</h2>
                 <button
                   onClick={() => {
                     if (selectedChapter) {
@@ -1817,7 +1661,6 @@ export default function Home() {
                   Neue Notiz
                 </button>
               </div>
-              
               {!selectedChapter ? (
                 <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                   <StickyNote size={48} className="mx-auto mb-4 text-gray-300 dark:text-gray-600" />
@@ -1852,27 +1695,17 @@ export default function Home() {
       >
         {!focusMode && rightSidebarOpen && (
           <>
-            {/* Toggle Button */}
             <button
               onClick={() => setRightSidebarOpen(false)}
               className="absolute left-0 top-1/2 transform -translate-x-full -translate-y-1/2 bg-white dark:bg-[#262626] p-2 rounded-l-lg shadow-md border border-r-0 border-gray-200 dark:border-gray-700"
             >
               <ChevronRight size={20} />
             </button>
-
-            {/* Content */}
             <div className="flex-1 overflow-auto p-4 space-y-6">
-              {/* Chapters Section */}
               <section>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Kapitel
-                  </h3>
-                  <button
-                    onClick={createChapter}
-                    className="p-1.5 text-[#4A7C59] hover:bg-[#4A7C59]/10 rounded transition-colors"
-                    title="Neues Kapitel"
-                  >
+                  <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kapitel</h3>
+                  <button onClick={createChapter} className="p-1.5 text-[#4A7C59] hover:bg-[#4A7C59]/10 rounded transition-colors" title="Neues Kapitel">
                     <Plus size={18} />
                   </button>
                 </div>
@@ -1891,39 +1724,24 @@ export default function Home() {
                     />
                   ))}
                   {chapters.length === 0 && (
-                    <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">
-                      Noch keine Kapitel
-                    </p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">Noch keine Kapitel</p>
                   )}
                 </div>
               </section>
 
-              {/* Characters Section */}
               <section>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Charaktere
-                  </h3>
-                  <button
-                    onClick={() => setShowCharacterModal(true)}
-                    className="p-1.5 text-[#4A7C59] hover:bg-[#4A7C59]/10 rounded transition-colors"
-                    title="Neuer Charakter"
-                  >
+                  <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Charaktere</h3>
+                  <button onClick={() => setShowCharacterModal(true)} className="p-1.5 text-[#4A7C59] hover:bg-[#4A7C59]/10 rounded transition-colors" title="Neuer Charakter">
                     <Plus size={18} />
                   </button>
                 </div>
                 <div className="space-y-3">
                   {characters.map((char) => (
-                    <CharacterCard
-                      key={char.id}
-                      character={char}
-                      onDelete={() => deleteCharacter(char.id)}
-                    />
+                    <CharacterCard key={char.id} character={char} onDelete={() => deleteCharacter(char.id)} />
                   ))}
                   {characters.length === 0 && (
-                    <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">
-                      Noch keine Charaktere
-                    </p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">Noch keine Charaktere</p>
                   )}
                 </div>
               </section>
@@ -1932,7 +1750,6 @@ export default function Home() {
         )}
       </aside>
 
-      {/* Right Sidebar Toggle (when closed and not in focus mode) */}
       {!focusMode && !rightSidebarOpen && (
         <button
           onClick={() => setRightSidebarOpen(true)}
@@ -1942,32 +1759,10 @@ export default function Home() {
         </button>
       )}
 
-      {/* Modals */}
-      <CreateProjectModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onCreate={createProject}
-      />
-
-      <AddCharacterModal
-        isOpen={showCharacterModal}
-        onClose={() => setShowCharacterModal(false)}
-        onAdd={addCharacter}
-      />
-
-      <AddPlaceModal
-        isOpen={showPlaceModal}
-        onClose={() => setShowPlaceModal(false)}
-        onAdd={addPlace}
-      />
-
-      {/* Character Quick-Card */}
-      <CharacterQuickCard
-        state={quickCard}
-        onClose={() => setQuickCard(prev => ({ ...prev, visible: false }))}
-      />
-
-      {/* Edit Project Modal */}
+      <CreateProjectModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} onCreate={createProject} />
+      <AddCharacterModal isOpen={showCharacterModal} onClose={() => setShowCharacterModal(false)} onAdd={addCharacter} />
+      <AddPlaceModal isOpen={showPlaceModal} onClose={() => setShowPlaceModal(false)} onAdd={addPlace} />
+      <CharacterQuickCard state={quickCard} onClose={() => setQuickCard(prev => ({ ...prev, visible: false }))} />
       <EditProjectModal
         isOpen={showEditProjectModal}
         onClose={() => setShowEditProjectModal(false)}
