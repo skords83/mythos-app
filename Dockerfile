@@ -10,6 +10,7 @@ RUN npm install
 COPY frontend/ ./
 
 RUN npx prisma generate
+RUN npm run build
 
 RUN chown -R node:node /app
 
@@ -17,4 +18,4 @@ USER node
 
 EXPOSE 4000
 
-CMD ["npm", "run", "dev"]
+CMD ["npm", "start"]
