@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import { 
   Project, Chapter, Character, Place, Note, QuickCardState,
-  ThemeToggle, RichTextEditor, CharacterListItem,
+  ThemeToggle, RichTextEditor, CharacterListItem, EditCharacterModal,
   FocusToggle,
   NavItem,
   ProjectCard,
@@ -78,8 +78,9 @@ export default function Page() {
   const [editorContent, setEditorContent] = useState('')
   const [isLoading, setIsLoading] = useState(isCheckingAuth)
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [showCharacterModal, setShowCharacterModal] = useState(false)
-  const [showPlaceModal, setShowPlaceModal] = useState(false)
+const [showCharacterModal, setShowCharacterModal] = useState(false)
+const [editingCharacter, setEditingCharacter] = useState<Character | null>(null)
+const [showPlaceModal, setShowPlaceModal] = useState(false)
   const [showEditProjectModal, setShowEditProjectModal] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [places, setPlaces] = useState<Place[]>([])
@@ -333,12 +334,26 @@ export default function Page() {
       })
       const newCharacter = await response.json()
       setCharacters([newCharacter, ...characters])
-    } catch (error) {
-      console.error('Error adding character:', error)
-    }
+} catch (error) {
+    console.error('Error adding character:', error)
   }
+}
 
-  const deleteCharacter = async (characterId: string) => {
+const updateCharacter = async (id: string, name: string, description: string, motivation: string) => {
+  try {
+    const response = await fetch(`/api/characters/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description, motivation })
+    })
+    const updated = await response.json()
+    setCharacters(characters.map(c => c.id === id ? updated : c))
+  } catch (error) {
+    console.error('Error updating character:', error)
+  }
+}
+
+const deleteCharacter = async (characterId: string) => {
     if (!confirm('Möchtest du diesen Charakter wirklich löschen?')) return
     try {
       await fetch(`/api/characters/${characterId}`, { method: 'DELETE' })
@@ -811,7 +826,7 @@ export default function Page() {
                 </div>
                 <div className="space-y-1">
                   {characters.map((char) => (
-                    <CharacterListItem key={char.id} character={char} />
+                    <CharacterListItem key={char.id} character={char} onClick={() => setEditingCharacter(char)} />
                   ))}
                   {characters.length === 0 && (
                     <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">Noch keine Charaktere</p>
@@ -834,6 +849,7 @@ export default function Page() {
 
       <CreateProjectModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} onCreate={createProject} />
       <AddCharacterModal isOpen={showCharacterModal} onClose={() => setShowCharacterModal(false)} onAdd={addCharacter} />
+<EditCharacterModal isOpen={!!editingCharacter} onClose={() => setEditingCharacter(null)} character={editingCharacter} onUpdate={updateCharacter} />
       <AddPlaceModal isOpen={showPlaceModal} onClose={() => setShowPlaceModal(false)} onAdd={addPlace} />
       <CharacterQuickCard state={quickCard} onClose={() => setQuickCard(prev => ({ ...prev, visible: false }))} />
       <EditProjectModal
