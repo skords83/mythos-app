@@ -53,7 +53,7 @@ export function FocusToggle({ isFocusMode, onToggle }: { isFocusMode: boolean, o
 }
 
 interface NavItemProps {
-  icon: React.ComponentType<{ size?: number }>
+  icon: React.ComponentType<any>
   label: string
   active?: boolean
   onClick?: () => void
