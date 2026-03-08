@@ -1223,26 +1223,30 @@ export default function Home() {
     }
   }
 
-  const saveChapter = async () => {
-    if (!selectedChapter) return
+  const saveChapter = async (chapterToSave?: Chapter) => {
+    const chapter = chapterToSave || selectedChapter
+    if (!chapter) return
     setIsSaving(true)
     try {
-      const wordCount = editorContent.trim().split(/\s+/).filter(w => w.length > 0).length
-      await fetch(`/api/chapters/${selectedChapter.id}`, {
+      const contentToSave = chapterToSave ? editorContent : editorContent
+      const wordCount = contentToSave.trim().split(/\s+/).filter(w => w.length > 0).length
+      await fetch(`/api/chapters/${chapter.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          title: selectedChapter.title,  // FIX: Titel wird jetzt mitgespeichert
-          content: editorContent,
+          title: chapter.title,
+          content: contentToSave,
           wordCount 
         })
       })
       setChapters(chapters.map(ch => 
-        ch.id === selectedChapter.id 
-          ? { ...ch, title: selectedChapter.title, content: editorContent, wordCount }
+        ch.id === chapter.id 
+          ? { ...ch, title: chapter.title, content: contentToSave, wordCount }
           : ch
       ))
-      setSelectedChapter({ ...selectedChapter, content: editorContent, wordCount })
+      if (!chapterToSave) {
+        setSelectedChapter({ ...chapter, content: contentToSave, wordCount })
+      }
     } catch (error) {
       console.error('Error saving chapter:', error)
     } finally {
@@ -1716,13 +1720,12 @@ export default function Home() {
                       chapter={chapter}
                       active={selectedChapter?.id === chapter.id}
                       onClick={async () => {
-                        if (selectedChapter?.id !== chapter.id) {
-                          if (selectedChapter) {
-                            await saveChapter()
-                          }
-                          setSelectedChapter(chapter)
-                          setEditorContent(chapter.content || '')
+                        const currentChapter = selectedChapter
+                        if (currentChapter && currentChapter.id !== chapter.id) {
+                          await saveChapter(currentChapter)
                         }
+                        setSelectedChapter(chapter)
+                        setEditorContent(chapter.content || '')
                       }}
                     />
                   ))}
