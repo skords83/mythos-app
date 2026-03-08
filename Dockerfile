@@ -5,15 +5,17 @@ COPY frontend/package*.json ./
 RUN npm install
 COPY frontend/ ./
 RUN npx prisma generate
-RUN npx prisma db push --accept-data-loss
 RUN npm run build
+
+# Startup script für DB Migrationen
+COPY docker-start.sh /app/docker-start.sh
+RUN chmod +x /app/docker-start.sh
 
 # Static files für standalone kopieren
 RUN cp -r .next/static .next/standalone/.next/static
 RUN mkdir -p .next/standalone/public
 
-RUN chown -R node:node /app
 USER node
 EXPOSE 4000
 ENV PORT=4000
-CMD ["node", ".next/standalone/server.js"]
+CMD ["/app/docker-start.sh"]
