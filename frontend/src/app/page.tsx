@@ -1223,30 +1223,54 @@ export default function Home() {
     }
   }
 
-  const saveChapter = async (chapterToSave?: Chapter) => {
-    const chapter = chapterToSave || selectedChapter
+  const saveChapter = async (chapterToSave?: Chapter | React.MouseEvent) => {
+    if (chapterToSave && 'id' in chapterToSave) {
+      const ch = chapterToSave as Chapter
+      setIsSaving(true)
+      try {
+        const wordCount = editorContent.trim().split(/\s+/).filter(w => w.length > 0).length
+        await fetch(`/api/chapters/${ch.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            title: ch.title,
+            content: editorContent,
+            wordCount 
+          })
+        })
+        setChapters(chapters.map(c => 
+          c.id === ch.id 
+            ? { ...c, title: ch.title, content: editorContent, wordCount }
+            : c
+        ))
+      } catch (error) {
+        console.error('Error saving chapter:', error)
+      } finally {
+        setIsSaving(false)
+      }
+      return
+    }
+    
+    const chapter = selectedChapter
     if (!chapter) return
     setIsSaving(true)
     try {
-      const contentToSave = chapterToSave ? editorContent : editorContent
-      const wordCount = contentToSave.trim().split(/\s+/).filter(w => w.length > 0).length
+      const wordCount = editorContent.trim().split(/\s+/).filter(w => w.length > 0).length
       await fetch(`/api/chapters/${chapter.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           title: chapter.title,
-          content: contentToSave,
+          content: editorContent,
           wordCount 
         })
       })
       setChapters(chapters.map(ch => 
         ch.id === chapter.id 
-          ? { ...ch, title: chapter.title, content: contentToSave, wordCount }
+          ? { ...ch, title: chapter.title, content: editorContent, wordCount }
           : ch
       ))
-      if (!chapterToSave) {
-        setSelectedChapter({ ...chapter, content: contentToSave, wordCount })
-      }
+      setSelectedChapter({ ...chapter, content: editorContent, wordCount })
     } catch (error) {
       console.error('Error saving chapter:', error)
     } finally {
