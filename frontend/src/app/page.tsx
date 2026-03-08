@@ -1715,12 +1715,13 @@ export default function Home() {
                       key={chapter.id}
                       chapter={chapter}
                       active={selectedChapter?.id === chapter.id}
-                      onClick={() => {
+                      onClick={async () => {
                         if (selectedChapter?.id !== chapter.id) {
                           if (selectedChapter) {
-                            saveChapter()
+                            await saveChapter()
                           }
                           setSelectedChapter(chapter)
+                          setEditorContent(chapter.content || '')
                         }
                       }}
                     />
