@@ -37,7 +37,22 @@ export function ExportModal({ isOpen, onClose, project, chapters, selectedChapte
   }
 
   const exportPDF = async (title: string, content: string) => {
-    const html2pdf = (await import('html2pdf.js')).default as any
+    const loadScript = () => {
+      return new Promise<void>((resolve, reject) => {
+        if ((window as any).html2pdf) {
+          resolve()
+          return
+        }
+        const script = document.createElement('script')
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
+        script.onload = () => resolve()
+        script.onerror = () => reject(new Error('Failed to load html2pdf'))
+        document.head.appendChild(script)
+      })
+    }
+    
+    await loadScript()
+    const html2pdf = (window as any).html2pdf
     
     const element = document.createElement('div')
     element.innerHTML = `
