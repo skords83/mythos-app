@@ -14,12 +14,13 @@ import {
   Save,
   MoreVertical,
   Settings,
+  Download,
   AlertTriangle,
   Home as HomeIcon
 } from 'lucide-react'
 import { 
   Project, Chapter, Character, Place, Note, QuickCardState,
-  ThemeToggle, RichTextEditor, CharacterListItem, EditCharacterModal,
+  ThemeToggle, RichTextEditor, CharacterListItem, EditCharacterModal, ExportModal,
   FocusToggle,
   NavItem,
   ProjectCard,
@@ -81,8 +82,9 @@ export default function Page() {
 const [showCharacterModal, setShowCharacterModal] = useState(false)
 const [editingCharacter, setEditingCharacter] = useState<Character | null>(null)
 const [showPlaceModal, setShowPlaceModal] = useState(false)
-  const [showEditProjectModal, setShowEditProjectModal] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
+const [showEditProjectModal, setShowEditProjectModal] = useState(false)
+const [showExportModal, setShowExportModal] = useState(false)
+const [isSaving, setIsSaving] = useState(false)
   const [places, setPlaces] = useState<Place[]>([])
   const [notes, setNotes] = useState<Note[]>([])
   const [quickCard, setQuickCard] = useState<QuickCardState>({
@@ -557,10 +559,17 @@ const deleteCharacter = async (characterId: string) => {
                   className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400"
                   title="Projekteinstellungen"
                 >
-                  <Settings size={20} />
-                </button>
-                <button 
-                  onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
+<Settings size={20} />
+</button>
+<button
+  onClick={() => setShowExportModal(true)}
+  className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400"
+  title="Exportieren"
+>
+  <Download size={20} />
+</button>
+<button
+  onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
                   className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                 >
                   <ChevronLeft size={20} />
@@ -857,8 +866,15 @@ const deleteCharacter = async (characterId: string) => {
         onClose={() => setShowEditProjectModal(false)}
         project={selectedProject}
         onUpdate={updateProject}
-        onDelete={deleteProject}
-      />
-    </div>
+onDelete={deleteProject}
+  />
+  <ExportModal 
+    isOpen={showExportModal} 
+    onClose={() => setShowExportModal(false)} 
+    project={selectedProject}
+    chapters={chapters}
+    selectedChapter={selectedChapter}
+  />
+</div>
   )
 }

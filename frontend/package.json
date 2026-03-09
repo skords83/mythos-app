@@ -18,7 +18,9 @@
     "@tiptap/extension-placeholder": "^2.5.4",
     "lucide-react": "^0.424.0",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "html2pdf.js": "^0.10.1",
+    "epub-gen": "^0.1.0"
   },
   "devDependencies": {
     "typescript": "^5.5.4",
