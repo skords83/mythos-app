@@ -90,12 +90,58 @@ export function ExportModal({ isOpen, onClose, project, chapters, selectedChapte
         ).join('<br/><br/>')
       }
 
-      if (format === 'pdf') {
-        await exportPDF(title, content)
-      } else {
-        // ePub Export - einfache Implementierung
-        alert('ePub Export wird in Kürze verfügbar sein. Bitte vorerst PDF verwenden.')
-      }
+if (format === 'pdf') {
+      await exportPDF(title, content)
+    } else {
+      const { default: JSZip } = await import('jszip')
+      const zip = new JSZip()
+      
+      const plainText = stripHtml(content)
+      
+      zip.file('mimetype', 'application/epub+zip')
+      zip.file('META-INF/container.xml', `<?xml version="1.0"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>`)
+      
+      const contentOpf = `<?xml version="1.0" encoding="UTF-8"?>
+<package version="2.0" xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title>${title}</dc:title>
+    <dc:language>de</dc:language>
+    <dc:identifier id="bookid">${Date.now()}</dc:identifier>
+  </metadata>
+  <manifest>
+    <item id="nav" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+    <item id="content" href="OEBPS/content.xhtml" media-type="application/xhtml+xml"/>
+  </manifest>
+  <spine toc="nav">
+    <itemref idref="content"/>
+  </spine>
+</package>`
+      
+      const contentXhtml = `<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>${title}</title></head>
+<body>
+<h1>${title}</h1>
+${content}
+</body>
+</html>`
+      
+      zip.file('OEBPS/content.opf', contentOpf)
+      zip.file('OEBPS/content.xhtml', contentXhtml)
+      
+      const blob = await zip.generateAsync({ type: 'blob' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${title.replace(/[^a-z0-9]/gi, '_')}.epub`
+      a.click()
+      URL.revokeObjectURL(url)
+    }
     } catch (error) {
       console.error('Export error:', error)
       alert('Export fehlgeschlagen')
