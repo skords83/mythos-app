@@ -95,9 +95,24 @@ if (format === 'pdf') {
     } else {
       const { default: JSZip } = await import('jszip')
       const zip = new JSZip()
-      
-      const plainText = stripHtml(content)
-      
+
+      // Base64-Bilder extrahieren und durch Platzhalter ersetzen
+      const imageRegex = /<img[^>]+src="data:image\/([^;]+);base64,([^"]+)"[^>]*>/g
+      const images: { id: string, type: string, data: string }[] = []
+      let imgCounter = 0
+
+      let processedContent = content.replace(imageRegex, (match, type, data) => {
+        const id = `img${imgCounter++}`
+        images.push({ id, type: type || 'png', data })
+        return `[BILD: ${id}]`
+      })
+
+      // Bild-Platzhalter durch ePub-Bildreferenzen ersetzen
+      images.forEach(img => {
+        processedContent = processedContent.replace(`[BILD: ${img.id}]`, 
+          `<img src="images/${img.id}.${img.type}" alt="Bild" style="max-width: 100%;"/>`)
+      })
+
       zip.file('mimetype', 'application/epub+zip')
       zip.file('META-INF/container.xml', `<?xml version="1.0"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
@@ -116,21 +131,32 @@ if (format === 'pdf') {
   <manifest>
     <item id="nav" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
     <item id="content" href="OEBPS/content.xhtml" media-type="application/xhtml+xml"/>
+    ${images.map(img => `<item id="${img.id}" href="OEBPS/images/${img.id}.${img.type}" media-type="image/${img.type}"/>`).join('\n    ')}
   </manifest>
   <spine toc="nav">
     <itemref idref="content"/>
   </spine>
 </package>`
       
-      const contentXhtml = `<?xml version="1.0" encoding="UTF-8"?>
+const contentXhtml = `<?xml version="1.0" encoding="UTF-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head><title>${title}</title></head>
 <body>
 <h1>${title}</h1>
-${content}
+${processedContent}
 </body>
 </html>`
-      
+
+      // Bilder hinzufügen
+      images.forEach(img => {
+        const binary = atob(img.data)
+        const array = new Uint8Array(binary.length)
+        for (let i = 0; i < binary.length; i++) {
+          array[i] = binary.charCodeAt(i)
+        }
+        zip.file(`OEBPS/images/${img.id}.${img.type}`, array)
+      })
+
       zip.file('OEBPS/content.opf', contentOpf)
       zip.file('OEBPS/content.xhtml', contentXhtml)
       
