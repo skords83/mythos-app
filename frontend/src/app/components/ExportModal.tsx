@@ -1,5 +1,10 @@
 'use client'
 
+declare module 'html2pdf.js' {
+  const html2pdf: any
+  export default html2pdf
+}
+
 import React, { useState } from 'react'
 import { Download, FileText, Book, X } from 'lucide-react'
 
