@@ -1,10 +1,5 @@
 'use client'
 
-declare module 'html2pdf.js' {
-  const html2pdf: any
-  export default html2pdf
-}
-
 import React, { useState } from 'react'
 import { Download, FileText, Book, X } from 'lucide-react'
 
@@ -42,7 +37,7 @@ export function ExportModal({ isOpen, onClose, project, chapters, selectedChapte
   }
 
   const exportPDF = async (title: string, content: string) => {
-    const { default: html2pdf } = await import('html2pdf.js')
+    const html2pdf = (await import('html2pdf.js')).default as any
     
     const element = document.createElement('div')
     element.innerHTML = `
