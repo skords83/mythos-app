@@ -3,6 +3,7 @@
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
+import Image from '@tiptap/extension-image'
 import { Bold, Italic, List, Quote, Heading1, Heading2, Undo, Redo } from 'lucide-react'
 import { useEffect } from 'react'
 
@@ -14,12 +15,13 @@ interface RichTextEditorProps {
 
 export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu schreiben...' }: RichTextEditorProps) {
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Placeholder.configure({
-        placeholder,
-      }),
-    ],
+extensions: [
+    StarterKit,
+    Placeholder.configure({
+      placeholder,
+    }),
+    Image,
+  ],
     content: content || '',
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML())
