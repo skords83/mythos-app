@@ -7,9 +7,11 @@ COPY frontend/ ./
 RUN npx prisma generate
 RUN npm run build
 
+# Fix permissions
+RUN chown -R node:node /app
+
 # Startup script für DB Migrationen
 COPY docker-start.sh /app/docker-start.sh
-RUN chmod +x /app/docker-start.sh
 
 # Static files für standalone kopieren
 RUN cp -r .next/static .next/standalone/.next/static
