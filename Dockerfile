@@ -23,4 +23,5 @@ RUN mkdir -p .next/standalone/public
 
 EXPOSE 4000
 ENV PORT=4000
+ENV HOSTNAME=0.0.0.0
 CMD ["/app/docker-start.sh"]
