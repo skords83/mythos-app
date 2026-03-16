@@ -146,18 +146,11 @@ export function EditProjectModal({ isOpen, onClose, project, onUpdate, onDelete 
                 <div className="w-16 h-20 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center text-gray-400">
                   <span className="text-xs">Keins</span>
                 </div>
-              )}
-              <button
-                type="button"
-                onClick={() => coverInputRef.current?.click()}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm"
-              >
-Bild auswählen
-</button>
+)}
 </div>
 <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Tagesziel (Wörter)
+  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+    Tagesziel (Wörter)
                 </label>
                 <input
                   type="number"
