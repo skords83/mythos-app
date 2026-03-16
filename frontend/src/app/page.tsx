@@ -206,21 +206,21 @@ const [isSaving, setIsSaving] = useState(false)
     }
   }
 
-  const updateProject = async (id: string, title: string, description: string, wordGoal: number) => {
-    try {
-      const response = await fetch(`/api/projects/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, description, wordGoal })
-      })
-      const updatedProject = await response.json()
-      setProjects(projects.map(p => p.id === id ? updatedProject : p))
-      if (selectedProject?.id === id) {
-        setSelectedProject(updatedProject)
-      }
-    } catch (error) {
-      console.error('Error updating project:', error)
+const updateProject = async (id: string, title: string, description: string, wordGoal: number, coverImage?: string) => {
+  try {
+    const response = await fetch(`/api/projects/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, description, wordGoal, coverImage })
+    })
+    const updatedProject = await response.json()
+    setProjects(projects.map(p => p.id === id ? updatedProject : p))
+    if (selectedProject?.id === id) {
+      setSelectedProject(updatedProject)
     }
+  } catch (error) {
+    console.error('Error updating project:', error)
+  }
   }
 
   const deleteProject = async (projectId: string) => {

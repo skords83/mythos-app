@@ -68,13 +68,14 @@ export async function PUT(
       return NextResponse.json({ error: 'Projekt nicht gefunden' }, { status: 404 })
     }
 
-    const body = await request.json()
-    const { title, description, wordGoal } = body
+const body = await request.json()
+  const { title, description, wordGoal, coverImage } = body
 
-    const updateData: any = {}
-    if (title !== undefined) updateData.title = title
-    if (description !== undefined) updateData.description = description
-    if (wordGoal !== undefined) updateData.wordGoal = wordGoal
+  const updateData: any = {}
+  if (title !== undefined) updateData.title = title
+  if (description !== undefined) updateData.description = description
+  if (wordGoal !== undefined) updateData.wordGoal = wordGoal
+  if (coverImage !== undefined) updateData.coverImage = coverImage
 
     const project = await prisma.project.update({
       where: { id: params.id },

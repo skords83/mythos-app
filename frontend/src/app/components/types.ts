@@ -2,6 +2,7 @@ export interface Project {
   id: string
   title: string
   description: string | null
+  coverImage?: string | null
   wordGoal: number
   createdAt: string
   updatedAt: string

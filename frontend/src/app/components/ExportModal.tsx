@@ -13,6 +13,7 @@ interface Project {
   id: string
   title: string
   description: string | null
+  coverImage?: string | null
 }
 
 interface ExportModalProps {
@@ -91,10 +92,21 @@ export function ExportModal({ isOpen, onClose, project, chapters, selectedChapte
       }
 
 if (format === 'pdf') {
-      await exportPDF(title, content)
+      // PDF-Export mit Cover-Bild
+      const coverImg = project.coverImage ? `<img src="${project.coverImage}" style="max-width: 300px; float: right; margin-left: 20px;"/>` : ''
+      await exportPDF(title, `${coverImg}${content}`)
     } else {
       const { default: JSZip } = await import('jszip')
       const zip = new JSZip()
+
+      // Cover-Bild aus dem Projekt
+      let coverImageData: { type: string, data: string } | null = null
+      if (project.coverImage) {
+        const match = project.coverImage.match(/data:image\/([^;]+);base64,(.+)/)
+        if (match) {
+          coverImageData = { type: match[1] || 'png', data: match[2] }
+        }
+      }
 
       // Base64-Bilder extrahieren und durch Platzhalter ersetzen
       const imageRegex = /<img[^>]+src="data:image\/([^;]+);base64,([^"]+)"[^>]*>/g
@@ -130,10 +142,11 @@ if (format === 'pdf') {
     <dc:language>de</dc:language>
     <dc:identifier id="bookid">${bookId}</dc:identifier>
   </metadata>
-  <manifest>
+<manifest>
     <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
     <item id="content" href="content.xhtml" media-type="application/xhtml+xml"/>
-    ${images.map(img => `<item id="${img.id}" href="images/${img.id}.${img.type}" media-type="image/${img.type}"/>`).join('\n    ')}
+    ${coverImageData ? `<item id="cover" href="cover.${coverImageData.type}" media-type="image/${coverImageData.type}"/>` : ''}
+    ${images.map(img => `<item id="${img.id}" href="images/${img.id}.${img.type}" media-type="image/${img.type}"/>`).join('\n ')}
   </manifest>
   <spine toc="ncx">
     <itemref idref="content"/>
@@ -157,14 +170,27 @@ if (format === 'pdf') {
   </navMap>
 </ncx>`
 
+      const coverHtml = coverImageData ? `<div style="text-align: center; margin: 20px 0;"><img src="cover.${coverImageData.type}" alt="Cover" style="max-width: 200px;"/></div>` : ''
+
       const contentXhtml = `<?xml version="1.0" encoding="UTF-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head><title>${title}</title></head>
 <body>
 <h1>${title}</h1>
+${coverHtml}
 ${processedContent}
 </body>
 </html>`
+
+      // Cover-Bild hinzufügen
+      if (coverImageData) {
+        const binary = atob(coverImageData.data)
+        const array = new Uint8Array(binary.length)
+        for (let i = 0; i < binary.length; i++) {
+          array[i] = binary.charCodeAt(i)
+        }
+        zip.file(`OEBPS/cover.${coverImageData.type}`, array)
+      }
 
       // Bilder hinzufügen
       images.forEach(img => {

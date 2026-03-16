@@ -8,7 +8,7 @@ interface EditProjectModalProps {
   isOpen: boolean
   onClose: () => void
   project: Project | null
-  onUpdate: (id: string, title: string, description: string, wordGoal: number) => void
+  onUpdate: (id: string, title: string, description: string, wordGoal: number, coverImage?: string) => void
   onDelete: (id: string) => void
 }
 
@@ -16,22 +16,36 @@ export function EditProjectModal({ isOpen, onClose, project, onUpdate, onDelete 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [wordGoal, setWordGoal] = useState(500)
+  const [coverImage, setCoverImage] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [activeTab, setActiveTab] = useState<'general' | 'danger'>('general')
+  const coverInputRef = React.useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (project) {
       setTitle(project.title)
       setDescription(project.description || '')
       setWordGoal(project.wordGoal)
+      setCoverImage(project.coverImage || '')
     }
   }, [project])
 
   if (!isOpen || !project) return null
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      setCoverImage(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onUpdate(project.id, title, description, wordGoal)
+    onUpdate(project.id, title, description, wordGoal, coverImage)
     onClose()
   }
 
@@ -97,12 +111,49 @@ export function EditProjectModal({ isOpen, onClose, project, onUpdate, onDelete 
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Beschreibung
                 </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#1A1A1B] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#4A7C59] outline-none resize-none"
-                  placeholder="Kurze Beschreibung..."
-                  rows={3}
+<textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#1A1A1B] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#4A7C59] outline-none resize-none"
+              placeholder="Kurze Beschreibung..."
+              rows={3}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Titelbild (für ePub)
+            </label>
+            <input
+              ref={coverInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+            <div className="flex items-center gap-3">
+              {coverImage ? (
+                <div className="relative">
+                  <img src={coverImage} alt="Cover" className="w-16 h-20 object-cover rounded" />
+                  <button
+                    type="button"
+                    onClick={() => setCoverImage('')}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5"
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <div className="w-16 h-20 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center text-gray-400">
+                  <span className="text-xs">Keins</span>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => coverInputRef.current?.click()}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm"
+              >
+                Bild auswählen
+              </button>
                 />
               </div>
               <div>
