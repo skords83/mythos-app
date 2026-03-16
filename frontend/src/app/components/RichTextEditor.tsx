@@ -4,8 +4,8 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Image from '@tiptap/extension-image'
-import { Bold, Italic, List, Quote, Heading1, Heading2, Undo, Redo } from 'lucide-react'
-import { useEffect } from 'react'
+import { Bold, Italic, List, Quote, Heading1, Heading2, Undo, Redo, Image as ImageIcon } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 
 interface RichTextEditorProps {
   content: string
@@ -38,6 +38,20 @@ extensions: [
       editor.commands.setContent(content || '')
     }
   }, [content, editor])
+
+  const imageInputRef = useRef<HTMLInputElement>(null)
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !editor) return
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      editor.chain().focus().setImage({ src: reader.result as string }).run()
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
 
   if (!editor) {
     return null
@@ -117,10 +131,24 @@ extensions: [
           className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
           title="Wiederholen"
         >
-          <Redo size={16} />
-        </button>
-      </div>
-      <EditorContent editor={editor} className="min-h-[400px]" />
+<Redo size={16} />
+</button>
+<input
+  ref={imageInputRef}
+  type="file"
+  accept="image/*"
+  onChange={handleImageUpload}
+  className="hidden"
+/>
+<button
+  onClick={() => imageInputRef.current?.click()}
+  className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+  title="Bild einfügen"
+>
+  <ImageIcon size={16} />
+</button>
+</div>
+<EditorContent editor={editor} className="min-h-[400px]" />
     </div>
   )
 }
