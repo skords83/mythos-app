@@ -152,11 +152,10 @@ export function EditProjectModal({ isOpen, onClose, project, onUpdate, onDelete 
                 onClick={() => coverInputRef.current?.click()}
                 className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm"
               >
-                Bild auswählen
-              </button>
-                />
-              </div>
-              <div>
+Bild auswählen
+</button>
+</div>
+<div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Tagesziel (Wörter)
                 </label>
