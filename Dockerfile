@@ -1,23 +1,26 @@
 FROM node:20
 RUN apt-get update && apt-get install -y openssl
 WORKDIR /app
+
 COPY frontend/package*.json ./
 RUN npm install
+
 COPY frontend/ ./
+
+# Generate Prisma Client as root, then fix permissions
 RUN npx prisma generate
+RUN chmod -R 777 /app/node_modules/.prisma 2>/dev/null || true
+
 RUN npm run build
 
-# Fix permissions
-RUN chown -R node:node /app
-
-# Startup script für DB Migrationen
+# Copy startup script
 COPY docker-start.sh /app/docker-start.sh
+RUN chmod +x /app/docker-start.sh
 
-# Static files für standalone kopieren
+# Copy static files
 RUN cp -r .next/static .next/standalone/.next/static
 RUN mkdir -p .next/standalone/public
 
-USER node
 EXPOSE 4000
 ENV PORT=4000
 CMD ["/app/docker-start.sh"]
