@@ -660,6 +660,7 @@ const deleteCharacter = async (characterId: string) => {
                     content={editorContent}
                     onChange={setEditorContent}
                     placeholder="Beginne zu schreiben... (Klicke auf Charakternamen für Quick-Card)"
+                    chapterId={selectedChapter?.id}
                   />
                 </>
               ) : (

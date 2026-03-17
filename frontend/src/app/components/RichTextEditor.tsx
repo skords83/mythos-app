@@ -8,12 +8,13 @@ import { Bold, Italic, List, Quote, Heading1, Heading2, Undo, Redo, Image as Ima
 import { useEffect, useRef } from 'react'
 
 interface RichTextEditorProps {
+  chapterId?: string
   content: string
   onChange: (content: string) => void
   placeholder?: string
 }
 
-export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu schreiben...' }: RichTextEditorProps) {
+export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu schreiben...', chapterId }: RichTextEditorProps) {
   const editor = useEditor({
 extensions: [
     StarterKit,
@@ -34,10 +35,10 @@ extensions: [
   })
 
   useEffect(() => {
-    if (editor && content !== editor.getHTML()) {
+    if (editor) {
       editor.commands.setContent(content || '')
     }
-  }, [content, editor])
+  }, [chapterId, editor])
 
   const imageInputRef = useRef<HTMLInputElement>(null)
 
