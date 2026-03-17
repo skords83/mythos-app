@@ -99,6 +99,7 @@ const [isSaving, setIsSaving] = useState(false)
   const selectedChapterRef = useRef(selectedChapter)
   const chaptersRef = useRef(chapters)
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const setEditorContentDirectly = useRef<((content: string) => void) | null>(null)
 
   useEffect(() => { editorContentRef.current = editorContent }, [editorContent])
   useEffect(() => { selectedChapterRef.current = selectedChapter }, [selectedChapter])
@@ -677,6 +678,7 @@ const deleteCharacter = async (characterId: string) => {
                     content={editorContent}
                     onChange={setEditorContent}
                     placeholder="Beginne zu schreiben... (Klicke auf Charakternamen für Quick-Card)"
+                    onEditorReady={(setter) => { setEditorContentDirectly.current = setter }}
                   />
                 </>
               ) : (

@@ -12,9 +12,10 @@ interface RichTextEditorProps {
   content: string
   onChange: (content: string) => void
   placeholder?: string
+  onEditorReady?: (setter: (content: string) => void) => void
 }
 
-export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu schreiben...', chapterId }: RichTextEditorProps) {
+export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu schreiben...', chapterId, onEditorReady }: RichTextEditorProps) {
   const editor = useEditor({
 extensions: [
     StarterKit,
@@ -37,6 +38,10 @@ extensions: [
   useEffect(() => {
     if (editor) {
       editor.commands.setContent(content || '')
+      // Setter registrieren damit page.tsx den Editor direkt befüllen kann
+      onEditorReady?.((newContent: string) => {
+        editor.commands.setContent(newContent || '')
+      })
     }
   }, [chapterId, editor])
 
