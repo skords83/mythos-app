@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken'
 import { randomUUID } from 'crypto'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'mythos-secret-key-change-in-production'
-const UPLOAD_DIR = join(process.cwd(), 'public', 'uploads')
+const UPLOAD_DIR = '/app/public/uploads'
 
 async function getUserFromRequest(request: NextRequest) {
   const token = request.cookies.get('auth-token')?.value
@@ -24,24 +24,20 @@ export async function POST(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
-
     const formData = await request.formData()
     const file = formData.get('file') as File
     if (!file) {
       return NextResponse.json({ error: 'Keine Datei' }, { status: 400 })
     }
-
     const ext = extname(file.name) || '.jpg'
     const filename = `${randomUUID()}${ext}`
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-
     await mkdir(UPLOAD_DIR, { recursive: true })
     await writeFile(join(UPLOAD_DIR, filename), buffer)
-
-    return NextResponse.json({ url: `/uploads/${filename}` })
+    return NextResponse.json({ url: `/api/uploads/${filename}` })
   } catch (error) {
     console.error('Upload error:', error)
-    return NextResponse.json({ error: 'Upload fehlgeschlagen' }, { status: 500 })
+    return NextResponse.json({ error: 'Upload fehlgeschlagen', details: String(error) }, { status: 500 })
   }
 }
