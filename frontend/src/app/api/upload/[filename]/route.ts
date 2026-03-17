@@ -10,7 +10,6 @@ export async function GET(
 ) {
   try {
     const filename = params.filename
-    // Kein Path-Traversal
     if (filename.includes('/') || filename.includes('..')) {
       return new NextResponse('Not found', { status: 404 })
     }

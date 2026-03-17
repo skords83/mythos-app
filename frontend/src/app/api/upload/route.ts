@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes)
     await mkdir(UPLOAD_DIR, { recursive: true })
     await writeFile(join(UPLOAD_DIR, filename), buffer)
-    return NextResponse.json({ url: `/api/uploads/${filename}` })
+    return NextResponse.json({ url: `/api/upload/${filename}` })
   } catch (error) {
     console.error('Upload error:', error)
     return NextResponse.json({ error: 'Upload fehlgeschlagen', details: String(error) }, { status: 500 })
