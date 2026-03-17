@@ -42,15 +42,22 @@ extensions: [
 
   const imageInputRef = useRef<HTMLInputElement>(null)
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !editor) return
 
-    const reader = new FileReader()
-    reader.onload = () => {
-      editor.chain().focus().setImage({ src: reader.result as string }).run()
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (data.url) {
+        editor.chain().focus().setImage({ src: data.url }).run()
+      }
+    } catch (err) {
+      console.error('Bild-Upload fehlgeschlagen:', err)
     }
-    reader.readAsDataURL(file)
     e.target.value = ''
   }
 
@@ -132,24 +139,24 @@ extensions: [
           className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
           title="Wiederholen"
         >
-<Redo size={16} />
-</button>
-<input
-  ref={imageInputRef}
-  type="file"
-  accept="image/*"
-  onChange={handleImageUpload}
-  className="hidden"
-/>
-<button
-  onClick={() => imageInputRef.current?.click()}
-  className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-  title="Bild einfügen"
->
-  <ImageIcon size={16} />
-</button>
-</div>
-<EditorContent editor={editor} className="min-h-[400px]" />
+          <Redo size={16} />
+        </button>
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleImageUpload}
+          className="hidden"
+        />
+        <button
+          onClick={() => imageInputRef.current?.click()}
+          className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          title="Bild einfügen"
+        >
+          <ImageIcon size={16} />
+        </button>
+      </div>
+      <EditorContent editor={editor} className="min-h-[400px]" />
     </div>
   )
 }
