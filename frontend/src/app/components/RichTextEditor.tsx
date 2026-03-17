@@ -34,30 +34,26 @@ extensions: [
     },
   })
 
+  const prevChapterIdRef = useRef<string | undefined>(undefined)
+
   useEffect(() => {
-    if (editor) {
+    if (editor && chapterId !== prevChapterIdRef.current) {
+      prevChapterIdRef.current = chapterId
       editor.commands.setContent(content || '')
     }
-  }, [chapterId, editor])
+  }, [chapterId, content, editor])
 
   const imageInputRef = useRef<HTMLInputElement>(null)
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !editor) return
 
-    const formData = new FormData()
-    formData.append('file', file)
-
-    try {
-      const res = await fetch('/api/upload', { method: 'POST', body: formData })
-      const data = await res.json()
-      if (data.url) {
-        editor.chain().focus().setImage({ src: data.url }).run()
-      }
-    } catch (err) {
-      console.error('Bild-Upload fehlgeschlagen:', err)
+    const reader = new FileReader()
+    reader.onload = () => {
+      editor.chain().focus().setImage({ src: reader.result as string }).run()
     }
+    reader.readAsDataURL(file)
     e.target.value = ''
   }
 
