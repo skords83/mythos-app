@@ -278,9 +278,9 @@ const updateProject = async (id: string, title: string, description: string, wor
   }
 
   // saveChapter uses refs to always have fresh values (stale closure fix)
-  const saveChapter = useCallback(async (chapterOverride?: Chapter) => {
+  const saveChapter = useCallback(async (chapterOverride?: Chapter, contentOverride?: string) => {
     const chapter = chapterOverride ?? selectedChapterRef.current
-    const content = editorContentRef.current
+    const content = contentOverride ?? editorContentRef.current
     if (!chapter) return
 
     setIsSaving(true)
@@ -674,7 +674,6 @@ const deleteCharacter = async (characterId: string) => {
                     className="w-full text-3xl font-serif font-bold bg-transparent border-none outline-none placeholder-gray-400 dark:placeholder-gray-600 text-gray-800 dark:text-gray-100 mb-8"
                   />
                   <RichTextEditor
-                    key={selectedChapter?.id}
                     content={editorContent}
                     onChange={setEditorContent}
                     placeholder="Beginne zu schreiben... (Klicke auf Charakternamen für Quick-Card)"
@@ -827,12 +826,15 @@ const deleteCharacter = async (characterId: string) => {
                       active={selectedChapter?.id === chapter.id}
                       onClick={async () => {
                         if (selectedChapterRef.current && selectedChapterRef.current.id !== chapter.id) {
-                          await saveChapter(selectedChapterRef.current)
+                          // Autosave-Timer canceln und mit aktuellem Content explizit speichern
+                          if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
+                          const currentContent = editorContentRef.current
+                          await saveChapter(selectedChapterRef.current, currentContent)
                         }
                         const full = await loadChapterContent(chapter.id)
                         const loaded = full ?? chapter
-                        setSelectedChapter(loaded)
                         setEditorContent(extractContent(loaded.content))
+                        setSelectedChapter(loaded)
                       }}
                       onDelete={(e) => {
                         e.stopPropagation()
