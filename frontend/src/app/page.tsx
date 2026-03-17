@@ -120,7 +120,7 @@ const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     if (selectedChapter) {
-      setEditorContent(typeof selectedChapter.content === 'string' ? selectedChapter.content : '')
+      setEditorContent(extractContent(selectedChapter.content))
       loadNotes(selectedChapter.id)
     }
   }, [selectedChapter])
@@ -329,10 +329,7 @@ const updateProject = async (id: string, title: string, description: string, wor
       setChapters(remaining)
       if (selectedChapter?.id === chapterId) {
         setSelectedChapter(remaining.length > 0 ? remaining[0] : null)
-        setEditorContent(remaining.length > 0
-          ? (typeof remaining[0].content === 'string' ? remaining[0].content : '')
-          : ''
-        )
+        setEditorContent(remaining.length > 0 ? extractContent(remaining[0].content) : '')
       }
     } catch (error) {
       console.error('Error deleting chapter:', error)
@@ -499,6 +496,13 @@ const deleteCharacter = async (characterId: string) => {
     } else {
       setQuickCard(prev => ({ ...prev, visible: false }))
     }
+  }
+
+  const extractContent = (content: any): string => {
+    if (!content) return ''
+    if (typeof content === 'string') return content
+    if (typeof content === 'object' && typeof content.content === 'string') return content.content
+    return ''
   }
 
   const totalWordCount = Array.isArray(chapters) ? chapters.reduce((sum, ch) => sum + (ch.wordCount || 0), 0) : 0
@@ -827,7 +831,7 @@ const deleteCharacter = async (characterId: string) => {
                         const full = await loadChapterContent(chapter.id)
                         const loaded = full ?? chapter
                         setSelectedChapter(loaded)
-                        setEditorContent(typeof loaded.content === 'string' ? loaded.content : '')
+                        setEditorContent(extractContent(loaded.content))
                       }}
                       onDelete={(e) => {
                         e.stopPropagation()
