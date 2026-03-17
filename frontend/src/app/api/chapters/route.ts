@@ -4,11 +4,9 @@ import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'mythos-secret-key-change-in-production'
 
-// Helper to extract user from request
 async function getUserFromRequest(request: NextRequest) {
   const token = request.cookies.get('auth-token')?.value
   if (!token) return null
-
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string }
     return decoded.userId
@@ -17,7 +15,7 @@ async function getUserFromRequest(request: NextRequest) {
   }
 }
 
-// GET /api/chapters?projectId=xxx - Kapitel eines Projekts abrufen
+// GET /api/chapters?projectId=xxx - Kapitel eines Projekts abrufen (ohne content)
 export async function GET(request: NextRequest) {
   try {
     const userId = await getUserFromRequest(request)
@@ -32,7 +30,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Projekt-ID erforderlich' }, { status: 400 })
     }
 
-    // Verify project belongs to user
     const project = await prisma.project.findFirst({
       where: { id: projectId, userId }
     })
@@ -44,8 +41,16 @@ export async function GET(request: NextRequest) {
     const chapters = await prisma.chapter.findMany({
       where: { projectId },
       orderBy: { order: 'asc' },
-      include: {
-        notes: true
+      select: {
+        id: true,
+        title: true,
+        order: true,
+        wordCount: true,
+        projectId: true,
+        createdAt: true,
+        updatedAt: true,
+        notes: true,
+        // content bewusst weggelassen
       }
     })
 
@@ -67,7 +72,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { title, projectId, content } = body
 
-    // Verify project belongs to user
     const project = await prisma.project.findFirst({
       where: { id: projectId, userId }
     })
@@ -76,7 +80,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Projekt nicht gefunden' }, { status: 404 })
     }
 
-    // Get the highest order number
     const lastChapter = await prisma.chapter.findFirst({
       where: { projectId },
       orderBy: { order: 'desc' }

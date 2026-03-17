@@ -153,6 +153,18 @@ const [isSaving, setIsSaving] = useState(false)
     }
   }
 
+  const loadChapterContent = async (chapterId: string) => {
+    try {
+      const response = await fetch(`/api/chapters/${chapterId}`)
+      if (!response.ok) return null
+      const data = await response.json()
+      return data
+    } catch (error) {
+      console.error('Error loading chapter content:', error)
+      return null
+    }
+  }
+
   const loadChapters = async (projectId: string) => {
     try {
       const response = await fetch(`/api/chapters?projectId=${projectId}`)
@@ -164,7 +176,8 @@ const [isSaving, setIsSaving] = useState(false)
       if (Array.isArray(data)) {
         setChapters(data)
         if (data.length > 0 && !selectedChapter) {
-          setSelectedChapter(data[0])
+          const full = await loadChapterContent(data[0].id)
+          if (full) setSelectedChapter(full)
         }
       } else {
         setChapters([])
@@ -660,7 +673,6 @@ const deleteCharacter = async (characterId: string) => {
                     content={editorContent}
                     onChange={setEditorContent}
                     placeholder="Beginne zu schreiben... (Klicke auf Charakternamen für Quick-Card)"
-                    chapterId={selectedChapter?.id}
                   />
                 </>
               ) : (
@@ -812,8 +824,10 @@ const deleteCharacter = async (characterId: string) => {
                         if (selectedChapterRef.current && selectedChapterRef.current.id !== chapter.id) {
                           await saveChapter(selectedChapterRef.current)
                         }
-                        setSelectedChapter(chapter)
-                        setEditorContent(typeof chapter.content === 'string' ? chapter.content : '')
+                        const full = await loadChapterContent(chapter.id)
+                        const loaded = full ?? chapter
+                        setSelectedChapter(loaded)
+                        setEditorContent(typeof loaded.content === 'string' ? loaded.content : '')
                       }}
                       onDelete={(e) => {
                         e.stopPropagation()
