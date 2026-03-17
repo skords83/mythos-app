@@ -177,11 +177,7 @@ const [isSaving, setIsSaving] = useState(false)
         setChapters(data)
         if (data.length > 0 && !selectedChapter) {
           const full = await loadChapterContent(data[0].id)
-          if (full) {
-            const newContent = extractContent(full.content)
-            setEditorContent(newContent)
-            setSelectedChapter({ ...full, content: newContent })
-          }
+          if (full) setSelectedChapter(full)
         }
       } else {
         setChapters([])
@@ -678,6 +674,7 @@ const deleteCharacter = async (characterId: string) => {
                     className="w-full text-3xl font-serif font-bold bg-transparent border-none outline-none placeholder-gray-400 dark:placeholder-gray-600 text-gray-800 dark:text-gray-100 mb-8"
                   />
                   <RichTextEditor
+                    key={selectedChapter?.id}
                     content={editorContent}
                     onChange={setEditorContent}
                     placeholder="Beginne zu schreiben... (Klicke auf Charakternamen für Quick-Card)"
@@ -834,10 +831,8 @@ const deleteCharacter = async (characterId: string) => {
                         }
                         const full = await loadChapterContent(chapter.id)
                         const loaded = full ?? chapter
-                        const newContent = extractContent(loaded.content)
-                        // Content zuerst setzen, dann chapterId wechseln damit der Editor-Effect den richtigen Content findet
-                        setEditorContent(newContent)
-                        setSelectedChapter({ ...loaded, content: newContent })
+                        setSelectedChapter(loaded)
+                        setEditorContent(extractContent(loaded.content))
                       }}
                       onDelete={(e) => {
                         e.stopPropagation()
