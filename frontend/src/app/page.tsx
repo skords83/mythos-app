@@ -177,7 +177,11 @@ const [isSaving, setIsSaving] = useState(false)
         setChapters(data)
         if (data.length > 0 && !selectedChapter) {
           const full = await loadChapterContent(data[0].id)
-          if (full) setSelectedChapter(full)
+          if (full) {
+            const newContent = extractContent(full.content)
+            setEditorContent(newContent)
+            setSelectedChapter({ ...full, content: newContent })
+          }
         }
       } else {
         setChapters([])
@@ -830,8 +834,10 @@ const deleteCharacter = async (characterId: string) => {
                         }
                         const full = await loadChapterContent(chapter.id)
                         const loaded = full ?? chapter
-                        setSelectedChapter(loaded)
-                        setEditorContent(extractContent(loaded.content))
+                        const newContent = extractContent(loaded.content)
+                        // Content zuerst setzen, dann chapterId wechseln damit der Editor-Effect den richtigen Content findet
+                        setEditorContent(newContent)
+                        setSelectedChapter({ ...loaded, content: newContent })
                       }}
                       onDelete={(e) => {
                         e.stopPropagation()

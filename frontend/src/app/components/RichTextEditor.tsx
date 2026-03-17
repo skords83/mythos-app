@@ -34,14 +34,11 @@ extensions: [
     },
   })
 
-  const prevChapterIdRef = useRef<string | undefined>(undefined)
-
   useEffect(() => {
-    if (editor && chapterId !== prevChapterIdRef.current) {
-      prevChapterIdRef.current = chapterId
+    if (editor) {
       editor.commands.setContent(content || '')
     }
-  }, [chapterId, content, editor])
+  }, [chapterId, editor])
 
   const imageInputRef = useRef<HTMLInputElement>(null)
 
