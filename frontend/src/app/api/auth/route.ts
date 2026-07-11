@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { signAuthToken, verifyAuthToken, setAuthCookie, clearAuthCookie } from '@/lib/auth'
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MIN_PASSWORD_LENGTH = 8
@@ -11,8 +12,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { action, email, password, name } = body
+    const ip = getClientIp(request)
 
     if (action === 'register') {
+      const limited = checkRateLimit(ip, 'auth:register', { limit: 5, windowMs: 60 * 60 * 1000 })
+      if (limited) return limited
+
       if (typeof email !== 'string' || !EMAIL_RE.test(email)) {
         return NextResponse.json(
           { error: 'Ungültige E-Mail-Adresse' },
@@ -64,6 +69,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'login') {
+      const limited = checkRateLimit(ip, 'auth:login', { limit: 10, windowMs: 15 * 60 * 1000 })
+      if (limited) return limited
+
       // Find user
       const user = await prisma.user.findUnique({
         where: { email },

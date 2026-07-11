@@ -3,6 +3,7 @@ import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
 import { getUserFromRequest } from '@/lib/auth'
+import { checkRateLimit } from '@/lib/rateLimit'
 
 // Falls back to a local folder outside Docker so `npm run dev` works
 // without the container's absolute /app path existing on disk.
@@ -22,6 +23,10 @@ export async function POST(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
+
+    const limited = checkRateLimit(userId, 'upload', { limit: 30, windowMs: 10 * 60 * 1000 })
+    if (limited) return limited
+
     const formData = await request.formData()
     const file = formData.get('file') as File
     if (!file) {
