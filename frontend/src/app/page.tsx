@@ -34,7 +34,9 @@ import {
   PlaceCard,
   AddPlaceModal,
   EditProjectModal,
-  CharacterQuickCard
+  CharacterQuickCard,
+  ConfirmDialog,
+  Toast
 } from './components'
 
 // Main Page Component
@@ -93,6 +95,13 @@ const [isSaving, setIsSaving] = useState(false)
     visible: false
   })
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const [errorToast, setErrorToast] = useState<string | null>(null)
+  const [confirmDialog, setConfirmDialog] = useState<{ title: string, message: string, onConfirm: () => void } | null>(null)
+
+  const showError = (message: string) => setErrorToast(message)
+  const requestConfirm = (title: string, message: string, onConfirm: () => void) => {
+    setConfirmDialog({ title, message, onConfirm })
+  }
 
   // Refs to always have current values in callbacks (stale closure fix)
   const editorContentRef = useRef(editorContent)
@@ -135,23 +144,30 @@ const [isSaving, setIsSaving] = useState(false)
         router.push('/login')
         return
       }
+      if (!response.ok) {
+        showError('Projekte konnten nicht geladen werden.')
+        setIsLoading(false)
+        return
+      }
       const data = await response.json()
-      setProjects(data)
+      const projectList: Project[] = data.projects
+      setProjects(projectList)
       const storedProjectId = localStorage.getItem('selectedProjectId')
       if (storedProjectId) {
-        const selectedProj = data.find((p: Project) => p.id === storedProjectId)
+        const selectedProj = projectList.find((p: Project) => p.id === storedProjectId)
         if (selectedProj) {
           setSelectedProject(selectedProj)
-        } else if (data.length > 0) {
-          setSelectedProject(data[0])
+        } else if (projectList.length > 0) {
+          setSelectedProject(projectList[0])
         }
         localStorage.removeItem('selectedProjectId')
-      } else if (data.length > 0 && !selectedProject) {
-        setSelectedProject(data[0])
+      } else if (projectList.length > 0 && !selectedProject) {
+        setSelectedProject(projectList[0])
       }
       setIsLoading(false)
     } catch (error) {
       console.error('Error loading projects:', error)
+      showError('Projekte konnten nicht geladen werden.')
       setIsLoading(false)
     }
   }
@@ -170,16 +186,22 @@ const [isSaving, setIsSaving] = useState(false)
 
   const loadChapters = async (projectId: string) => {
     try {
-      const response = await fetch(`/api/chapters?projectId=${projectId}`)
+      const response = await fetch(`/api/chapters?projectId=${projectId}&limit=200`)
       if (response.status === 401) {
         router.push('/login')
         return
       }
+      if (!response.ok) {
+        showError('Kapitel konnten nicht geladen werden.')
+        setChapters([])
+        return
+      }
       const data = await response.json()
-      if (Array.isArray(data)) {
-        setChapters(data)
-        if (data.length > 0 && !selectedChapter) {
-          const full = await loadChapterContent(data[0].id)
+      const chapterList: Chapter[] = data.chapters
+      if (Array.isArray(chapterList)) {
+        setChapters(chapterList)
+        if (chapterList.length > 0 && !selectedChapter) {
+          const full = await loadChapterContent(chapterList[0].id)
           if (full) setSelectedChapter(full)
         }
       } else {
@@ -187,6 +209,7 @@ const [isSaving, setIsSaving] = useState(false)
       }
     } catch (error) {
       console.error('Error loading chapters:', error)
+      showError('Kapitel konnten nicht geladen werden.')
       setChapters([])
     }
   }
@@ -208,6 +231,10 @@ const [isSaving, setIsSaving] = useState(false)
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, description, wordGoal })
       })
+      if (!response.ok) {
+        showError('Projekt konnte nicht erstellt werden.')
+        return
+      }
       const newProject = await response.json()
       setProjects([newProject, ...projects])
       setSelectedProject(newProject)
@@ -219,6 +246,7 @@ const [isSaving, setIsSaving] = useState(false)
       loadChapters(newProject.id)
     } catch (error) {
       console.error('Error creating project:', error)
+      showError('Projekt konnte nicht erstellt werden.')
     }
   }
 
@@ -229,6 +257,10 @@ const updateProject = async (id: string, title: string, description: string, wor
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title, description, wordGoal, coverImage })
     })
+    if (!response.ok) {
+      showError('Projekt konnte nicht gespeichert werden.')
+      return
+    }
     const updatedProject = await response.json()
     setProjects(projects.map(p => p.id === id ? updatedProject : p))
     if (selectedProject?.id === id) {
@@ -236,12 +268,17 @@ const updateProject = async (id: string, title: string, description: string, wor
     }
   } catch (error) {
     console.error('Error updating project:', error)
+    showError('Projekt konnte nicht gespeichert werden.')
   }
   }
 
   const deleteProject = async (projectId: string) => {
     try {
-      await fetch(`/api/projects/${projectId}`, { method: 'DELETE' })
+      const response = await fetch(`/api/projects/${projectId}`, { method: 'DELETE' })
+      if (!response.ok) {
+        showError('Projekt konnte nicht gelöscht werden.')
+        return
+      }
       setProjects(projects.filter(p => p.id !== projectId))
       if (selectedProject?.id === projectId) {
         setSelectedProject(null)
@@ -251,6 +288,7 @@ const updateProject = async (id: string, title: string, description: string, wor
       }
     } catch (error) {
       console.error('Error deleting project:', error)
+      showError('Projekt konnte nicht gelöscht werden.')
     }
   }
 
@@ -260,16 +298,21 @@ const updateProject = async (id: string, title: string, description: string, wor
       const response = await fetch('/api/chapters', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          title: `Kapitel ${chapters.length + 1}`, 
-          projectId: selectedProject.id 
+        body: JSON.stringify({
+          title: `Kapitel ${chapters.length + 1}`,
+          projectId: selectedProject.id
         })
       })
+      if (!response.ok) {
+        showError('Kapitel konnte nicht erstellt werden.')
+        return
+      }
       const newChapter = await response.json()
       setChapters([...chapters, newChapter])
       setSelectedChapter(newChapter)
     } catch (error) {
       console.error('Error creating chapter:', error)
+      showError('Kapitel konnte nicht erstellt werden.')
     }
   }
 
@@ -290,11 +333,15 @@ const updateProject = async (id: string, title: string, description: string, wor
     try {
       const textContent = stripHtml(content)
       const wordCount = textContent.trim().split(/\s+/).filter(w => w.length > 0).length
-      await fetch(`/api/chapters/${chapter.id}`, {
+      const response = await fetch(`/api/chapters/${chapter.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: chapter.title, content, wordCount })
       })
+      if (!response.ok) {
+        setErrorToast('Kapitel konnte nicht gespeichert werden.')
+        return
+      }
       setChapters(prev => prev.map(ch =>
         ch.id === chapter.id ? { ...ch, title: chapter.title, content, wordCount } : ch
       ))
@@ -305,6 +352,7 @@ const updateProject = async (id: string, title: string, description: string, wor
       setTimeout(() => setAutoSaveStatus('idle'), 2000)
     } catch (error) {
       console.error('Error saving chapter:', error)
+      setErrorToast('Kapitel konnte nicht gespeichert werden.')
     } finally {
       setIsSaving(false)
     }
@@ -324,19 +372,26 @@ const updateProject = async (id: string, title: string, description: string, wor
     }
   }, [editorContent, selectedChapter?.id])
 
-  const deleteChapter = async (chapterId: string) => {
-    if (!confirm('Möchtest du dieses Kapitel wirklich löschen?')) return
-    try {
-      await fetch(`/api/chapters/${chapterId}`, { method: 'DELETE' })
-      const remaining = chapters.filter(ch => ch.id !== chapterId)
-      setChapters(remaining)
-      if (selectedChapter?.id === chapterId) {
-        setSelectedChapter(remaining.length > 0 ? remaining[0] : null)
-        setEditorContent(remaining.length > 0 ? extractContent(remaining[0].content) : '')
+  const deleteChapter = (chapterId: string) => {
+    requestConfirm('Kapitel löschen', 'Möchtest du dieses Kapitel wirklich löschen?', async () => {
+      setConfirmDialog(null)
+      try {
+        const response = await fetch(`/api/chapters/${chapterId}`, { method: 'DELETE' })
+        if (!response.ok) {
+          showError('Kapitel konnte nicht gelöscht werden.')
+          return
+        }
+        const remaining = chapters.filter(ch => ch.id !== chapterId)
+        setChapters(remaining)
+        if (selectedChapter?.id === chapterId) {
+          setSelectedChapter(remaining.length > 0 ? remaining[0] : null)
+          setEditorContent(remaining.length > 0 ? extractContent(remaining[0].content) : '')
+        }
+      } catch (error) {
+        console.error('Error deleting chapter:', error)
+        showError('Kapitel konnte nicht gelöscht werden.')
       }
-    } catch (error) {
-      console.error('Error deleting chapter:', error)
-    }
+    })
   }
 
   const addCharacter = async (name: string, description: string, motivation: string) => {
@@ -347,10 +402,15 @@ const updateProject = async (id: string, title: string, description: string, wor
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, description, motivation, projectId: selectedProject.id })
       })
+      if (!response.ok) {
+        showError('Charakter konnte nicht erstellt werden.')
+        return
+      }
       const newCharacter = await response.json()
       setCharacters([newCharacter, ...characters])
 } catch (error) {
     console.error('Error adding character:', error)
+    showError('Charakter konnte nicht erstellt werden.')
   }
 }
 
@@ -361,30 +421,47 @@ const updateCharacter = async (id: string, name: string, description: string, mo
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, description, motivation })
     })
+    if (!response.ok) {
+      showError('Charakter konnte nicht gespeichert werden.')
+      return
+    }
     const updated = await response.json()
     setCharacters(characters.map(c => c.id === id ? updated : c))
   } catch (error) {
     console.error('Error updating character:', error)
+    showError('Charakter konnte nicht gespeichert werden.')
   }
 }
 
-const deleteCharacter = async (characterId: string) => {
-    if (!confirm('Möchtest du diesen Charakter wirklich löschen?')) return
+const deleteCharacter = (characterId: string) => {
+  requestConfirm('Charakter löschen', 'Möchtest du diesen Charakter wirklich löschen?', async () => {
+    setConfirmDialog(null)
     try {
-      await fetch(`/api/characters/${characterId}`, { method: 'DELETE' })
+      const response = await fetch(`/api/characters/${characterId}`, { method: 'DELETE' })
+      if (!response.ok) {
+        showError('Charakter konnte nicht gelöscht werden.')
+        return
+      }
       setCharacters(characters.filter(c => c.id !== characterId))
     } catch (error) {
       console.error('Error deleting character:', error)
+      showError('Charakter konnte nicht gelöscht werden.')
     }
-  }
+  })
+}
 
   const loadPlaces = async (projectId: string) => {
     try {
       const response = await fetch(`/api/places?projectId=${projectId}`)
+      if (!response.ok) {
+        showError('Orte konnten nicht geladen werden.')
+        return
+      }
       const data = await response.json()
       setPlaces(data)
     } catch (error) {
       console.error('Error loading places:', error)
+      showError('Orte konnten nicht geladen werden.')
     }
   }
 
@@ -396,21 +473,33 @@ const deleteCharacter = async (characterId: string) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, description, location, climate, importance, projectId: selectedProject.id })
       })
+      if (!response.ok) {
+        showError('Ort konnte nicht erstellt werden.')
+        return
+      }
       const newPlace = await response.json()
       setPlaces([newPlace, ...places])
     } catch (error) {
       console.error('Error adding place:', error)
+      showError('Ort konnte nicht erstellt werden.')
     }
   }
 
-  const deletePlace = async (placeId: string) => {
-    if (!confirm('Möchtest du diesen Ort wirklich löschen?')) return
-    try {
-      await fetch(`/api/places/${placeId}`, { method: 'DELETE' })
-      setPlaces(places.filter(p => p.id !== placeId))
-    } catch (error) {
-      console.error('Error deleting place:', error)
-    }
+  const deletePlace = (placeId: string) => {
+    requestConfirm('Ort löschen', 'Möchtest du diesen Ort wirklich löschen?', async () => {
+      setConfirmDialog(null)
+      try {
+        const response = await fetch(`/api/places/${placeId}`, { method: 'DELETE' })
+        if (!response.ok) {
+          showError('Ort konnte nicht gelöscht werden.')
+          return
+        }
+        setPlaces(places.filter(p => p.id !== placeId))
+      } catch (error) {
+        console.error('Error deleting place:', error)
+        showError('Ort konnte nicht gelöscht werden.')
+      }
+    })
   }
 
   const loadNotes = async (chapterId: string) => {
@@ -419,9 +508,12 @@ const deleteCharacter = async (characterId: string) => {
       if (response.ok) {
         const data = await response.json()
         setNotes(data)
+      } else {
+        showError('Notizen konnten nicht geladen werden.')
       }
     } catch (error) {
       console.error('Error loading notes:', error)
+      showError('Notizen konnten nicht geladen werden.')
     }
   }
 
@@ -432,10 +524,15 @@ const deleteCharacter = async (characterId: string) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, content, chapterId })
       })
+      if (!response.ok) {
+        showError('Notiz konnte nicht erstellt werden.')
+        return
+      }
       const newNote = await response.json()
       setNotes([newNote, ...notes])
     } catch (error) {
       console.error('Error adding note:', error)
+      showError('Notiz konnte nicht erstellt werden.')
     }
   }
 
@@ -446,21 +543,33 @@ const deleteCharacter = async (characterId: string) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, content })
       })
+      if (!response.ok) {
+        showError('Notiz konnte nicht gespeichert werden.')
+        return
+      }
       const updatedNote = await response.json()
       setNotes(notes.map(n => n.id === noteId ? updatedNote : n))
     } catch (error) {
       console.error('Error updating note:', error)
+      showError('Notiz konnte nicht gespeichert werden.')
     }
   }
 
-  const deleteNote = async (noteId: string) => {
-    if (!confirm('Möchtest du diese Notiz wirklich löschen?')) return
-    try {
-      await fetch(`/api/notes/${noteId}`, { method: 'DELETE' })
-      setNotes(notes.filter(n => n.id !== noteId))
-    } catch (error) {
-      console.error('Error deleting note:', error)
-    }
+  const deleteNote = (noteId: string) => {
+    requestConfirm('Notiz löschen', 'Möchtest du diese Notiz wirklich löschen?', async () => {
+      setConfirmDialog(null)
+      try {
+        const response = await fetch(`/api/notes/${noteId}`, { method: 'DELETE' })
+        if (!response.ok) {
+          showError('Notiz konnte nicht gelöscht werden.')
+          return
+        }
+        setNotes(notes.filter(n => n.id !== noteId))
+      } catch (error) {
+        console.error('Error deleting note:', error)
+        showError('Notiz konnte nicht gelöscht werden.')
+      }
+    })
   }
 
   const handleTextSelection = () => {
@@ -764,7 +873,7 @@ const deleteCharacter = async (characterId: string) => {
                     if (selectedChapter) {
                       addNote('Neue Notiz', '', selectedChapter.id)
                     } else {
-                      alert('Bitte wähle zuerst ein Kapitel aus.')
+                      showError('Bitte wähle zuerst ein Kapitel aus.')
                     }
                   }}
                   disabled={!selectedChapter}
@@ -894,13 +1003,21 @@ const deleteCharacter = async (characterId: string) => {
         onUpdate={updateProject}
 onDelete={deleteProject}
   />
-  <ExportModal 
-    isOpen={showExportModal} 
-    onClose={() => setShowExportModal(false)} 
+  <ExportModal
+    isOpen={showExportModal}
+    onClose={() => setShowExportModal(false)}
     project={selectedProject}
     chapters={chapters}
     selectedChapter={selectedChapter}
   />
+  <ConfirmDialog
+    isOpen={!!confirmDialog}
+    title={confirmDialog?.title ?? ''}
+    message={confirmDialog?.message ?? ''}
+    onConfirm={() => confirmDialog?.onConfirm()}
+    onCancel={() => setConfirmDialog(null)}
+  />
+  <Toast message={errorToast} onDismiss={() => setErrorToast(null)} />
 </div>
   )
 }

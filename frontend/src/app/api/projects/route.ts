@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
 
-// GET /api/projects - Projekte des eingeloggten Benutzers
+// GET /api/projects?page=1&limit=20 - Projekte des eingeloggten Benutzers (paginiert)
 export async function GET(request: NextRequest) {
   try {
     const userId = await getUserFromRequest(request)
@@ -10,16 +10,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
 
-    const projects = await prisma.project.findMany({
-      where: { userId },
-      orderBy: { updatedAt: 'desc' },
-      include: {
-        _count: {
-          select: { chapters: true, characters: true }
+    const { searchParams } = new URL(request.url)
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20', 10) || 20))
+
+    const [projects, total] = await Promise.all([
+      prisma.project.findMany({
+        where: { userId },
+        orderBy: { updatedAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          _count: {
+            select: { chapters: true, characters: true }
+          }
         }
-      }
+      }),
+      prisma.project.count({ where: { userId } })
+    ])
+
+    return NextResponse.json({
+      projects,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
     })
-    return NextResponse.json(projects)
   } catch (error) {
     console.error('Error fetching projects:', error)
     return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 })

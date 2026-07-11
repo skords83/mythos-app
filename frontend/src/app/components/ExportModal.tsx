@@ -28,6 +28,7 @@ export function ExportModal({ isOpen, onClose, project, chapters, selectedChapte
   const [exportType, setExportType] = useState<'project' | 'chapter'>(selectedChapter ? 'chapter' : 'project')
   const [format, setFormat] = useState<'pdf' | 'epub'>('pdf')
   const [isExporting, setIsExporting] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
 
   if (!isOpen || !project) return null
 
@@ -61,6 +62,7 @@ export function ExportModal({ isOpen, onClose, project, chapters, selectedChapte
 
   const handleExport = async () => {
     setIsExporting(true)
+    setExportError(null)
     try {
       let title = project.title
       let content = ''
@@ -201,7 +203,7 @@ ${processedContent}
     }
     } catch (error) {
       console.error('Export error:', error)
-      alert('Export fehlgeschlagen')
+      setExportError('Export fehlgeschlagen. Bitte versuche es erneut.')
     } finally {
       setIsExporting(false)
     }
@@ -278,6 +280,10 @@ ${processedContent}
               </button>
             </div>
           </div>
+
+          {exportError && (
+            <p className="text-sm text-red-600 dark:text-red-400">{exportError}</p>
+          )}
 
           <button
             onClick={handleExport}

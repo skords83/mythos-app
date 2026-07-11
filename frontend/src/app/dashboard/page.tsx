@@ -14,6 +14,8 @@ import {
   Loader2
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { ConfirmDialog } from '../components/ConfirmDialog'
+import { Toast } from '../components/Toast'
 
 interface Project {
   id: string
@@ -208,6 +210,8 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [errorToast, setErrorToast] = useState<string | null>(null)
+  const [confirmDialog, setConfirmDialog] = useState<{ title: string, message: string, onConfirm: () => void } | null>(null)
   const router = useRouter()
 
   // Check auth and load projects
@@ -240,10 +244,15 @@ export default function DashboardPage() {
         router.push('/login')
         return
       }
+      if (!response.ok) {
+        setErrorToast('Projekte konnten nicht geladen werden.')
+        return
+      }
       const data = await response.json()
-      setProjects(data)
+      setProjects(data.projects)
     } catch (error) {
       console.error('Error loading projects:', error)
+      setErrorToast('Projekte konnten nicht geladen werden.')
     } finally {
       setIsLoading(false)
     }
@@ -256,28 +265,44 @@ export default function DashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, description, wordGoal })
       })
-      
+
       if (response.status === 401) {
         router.push('/login')
         return
       }
-      
+
+      if (!response.ok) {
+        setErrorToast('Projekt konnte nicht erstellt werden.')
+        return
+      }
+
       const newProject = await response.json()
       setProjects([newProject, ...projects])
     } catch (error) {
       console.error('Error creating project:', error)
+      setErrorToast('Projekt konnte nicht erstellt werden.')
     }
   }
 
-  const deleteProject = async (projectId: string) => {
-    if (!confirm('Möchtest du dieses Projekt wirklich löschen?')) return
-    
-    try {
-      await fetch(`/api/projects/${projectId}`, { method: 'DELETE' })
-      setProjects(projects.filter(p => p.id !== projectId))
-    } catch (error) {
-      console.error('Error deleting project:', error)
-    }
+  const deleteProject = (projectId: string) => {
+    setConfirmDialog({
+      title: 'Projekt löschen',
+      message: 'Möchtest du dieses Projekt wirklich löschen?',
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        try {
+          const response = await fetch(`/api/projects/${projectId}`, { method: 'DELETE' })
+          if (!response.ok) {
+            setErrorToast('Projekt konnte nicht gelöscht werden.')
+            return
+          }
+          setProjects(projects.filter(p => p.id !== projectId))
+        } catch (error) {
+          console.error('Error deleting project:', error)
+          setErrorToast('Projekt konnte nicht gelöscht werden.')
+        }
+      }
+    })
   }
 
   const openProject = (projectId: string) => {
@@ -401,6 +426,14 @@ export default function DashboardPage() {
         onClose={() => setShowCreateModal(false)}
         onCreate={createProject}
       />
+      <ConfirmDialog
+        isOpen={!!confirmDialog}
+        title={confirmDialog?.title ?? ''}
+        message={confirmDialog?.message ?? ''}
+        onConfirm={() => confirmDialog?.onConfirm()}
+        onCancel={() => setConfirmDialog(null)}
+      />
+      <Toast message={errorToast} onDismiss={() => setErrorToast(null)} />
     </div>
   )
 }
