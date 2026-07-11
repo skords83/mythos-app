@@ -114,7 +114,7 @@ export default function LoginPage() {
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-[#1A1A1B] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#4A7C59] focus:border-transparent outline-none transition-all pr-12"
                   placeholder="••••••••"
                   required
-                  minLength={6}
+                  minLength={isLogin ? undefined : 8}
                 />
                 <button
                   type="button"

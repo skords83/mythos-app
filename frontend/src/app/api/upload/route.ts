@@ -1,21 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
-import { join, extname } from 'path'
-import jwt from 'jsonwebtoken'
+import { join } from 'path'
 import { randomUUID } from 'crypto'
+import { getUserFromRequest } from '@/lib/auth'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'mythos-secret-key-change-in-production'
-const UPLOAD_DIR = '/app/public/uploads'
+// Falls back to a local folder outside Docker so `npm run dev` works
+// without the container's absolute /app path existing on disk.
+const UPLOAD_DIR = process.env.UPLOAD_DIR || join(process.cwd(), 'public', 'uploads')
 
-async function getUserFromRequest(request: NextRequest) {
-  const token = request.cookies.get('auth-token')?.value
-  if (!token) return null
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string }
-    return decoded.userId
-  } catch {
-    return null
-  }
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5 MB
+const ALLOWED_TYPES: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'image/gif': '.gif',
 }
 
 export async function POST(request: NextRequest) {
@@ -29,7 +27,22 @@ export async function POST(request: NextRequest) {
     if (!file) {
       return NextResponse.json({ error: 'Keine Datei' }, { status: 400 })
     }
-    const ext = extname(file.name) || '.jpg'
+
+    const ext = ALLOWED_TYPES[file.type]
+    if (!ext) {
+      return NextResponse.json(
+        { error: 'Nur JPEG-, PNG-, WebP- oder GIF-Bilder sind erlaubt' },
+        { status: 400 }
+      )
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: 'Datei ist zu groß (max. 5 MB)' },
+        { status: 400 }
+      )
+    }
+
     const filename = `${randomUUID()}${ext}`
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)

@@ -1,30 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
+import { signAuthToken, verifyAuthToken, setAuthCookie, clearAuthCookie } from '@/lib/auth'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'mythos-secret-key-change-in-production'
-
-// Helper to set cookie
-function setAuthCookie(response: NextResponse, token: string) {
-  response.cookies.set('auth-token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-    path: '/',
-  })
-}
-
-function clearAuthCookie(response: NextResponse) {
-  response.cookies.set('auth-token', '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 0,
-    path: '/',
-  })
-}
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const MIN_PASSWORD_LENGTH = 8
 
 // POST /api/auth/register
 export async function POST(request: NextRequest) {
@@ -33,6 +13,20 @@ export async function POST(request: NextRequest) {
     const { action, email, password, name } = body
 
     if (action === 'register') {
+      if (typeof email !== 'string' || !EMAIL_RE.test(email)) {
+        return NextResponse.json(
+          { error: 'Ungültige E-Mail-Adresse' },
+          { status: 400 }
+        )
+      }
+
+      if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
+        return NextResponse.json(
+          { error: `Passwort muss mindestens ${MIN_PASSWORD_LENGTH} Zeichen lang sein` },
+          { status: 400 }
+        )
+      }
+
       // Check if user exists
       const existingUser = await prisma.user.findUnique({
         where: { email },
@@ -58,11 +52,7 @@ export async function POST(request: NextRequest) {
       })
 
       // Generate token
-      const token = jwt.sign(
-        { userId: user.id, email: user.email },
-        JWT_SECRET,
-        { expiresIn: '7d' }
-      )
+      const token = signAuthToken({ userId: user.id, email: user.email })
 
       const response = NextResponse.json({
         user: { id: user.id, email: user.email, name: user.name },
@@ -97,11 +87,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Generate token
-      const token = jwt.sign(
-        { userId: user.id, email: user.email },
-        JWT_SECRET,
-        { expiresIn: '7d' }
-      )
+      const token = signAuthToken({ userId: user.id, email: user.email })
 
       const response = NextResponse.json({
         user: { id: user.id, email: user.email, name: user.name },
@@ -140,7 +126,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ user: null }, { status: 401 })
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string }
+    const decoded = verifyAuthToken(token)
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },

@@ -1,21 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
-
-const JWT_SECRET = process.env.JWT_SECRET || 'mythos-secret-key-change-in-production'
-
-// Helper to extract user from request
-async function getUserFromRequest(request: NextRequest) {
-  const token = request.cookies.get('auth-token')?.value
-  if (!token) return null
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string }
-    return decoded.userId
-  } catch {
-    return null
-  }
-}
+import { getUserFromRequest } from '@/lib/auth'
 
 // GET /api/projects - Projekte des eingeloggten Benutzers
 export async function GET(request: NextRequest) {
