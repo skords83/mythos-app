@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
+import { FamilyRole } from '@prisma/client'
 
 export interface AuthTokenPayload {
   userId: string
   email: string
+  familyId: string
+  role: FamilyRole | string
+}
+
+export interface AuthContext {
+  userId: string
+  familyId: string
+  role: FamilyRole
 }
 
 // Read lazily (not at module load) so `next build` doesn't fail when
@@ -32,6 +41,33 @@ export async function getUserFromRequest(request: NextRequest): Promise<string |
   } catch {
     return null
   }
+}
+
+export async function getAuthContext(request: NextRequest): Promise<AuthContext | null> {
+  const token = request.cookies.get('auth-token')?.value
+  if (!token) return null
+  try {
+    const payload = verifyAuthToken(token)
+    // Require both familyId and role to be present (reject legacy tokens)
+    if (!payload.familyId || !payload.role) return null
+    return {
+      userId: payload.userId,
+      familyId: payload.familyId,
+      role: payload.role as FamilyRole,
+    }
+  } catch {
+    return null
+  }
+}
+
+export function requireRole(context: AuthContext | null, allowedRoles: FamilyRole[]): NextResponse | null {
+  if (!context) {
+    return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
+  }
+  if (!allowedRoles.includes(context.role)) {
+    return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
+  }
+  return null
 }
 
 export function setAuthCookie(response: NextResponse, token: string) {
