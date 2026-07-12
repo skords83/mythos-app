@@ -5,22 +5,24 @@ import React, { useState } from 'react'
 interface AddCharacterModalProps {
   isOpen: boolean
   onClose: () => void
-  onAdd: (name: string, description: string, motivation: string) => void
+  onAdd: (name: string, description: string, motivation: string, visibility: 'PRIVATE' | 'FAMILY') => void
 }
 
 export function AddCharacterModal({ isOpen, onClose, onAdd }: AddCharacterModalProps) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [motivation, setMotivation] = useState('')
+  const [visibility, setVisibility] = useState<'PRIVATE' | 'FAMILY'>('PRIVATE')
 
   if (!isOpen) return null
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onAdd(name, description, motivation)
+    onAdd(name, description, motivation, visibility)
     setName('')
     setDescription('')
     setMotivation('')
+    setVisibility('PRIVATE')
     onClose()
   }
 
@@ -67,6 +69,19 @@ export function AddCharacterModal({ isOpen, onClose, onAdd }: AddCharacterModalP
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#1A1A1B] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#4A7C59] outline-none"
               placeholder="Was treibt den Charakter an?"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Sichtbarkeit
+            </label>
+            <select
+              value={visibility}
+              onChange={(e) => setVisibility(e.target.value as 'PRIVATE' | 'FAMILY')}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#1A1A1B] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#4A7C59] outline-none"
+            >
+              <option value="PRIVATE">Privat (nur ich)</option>
+              <option value="FAMILY">Familie (alle Familienmitglieder)</option>
+            </select>
           </div>
           <div className="flex gap-3 pt-2">
             <button

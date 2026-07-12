@@ -30,13 +30,13 @@ export function useCharacters({ selectedProject, showError, requestConfirm, onCo
     }
   }, [selectedProject])
 
-  const addCharacter = async (name: string, description: string, motivation: string) => {
+  const addCharacter = async (name: string, description: string, motivation: string, visibility: 'PRIVATE' | 'FAMILY') => {
     if (!selectedProject) return
     try {
       const response = await fetch('/api/characters', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, motivation, projectId: selectedProject.id })
+        body: JSON.stringify({ name, description, motivation, visibility, projectId: selectedProject.id })
       })
       if (!response.ok) {
         showError('Charakter konnte nicht erstellt werden.')
@@ -50,12 +50,12 @@ export function useCharacters({ selectedProject, showError, requestConfirm, onCo
     }
   }
 
-  const updateCharacter = async (id: string, name: string, description: string, motivation: string) => {
+  const updateCharacter = async (id: string, name: string, description: string, motivation: string, visibility: 'PRIVATE' | 'FAMILY') => {
     try {
       const response = await fetch(`/api/characters/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, motivation })
+        body: JSON.stringify({ name, description, motivation, visibility })
       })
       if (!response.ok) {
         showError('Charakter konnte nicht gespeichert werden.')

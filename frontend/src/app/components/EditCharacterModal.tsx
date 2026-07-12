@@ -7,19 +7,21 @@ interface EditCharacterModalProps {
   isOpen: boolean
   onClose: () => void
   character: Character | null
-  onUpdate: (id: string, name: string, description: string, motivation: string) => void
+  onUpdate: (id: string, name: string, description: string, motivation: string, visibility: 'PRIVATE' | 'FAMILY') => void
 }
 
 export function EditCharacterModal({ isOpen, onClose, character, onUpdate }: EditCharacterModalProps) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [motivation, setMotivation] = useState('')
+  const [visibility, setVisibility] = useState<'PRIVATE' | 'FAMILY'>('PRIVATE')
 
   React.useEffect(() => {
     if (character) {
       setName(character.name)
       setDescription(character.description || '')
       setMotivation(character.motivation || '')
+      setVisibility(character.visibility)
     }
   }, [character])
 
@@ -27,7 +29,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onUpdate }: Edi
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onUpdate(character.id, name, description, motivation)
+    onUpdate(character.id, name, description, motivation, visibility)
     onClose()
   }
 
@@ -74,6 +76,19 @@ export function EditCharacterModal({ isOpen, onClose, character, onUpdate }: Edi
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#1A1A1B] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#4A7C59] outline-none"
               placeholder="Was treibt den Charakter an?"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Sichtbarkeit
+            </label>
+            <select
+              value={visibility}
+              onChange={(e) => setVisibility(e.target.value as 'PRIVATE' | 'FAMILY')}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#1A1A1B] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#4A7C59] outline-none"
+            >
+              <option value="PRIVATE">Privat (nur ich)</option>
+              <option value="FAMILY">Familie (alle Familienmitglieder)</option>
+            </select>
           </div>
           <div className="flex gap-3 pt-2">
             <button

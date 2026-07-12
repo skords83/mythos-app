@@ -356,6 +356,13 @@ export default function DashboardPage() {
               )}
               <ThemeToggle />
               <button
+                onClick={() => router.push('/family')}
+                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400"
+                title="Familie verwalten"
+              >
+                <Users size={20} />
+              </button>
+              <button
                 onClick={handleLogout}
                 className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400"
                 title="Abmelden"

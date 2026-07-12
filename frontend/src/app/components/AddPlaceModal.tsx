@@ -5,7 +5,7 @@ import React, { useState } from 'react'
 interface AddPlaceModalProps {
   isOpen: boolean
   onClose: () => void
-  onAdd: (name: string, description: string, location: string, climate: string, importance: string) => void
+  onAdd: (name: string, description: string, location: string, climate: string, importance: string, visibility: 'PRIVATE' | 'FAMILY') => void
 }
 
 export function AddPlaceModal({ isOpen, onClose, onAdd }: AddPlaceModalProps) {
@@ -14,17 +14,19 @@ export function AddPlaceModal({ isOpen, onClose, onAdd }: AddPlaceModalProps) {
   const [location, setLocation] = useState('')
   const [climate, setClimate] = useState('')
   const [importance, setImportance] = useState('')
+  const [visibility, setVisibility] = useState<'PRIVATE' | 'FAMILY'>('PRIVATE')
 
   if (!isOpen) return null
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onAdd(name, description, location, climate, importance)
+    onAdd(name, description, location, climate, importance, visibility)
     setName('')
     setDescription('')
     setLocation('')
     setClimate('')
     setImportance('')
+    setVisibility('PRIVATE')
     onClose()
   }
 
@@ -102,6 +104,19 @@ export function AddPlaceModal({ isOpen, onClose, onAdd }: AddPlaceModalProps) {
               <option value="Wald">Wald</option>
               <option value="Berg">Berg</option>
               <option value="Höhle">Höhle</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Sichtbarkeit
+            </label>
+            <select
+              value={visibility}
+              onChange={(e) => setVisibility(e.target.value as 'PRIVATE' | 'FAMILY')}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#1A1A1B] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#4A7C59] outline-none"
+            >
+              <option value="PRIVATE">Privat (nur ich)</option>
+              <option value="FAMILY">Familie (alle Familienmitglieder)</option>
             </select>
           </div>
           <div className="flex gap-3 pt-2">

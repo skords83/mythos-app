@@ -34,13 +34,13 @@ export function usePlaces({ selectedProject, showError, requestConfirm, onConfir
     }
   }, [selectedProject])
 
-  const addPlace = async (name: string, description: string, location: string, climate: string, importance: string) => {
+  const addPlace = async (name: string, description: string, location: string, climate: string, importance: string, visibility: 'PRIVATE' | 'FAMILY') => {
     if (!selectedProject) return
     try {
       const response = await fetch('/api/places', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, location, climate, importance, projectId: selectedProject.id })
+        body: JSON.stringify({ name, description, location, climate, importance, visibility, projectId: selectedProject.id })
       })
       if (!response.ok) {
         showError('Ort konnte nicht erstellt werden.')
