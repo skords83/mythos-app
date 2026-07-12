@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
+import { logger } from '@/lib/logger'
 
 // GET /api/projects?page=1&limit=20 - Projekte des eingeloggten Benutzers (paginiert)
 export async function GET(request: NextRequest) {
+  let userId: string | null = null
   try {
-    const userId = await getUserFromRequest(request)
+    userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
@@ -34,15 +36,16 @@ export async function GET(request: NextRequest) {
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
     })
   } catch (error) {
-    console.error('Error fetching projects:', error)
+    logger.error(error, { route: 'GET /api/projects', userId })
     return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 })
   }
 }
 
 // POST /api/projects - Neues Projekt erstellen
 export async function POST(request: NextRequest) {
+  let userId: string | null = null
   try {
-    const userId = await getUserFromRequest(request)
+    userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
@@ -73,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(project, { status: 201 })
   } catch (error) {
-    console.error('Error creating project:', error)
+    logger.error(error, { route: 'POST /api/projects', userId })
     return NextResponse.json({ error: 'Failed to create project' }, { status: 500 })
   }
 }

@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
+import { logger } from '@/lib/logger'
 
 // GET /api/projects/[id] - Einzelnes Projekt abrufen
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let userId: string | null = null
   try {
-    const userId = await getUserFromRequest(request)
+    userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
@@ -28,7 +30,7 @@ export async function GET(
 
     return NextResponse.json(project)
   } catch (error) {
-    console.error('Error fetching project:', error)
+    logger.error(error, { route: 'GET /api/projects/[id]', userId })
     return NextResponse.json({ error: 'Fehler beim Laden des Projekts' }, { status: 500 })
   }
 }
@@ -38,8 +40,9 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let userId: string | null = null
   try {
-    const userId = await getUserFromRequest(request)
+    userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
@@ -69,7 +72,7 @@ const body = await request.json()
 
     return NextResponse.json(project)
   } catch (error) {
-    console.error('Error updating project:', error)
+    logger.error(error, { route: 'PUT /api/projects/[id]', userId })
     return NextResponse.json({ error: 'Fehler beim Aktualisieren' }, { status: 500 })
   }
 }
@@ -79,8 +82,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let userId: string | null = null
   try {
-    const userId = await getUserFromRequest(request)
+    userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
@@ -100,7 +104,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting project:', error)
+    logger.error(error, { route: 'DELETE /api/projects/[id]', userId })
     return NextResponse.json({ error: 'Fehler beim Löschen' }, { status: 500 })
   }
 }
