@@ -47,18 +47,21 @@ export async function POST(request: NextRequest) {
 
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10)
+      const displayName = name || email.split('@')[0]
 
-      // Create user
+      // Create user as OWNER of a brand-new Family
       const user = await prisma.user.create({
         data: {
           email,
           password: hashedPassword,
-          name: name || email.split('@')[0],
+          name: displayName,
+          role: 'OWNER',
+          family: { create: { name: `${displayName}s Familie` } },
         },
       })
 
       // Generate token
-      const token = signAuthToken({ userId: user.id, email: user.email })
+      const token = signAuthToken({ userId: user.id, email: user.email, familyId: user.familyId, role: user.role })
 
       const response = NextResponse.json({
         user: { id: user.id, email: user.email, name: user.name },
@@ -96,7 +99,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Generate token
-      const token = signAuthToken({ userId: user.id, email: user.email })
+      const token = signAuthToken({ userId: user.id, email: user.email, familyId: user.familyId, role: user.role })
 
       const response = NextResponse.json({
         user: { id: user.id, email: user.email, name: user.name },
