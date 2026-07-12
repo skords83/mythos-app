@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
+import { logger } from '@/lib/logger'
 
 // GET /api/chapters/[id] - Einzelnes Kapitel abrufen
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let userId: string | null = null
   try {
-    const userId = await getUserFromRequest(request)
+    userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
@@ -29,7 +31,7 @@ export async function GET(
 
     return NextResponse.json(chapter)
   } catch (error) {
-    console.error('Error fetching chapter:', error)
+    logger.error(error, { route: 'GET /api/chapters/[id]', userId })
     return NextResponse.json({ error: 'Fehler beim Laden des Kapitels' }, { status: 500 })
   }
 }
@@ -39,8 +41,9 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let userId: string | null = null
   try {
-    const userId = await getUserFromRequest(request)
+    userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
@@ -72,7 +75,7 @@ export async function PUT(
 
     return NextResponse.json(updated)
   } catch (error) {
-    console.error('Error updating chapter:', error)
+    logger.error(error, { route: 'PUT /api/chapters/[id]', userId })
     return NextResponse.json({ error: 'Fehler beim Aktualisieren' }, { status: 500 })
   }
 }
@@ -82,8 +85,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let userId: string | null = null
   try {
-    const userId = await getUserFromRequest(request)
+    userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
@@ -106,7 +110,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting chapter:', error)
+    logger.error(error, { route: 'DELETE /api/chapters/[id]', userId })
     return NextResponse.json({ error: 'Fehler beim Löschen' }, { status: 500 })
   }
 }
