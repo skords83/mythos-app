@@ -1,20 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
+import { logger } from '@/lib/logger'
 
 // GET /api/places/[id] - Einzelnen Ort abrufen
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let userId: string | null = null
+
   try {
-    const userId = await getUserFromRequest(request)
+    userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
 
     const place = await prisma.place.findFirst({
-      where: { 
+      where: {
         id: params.id,
         project: { userId }
       }
@@ -26,7 +29,7 @@ export async function GET(
 
     return NextResponse.json(place)
   } catch (error) {
-    console.error('Error fetching place:', error)
+    logger.error(error, { route: 'GET /api/places/[id]', userId })
     return NextResponse.json({ error: 'Fehler beim Laden des Ortes' }, { status: 500 })
   }
 }
@@ -36,15 +39,17 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let userId: string | null = null
+
   try {
-    const userId = await getUserFromRequest(request)
+    userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
 
     // Verify ownership
     const place = await prisma.place.findFirst({
-      where: { 
+      where: {
         id: params.id,
         project: { userId }
       }
@@ -71,7 +76,7 @@ export async function PUT(
 
     return NextResponse.json(updated)
   } catch (error) {
-    console.error('Error updating place:', error)
+    logger.error(error, { route: 'PUT /api/places/[id]', userId })
     return NextResponse.json({ error: 'Fehler beim Aktualisieren' }, { status: 500 })
   }
 }
@@ -81,15 +86,17 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let userId: string | null = null
+
   try {
-    const userId = await getUserFromRequest(request)
+    userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
 
     // Verify ownership
     const place = await prisma.place.findFirst({
-      where: { 
+      where: {
         id: params.id,
         project: { userId }
       }
@@ -105,7 +112,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting place:', error)
+    logger.error(error, { route: 'DELETE /api/places/[id]', userId })
     return NextResponse.json({ error: 'Fehler beim Löschen' }, { status: 500 })
   }
 }

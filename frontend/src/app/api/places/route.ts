@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
+import { logger } from '@/lib/logger'
 
 // GET /api/places?projectId=xxx - Orte eines Projekts abrufen
 export async function GET(request: NextRequest) {
+  let userId: string | null = null
+
   try {
-    const userId = await getUserFromRequest(request)
+    userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
@@ -33,15 +36,17 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(places)
   } catch (error) {
-    console.error('Error fetching places:', error)
+    logger.error(error, { route: 'GET /api/places', userId })
     return NextResponse.json({ error: 'Fehler beim Laden der Orte' }, { status: 500 })
   }
 }
 
 // POST /api/places - Neuen Ort erstellen
 export async function POST(request: NextRequest) {
+  let userId: string | null = null
+
   try {
-    const userId = await getUserFromRequest(request)
+    userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
@@ -71,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(place, { status: 201 })
   } catch (error) {
-    console.error('Error creating place:', error)
+    logger.error(error, { route: 'POST /api/places', userId })
     return NextResponse.json({ error: 'Fehler beim Erstellen des Ortes' }, { status: 500 })
   }
 }
