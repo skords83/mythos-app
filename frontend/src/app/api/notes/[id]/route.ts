@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
+import { logger } from '@/lib/logger'
 
 // PUT /api/notes/[id] - Notiz aktualisieren
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let userId: string | null = null
   try {
-    const userId = await getUserFromRequest(request)
+    userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
@@ -39,7 +41,7 @@ export async function PUT(
 
     return NextResponse.json(updated)
   } catch (error) {
-    console.error('Error updating note:', error)
+    logger.error(error, { route: 'PUT /api/notes/[id]', userId })
     return NextResponse.json({ error: 'Fehler beim Aktualisieren' }, { status: 500 })
   }
 }
@@ -49,8 +51,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let userId: string | null = null
   try {
-    const userId = await getUserFromRequest(request)
+    userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
@@ -73,7 +76,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting note:', error)
+    logger.error(error, { route: 'DELETE /api/notes/[id]', userId })
     return NextResponse.json({ error: 'Fehler beim Löschen' }, { status: 500 })
   }
 }

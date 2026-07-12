@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
+import { logger } from '@/lib/logger'
 
 // GET /api/notes?chapterId=xxx - Notizen eines Kapitels abrufen
 export async function GET(request: NextRequest) {
+  let userId: string | null = null
   try {
-    const userId = await getUserFromRequest(request)
+    userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
@@ -36,15 +38,16 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(notes)
   } catch (error) {
-    console.error('Error fetching notes:', error)
+    logger.error(error, { route: 'GET /api/notes', userId })
     return NextResponse.json({ error: 'Fehler beim Laden der Notizen' }, { status: 500 })
   }
 }
 
 // POST /api/notes - Neue Notiz erstellen
 export async function POST(request: NextRequest) {
+  let userId: string | null = null
   try {
-    const userId = await getUserFromRequest(request)
+    userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
@@ -74,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(note, { status: 201 })
   } catch (error) {
-    console.error('Error creating note:', error)
+    logger.error(error, { route: 'POST /api/notes', userId })
     return NextResponse.json({ error: 'Fehler beim Erstellen der Notiz' }, { status: 500 })
   }
 }
