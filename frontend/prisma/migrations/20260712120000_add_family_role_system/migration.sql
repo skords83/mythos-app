@@ -69,3 +69,18 @@ ALTER TABLE "Character" ADD CONSTRAINT "Character_familyId_fkey" FOREIGN KEY ("f
 ALTER TABLE "Character" ADD CONSTRAINT "Character_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "Place" ADD CONSTRAINT "Place_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "Family"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "Place" ADD CONSTRAINT "Place_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- CreateIndex
+CREATE INDEX "User_familyId_idx" ON "User"("familyId");
+
+-- CreateIndex
+CREATE INDEX "Character_familyId_idx" ON "Character"("familyId");
+
+-- CreateIndex
+CREATE INDEX "Character_authorId_idx" ON "Character"("authorId");
+
+-- CreateIndex
+CREATE INDEX "Place_familyId_idx" ON "Place"("familyId");
+
+-- CreateIndex
+CREATE INDEX "Place_authorId_idx" ON "Place"("authorId");
