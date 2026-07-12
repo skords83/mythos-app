@@ -27,6 +27,7 @@ describe('auth token helpers', () => {
     const token = signAuthToken({ userId: 'user-1', email: 'a@example.com', familyId: 'fam-1', role: 'ADULT' })
     const payload = verifyAuthToken(token)
     expect(payload.userId).toBe('user-1')
+    expect(payload.email).toBe('a@example.com')
     expect(payload.familyId).toBe('fam-1')
     expect(payload.role).toBe('ADULT')
   })

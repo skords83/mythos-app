@@ -6,7 +6,7 @@ export interface AuthTokenPayload {
   userId: string
   email: string
   familyId: string
-  role: FamilyRole | string
+  role: FamilyRole
 }
 
 export interface AuthContext {
@@ -50,21 +50,14 @@ export async function getAuthContext(request: NextRequest): Promise<AuthContext 
     const payload = verifyAuthToken(token)
     // Require both familyId and role to be present (reject legacy tokens)
     if (!payload.familyId || !payload.role) return null
-    return {
-      userId: payload.userId,
-      familyId: payload.familyId,
-      role: payload.role as FamilyRole,
-    }
+    return { userId: payload.userId, familyId: payload.familyId, role: payload.role }
   } catch {
     return null
   }
 }
 
-export function requireRole(context: AuthContext | null, allowedRoles: FamilyRole[]): NextResponse | null {
-  if (!context) {
-    return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
-  }
-  if (!allowedRoles.includes(context.role)) {
+export function requireRole(context: AuthContext, allowed: FamilyRole[]): NextResponse | null {
+  if (!allowed.includes(context.role)) {
     return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
   }
   return null
