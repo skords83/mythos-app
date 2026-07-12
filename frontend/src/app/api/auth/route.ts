@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     const ip = getClientIp(request)
 
     if (action === 'register') {
-      const limited = checkRateLimit(ip, 'auth:register', { limit: 5, windowMs: 60 * 60 * 1000 })
+      const limited = await checkRateLimit(ip, 'auth:register', { limit: 5, windowMs: 60 * 60 * 1000 })
       if (limited) return limited
 
       if (typeof email !== 'string' || !EMAIL_RE.test(email)) {
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'login') {
-      const limited = checkRateLimit(ip, 'auth:login', { limit: 10, windowMs: 15 * 60 * 1000 })
+      const limited = await checkRateLimit(ip, 'auth:login', { limit: 10, windowMs: 15 * 60 * 1000 })
       if (limited) return limited
 
       // Find user

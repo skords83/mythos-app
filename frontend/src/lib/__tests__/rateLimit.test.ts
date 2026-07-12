@@ -2,6 +2,9 @@
  * @jest-environment node
  */
 import { NextRequest } from 'next/server'
+
+jest.mock('ioredis', () => require('ioredis-mock'))
+
 import { checkRateLimit, getClientIp } from '../rateLimit'
 
 function makeRequest(headers: Record<string, string> = {}): NextRequest {
@@ -26,17 +29,17 @@ describe('getClientIp', () => {
 })
 
 describe('checkRateLimit', () => {
-  it('allows requests under the limit', () => {
-    const result = checkRateLimit('user-a', 'test-scope-1', { limit: 3, windowMs: 60_000 })
+  it('allows requests under the limit', async () => {
+    const result = await checkRateLimit('user-a', 'test-scope-1', { limit: 3, windowMs: 60_000 })
     expect(result).toBeNull()
   })
 
   it('blocks requests once the limit is reached, with a 429 and Retry-After header', async () => {
     const options = { limit: 2, windowMs: 60_000 }
-    expect(checkRateLimit('user-b', 'test-scope-2', options)).toBeNull()
-    expect(checkRateLimit('user-b', 'test-scope-2', options)).toBeNull()
+    expect(await checkRateLimit('user-b', 'test-scope-2', options)).toBeNull()
+    expect(await checkRateLimit('user-b', 'test-scope-2', options)).toBeNull()
 
-    const blocked = checkRateLimit('user-b', 'test-scope-2', options)
+    const blocked = await checkRateLimit('user-b', 'test-scope-2', options)
     expect(blocked).not.toBeNull()
     expect(blocked!.status).toBe(429)
     expect(blocked!.headers.get('Retry-After')).toBeTruthy()
@@ -45,24 +48,20 @@ describe('checkRateLimit', () => {
     expect(body.error).toMatch(/Anfragen/)
   })
 
-  it('tracks separate identifiers independently', () => {
+  it('tracks separate identifiers independently', async () => {
     const options = { limit: 1, windowMs: 60_000 }
-    expect(checkRateLimit('user-c', 'test-scope-3', options)).toBeNull()
-    expect(checkRateLimit('user-c', 'test-scope-3', options)).not.toBeNull()
+    expect(await checkRateLimit('user-c', 'test-scope-3', options)).toBeNull()
+    expect(await checkRateLimit('user-c', 'test-scope-3', options)).not.toBeNull()
     // Different identifier, same scope, should still be allowed.
-    expect(checkRateLimit('user-d', 'test-scope-3', options)).toBeNull()
+    expect(await checkRateLimit('user-d', 'test-scope-3', options)).toBeNull()
   })
 
-  it('resets the count after the window elapses', () => {
+  it('resets the count after the window elapses', async () => {
     const options = { limit: 1, windowMs: 10 }
-    expect(checkRateLimit('user-e', 'test-scope-4', options)).toBeNull()
-    expect(checkRateLimit('user-e', 'test-scope-4', options)).not.toBeNull()
+    expect(await checkRateLimit('user-e', 'test-scope-4', options)).toBeNull()
+    expect(await checkRateLimit('user-e', 'test-scope-4', options)).not.toBeNull()
 
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        expect(checkRateLimit('user-e', 'test-scope-4', options)).toBeNull()
-        resolve()
-      }, 20)
-    })
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(await checkRateLimit('user-e', 'test-scope-4', options)).toBeNull()
   })
 })

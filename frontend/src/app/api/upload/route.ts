@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
 
-    const limited = checkRateLimit(userId, 'upload', { limit: 30, windowMs: 10 * 60 * 1000 })
+    const limited = await checkRateLimit(userId, 'upload', { limit: 30, windowMs: 10 * 60 * 1000 })
     if (limited) return limited
 
     const formData = await request.formData()
