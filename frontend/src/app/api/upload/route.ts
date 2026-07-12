@@ -19,8 +19,9 @@ const ALLOWED_TYPES: Record<string, string> = {
 }
 
 export async function POST(request: NextRequest) {
-  const userId = await getUserFromRequest(request)
+  let userId: string | null = null
   try {
+    userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
     await writeFile(join(UPLOAD_DIR, filename), buffer)
     return NextResponse.json({ url: `/api/upload/${filename}` })
   } catch (error) {
-    logger.error(error, { context: 'upload', userId })
+    logger.error(error, { route: 'POST /api/upload', userId })
     return NextResponse.json({ error: 'Upload fehlgeschlagen', details: String(error) }, { status: 500 })
   }
 }

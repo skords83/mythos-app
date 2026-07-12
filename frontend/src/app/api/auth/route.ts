@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     )
   } catch (error) {
-    logger.error(error, { context: 'auth' })
+    logger.error(error, { route: 'POST /api/auth' })
     return NextResponse.json(
       { error: 'Serverfehler' },
       { status: 500 }

@@ -15,8 +15,9 @@ const MAX_RESULTS_PER_TYPE = 8
 
 // GET /api/search?projectId=xxx&q=yyy - Volltextsuche über Kapitel/Charaktere/Orte/Notizen eines Projekts
 export async function GET(request: NextRequest) {
-  const userId = await getUserFromRequest(request)
+  let userId: string | null = null
   try {
+    userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ chapters, characters, places, notes })
   } catch (error) {
-    logger.error(error, { context: 'search', userId })
+    logger.error(error, { route: 'GET /api/search', userId })
     return NextResponse.json({ error: 'Fehler bei der Suche' }, { status: 500 })
   }
 }
