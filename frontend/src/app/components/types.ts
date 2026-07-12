@@ -43,7 +43,10 @@ export interface Place {
   location: string | null
   climate: string | null
   importance: string | null
-  projectId: string
+  visibility: 'PRIVATE' | 'FAMILY'
+  projectId: string | null
+  familyId: string
+  authorId: string
   createdAt: string
   updatedAt: string
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getUserFromRequest } from '@/lib/auth'
+import { getAuthContext } from '@/lib/auth'
 import { logger } from '@/lib/logger'
 
 // GET /api/places/[id] - Einzelnen Ort abrufen
@@ -9,20 +9,20 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   let userId: string | null = null
-
   try {
-    userId = await getUserFromRequest(request)
-    if (!userId) {
+    const context = await getAuthContext(request)
+    if (!context) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
+    userId = context.userId
 
     const place = await prisma.place.findFirst({
       where: {
         id: params.id,
-        project: { userId }
-      }
+        familyId: context.familyId,
+        OR: [{ visibility: 'FAMILY' }, { authorId: context.userId }],
+      },
     })
-
     if (!place) {
       return NextResponse.json({ error: 'Ort nicht gefunden' }, { status: 404 })
     }
@@ -34,33 +34,35 @@ export async function GET(
   }
 }
 
-// PUT /api/places/[id] - Ort aktualisieren
+// PUT /api/places/[id] - Ort aktualisieren (nur Autor)
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   let userId: string | null = null
-
   try {
-    userId = await getUserFromRequest(request)
-    if (!userId) {
+    const context = await getAuthContext(request)
+    if (!context) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
+    userId = context.userId
 
-    // Verify ownership
     const place = await prisma.place.findFirst({
-      where: {
-        id: params.id,
-        project: { userId }
-      }
+      where: { id: params.id, familyId: context.familyId },
     })
-
     if (!place) {
       return NextResponse.json({ error: 'Ort nicht gefunden' }, { status: 404 })
     }
+    if (place.authorId !== context.userId) {
+      return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
+    }
 
     const body = await request.json()
-    const { name, description, location, climate, importance } = body
+    const { name, description, location, climate, importance, visibility } = body
+
+    if (visibility !== undefined && visibility !== 'PRIVATE' && visibility !== 'FAMILY') {
+      return NextResponse.json({ error: 'Sichtbarkeit muss PRIVATE oder FAMILY sein' }, { status: 400 })
+    }
 
     const updateData: any = {}
     if (name !== undefined) updateData.name = name
@@ -68,12 +70,9 @@ export async function PUT(
     if (location !== undefined) updateData.location = location
     if (climate !== undefined) updateData.climate = climate
     if (importance !== undefined) updateData.importance = importance
+    if (visibility !== undefined) updateData.visibility = visibility
 
-    const updated = await prisma.place.update({
-      where: { id: params.id },
-      data: updateData
-    })
-
+    const updated = await prisma.place.update({ where: { id: params.id }, data: updateData })
     return NextResponse.json(updated)
   } catch (error) {
     logger.error(error, { route: 'PUT /api/places/[id]', userId })
@@ -81,35 +80,30 @@ export async function PUT(
   }
 }
 
-// DELETE /api/places/[id] - Ort löschen
+// DELETE /api/places/[id] - Ort löschen (Autor oder Familien-OWNER)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   let userId: string | null = null
-
   try {
-    userId = await getUserFromRequest(request)
-    if (!userId) {
+    const context = await getAuthContext(request)
+    if (!context) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
+    userId = context.userId
 
-    // Verify ownership
     const place = await prisma.place.findFirst({
-      where: {
-        id: params.id,
-        project: { userId }
-      }
+      where: { id: params.id, familyId: context.familyId },
     })
-
     if (!place) {
       return NextResponse.json({ error: 'Ort nicht gefunden' }, { status: 404 })
     }
+    if (place.authorId !== context.userId && context.role !== 'OWNER') {
+      return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
+    }
 
-    await prisma.place.delete({
-      where: { id: params.id }
-    })
-
+    await prisma.place.delete({ where: { id: params.id } })
     return NextResponse.json({ success: true })
   } catch (error) {
     logger.error(error, { route: 'DELETE /api/places/[id]', userId })
