@@ -1,6 +1,6 @@
 'use client'
 
-import { Book, ChevronLeft, ChevronRight, Download, MapPin, Settings, StickyNote, Users, Home as HomeIcon } from 'lucide-react'
+import { Book, ChevronLeft, ChevronRight, Download, MapPin, Search, Settings, StickyNote, Users, Home as HomeIcon } from 'lucide-react'
 import { NavItem } from './ThemeToggle'
 import { WordProgress } from './WordProgress'
 import { Project } from './types'
@@ -18,6 +18,7 @@ interface LeftSidebarProps {
   onGoToDashboard: () => void
   onOpenEditProject: () => void
   onOpenExport: () => void
+  onOpenSearch: () => void
 }
 
 export function LeftSidebar({
@@ -31,6 +32,7 @@ export function LeftSidebar({
   onGoToDashboard,
   onOpenEditProject,
   onOpenExport,
+  onOpenSearch,
 }: LeftSidebarProps) {
   return (
     <aside
@@ -49,6 +51,13 @@ export function LeftSidebar({
                 title="Zurück zum Dashboard"
               >
                 <HomeIcon size={20} />
+              </button>
+              <button
+                onClick={onOpenSearch}
+                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400"
+                title="Suchen (Strg+K)"
+              >
+                <Search size={20} />
               </button>
               <button
                 onClick={onOpenEditProject}

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Book, Plus, Save } from 'lucide-react'
 import {
@@ -22,6 +22,7 @@ import {
   CharactersView,
   PlacesView,
   NotesView,
+  SearchModal,
 } from './components'
 import { useAuth } from './hooks/useAuth'
 import { useNotifications } from './hooks/useNotifications'
@@ -30,6 +31,7 @@ import { useChapters } from './hooks/useChapters'
 import { useCharacters } from './hooks/useCharacters'
 import { usePlaces } from './hooks/usePlaces'
 import { useNotes } from './hooks/useNotes'
+import { useSearch } from './hooks/useSearch'
 import { ActiveTab } from './components/LeftSidebar'
 
 // Main Page Component
@@ -66,6 +68,9 @@ export default function Page() {
   const { notes, addNote, updateNote, deleteNote } =
     useNotes({ selectedChapterId: selectedChapter?.id, showError, requestConfirm, onConfirmed })
 
+  const { query: searchQuery, setQuery: setSearchQuery, results: searchResults, isSearching } =
+    useSearch(selectedProject?.id)
+
   const [activeTab, setActiveTab] = useState<ActiveTab>('manuscript')
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true)
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
@@ -75,6 +80,7 @@ export default function Page() {
   const [showPlaceModal, setShowPlaceModal] = useState(false)
   const [showEditProjectModal, setShowEditProjectModal] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
+  const [showSearchModal, setShowSearchModal] = useState(false)
   const [quickCard, setQuickCard] = useState<QuickCardState>({
     character: null,
     position: { x: 0, y: 0 },
@@ -82,6 +88,42 @@ export default function Page() {
   })
 
   const totalWordCount = Array.isArray(chapters) ? chapters.reduce((sum, ch) => sum + (ch.wordCount || 0), 0) : 0
+
+  useEffect(() => {
+    if (!selectedProject) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        setShowSearchModal(true)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedProject])
+
+  const handleSelectSearchChapter = (chapterId: string) => {
+    const chapter = chapters.find(ch => ch.id === chapterId)
+    if (chapter) {
+      switchChapter(chapter)
+      setActiveTab('manuscript')
+    }
+  }
+
+  const handleSelectSearchCharacter = (characterId: string) => {
+    const character = characters.find(c => c.id === characterId)
+    if (character) {
+      setEditingCharacter(character)
+      setActiveTab('characters')
+    }
+  }
+
+  const handleSelectSearchNote = (chapterId: string) => {
+    const chapter = chapters.find(ch => ch.id === chapterId)
+    if (chapter) {
+      switchChapter(chapter)
+      setActiveTab('notes')
+    }
+  }
 
   if (isLoading) {
     return (
@@ -140,6 +182,7 @@ export default function Page() {
         onGoToDashboard={() => router.push('/dashboard')}
         onOpenEditProject={() => setShowEditProjectModal(true)}
         onOpenExport={() => setShowExportModal(true)}
+        onOpenSearch={() => setShowSearchModal(true)}
       />
 
       {/* Main Content */}
@@ -264,6 +307,18 @@ export default function Page() {
         onCancel={() => setConfirmDialog(null)}
       />
       <Toast message={errorToast} onDismiss={() => setErrorToast(null)} />
+      <SearchModal
+        isOpen={showSearchModal}
+        onClose={() => setShowSearchModal(false)}
+        query={searchQuery}
+        setQuery={setSearchQuery}
+        results={searchResults}
+        isSearching={isSearching}
+        onSelectChapter={handleSelectSearchChapter}
+        onSelectCharacter={handleSelectSearchCharacter}
+        onSelectPlace={() => setActiveTab('places')}
+        onSelectNote={handleSelectSearchNote}
+      />
     </div>
   )
 }
