@@ -29,3 +29,5 @@ jobs:
           context: .
           push: true
           tags: ghcr.io/skords83/mythos-app/app:latest
+          build-args: |
+            NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}

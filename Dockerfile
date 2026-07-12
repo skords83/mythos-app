@@ -11,6 +11,9 @@ COPY frontend/ ./
 RUN npx prisma generate
 RUN chmod -R 777 /app/node_modules/.prisma 2>/dev/null || true
 
+ARG NEXT_PUBLIC_SENTRY_DSN
+ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
+
 RUN npm run build
 
 # Copy startup script

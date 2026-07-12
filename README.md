@@ -56,6 +56,8 @@ Der App-Container führt beim Start automatisch `prisma db push` aus (siehe `doc
 | `UPLOAD_DIR` | Zielverzeichnis für hochgeladene Bilder |
 | `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | Optional — leer lassen deaktiviert Sentry, mit DSN eines Sentry-Projekts (sentry.io) befüllen aktiviert Error-Tracking |
 
+> **Hinweis für den Docker-Deploy-Pfad:** `NEXT_PUBLIC_SENTRY_DSN` wird beim `npm run build` in das Client-Bundle eingebettet, nicht zur Laufzeit gelesen. Im CI-Workflow (`.github/workflows/docker.yml`) muss dafür ein Repository-Secret `NEXT_PUBLIC_SENTRY_DSN` hinterlegt sein — sonst bleibt client-seitiges Sentry im gebauten Image inaktiv, auch wenn `docker-compose.yml` die Variable zur Laufzeit setzt. Server-seitiges Sentry (`SENTRY_DSN`) ist davon nicht betroffen, da es zur Laufzeit gelesen wird.
+
 ## Projektstruktur
 
 ```
