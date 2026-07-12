@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.17.0",
+    "@sentry/nextjs": "^10.65.0",
     "@tiptap/extension-image": "^2.5.4",
     "@tiptap/extension-placeholder": "^2.5.4",
     "@tiptap/react": "^2.5.4",
@@ -23,6 +24,7 @@
     "jszip": "^3.10.1",
     "lucide-react": "^0.424.0",
     "next": "^14.2.35",
+    "pino": "^10.3.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
