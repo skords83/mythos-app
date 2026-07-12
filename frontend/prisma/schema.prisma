@@ -7,14 +7,40 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum FamilyRole {
+  OWNER
+  ADULT
+  CHILD
+}
+
+enum Visibility {
+  PRIVATE
+  FAMILY
+}
+
+model Family {
+  id         String      @id @default(cuid())
+  name       String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  members    User[]
+  characters Character[]
+  places     Place[]
+}
+
 model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
-  name      String?
-  password  String    // hashed password
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  projects  Project[]
+  id         String      @id @default(cuid())
+  email      String      @unique
+  name       String?
+  password   String    // hashed password
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  projects   Project[]
+  familyId   String
+  family     Family      @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  role       FamilyRole  @default(ADULT)
+  characters Character[]
+  places     Place[]
 }
 
 model Project {
@@ -46,14 +72,19 @@ model Chapter {
 }
 
 model Character {
-  id          String   @id @default(cuid())
+  id          String     @id @default(cuid())
   name        String
   description String?
   motivation  String?
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  visibility  Visibility @default(PRIVATE)
+  projectId   String?
+  project     Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  familyId    String
+  family      Family     @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
 model Note {
@@ -67,14 +98,19 @@ model Note {
 }
 
 model Place {
-  id          String   @id @default(cuid())
+  id          String     @id @default(cuid())
   name        String
   description String?
   location    String?
   climate     String?
   importance  String?
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  visibility  Visibility @default(PRIVATE)
+  projectId   String?
+  project     Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  familyId    String
+  family      Family     @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
