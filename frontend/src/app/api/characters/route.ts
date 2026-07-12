@@ -1,38 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getUserFromRequest } from '@/lib/auth'
+import { getAuthContext } from '@/lib/auth'
 import { logger } from '@/lib/logger'
 
-// GET /api/characters?projectId=xxx - Charaktere eines Projekts abrufen
+// GET /api/characters?projectId=xxx - Charaktere eines Projekts, sonst die Familien-Bibliothek
 export async function GET(request: NextRequest) {
   let userId: string | null = null
   try {
-    userId = await getUserFromRequest(request)
-    if (!userId) {
+    const context = await getAuthContext(request)
+    if (!context) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
+    userId = context.userId
 
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
 
-    if (!projectId) {
-      return NextResponse.json({ error: 'Projekt-ID erforderlich' }, { status: 400 })
-    }
+    if (projectId) {
+      const project = await prisma.project.findFirst({
+        where: { id: projectId, user: { familyId: context.familyId } },
+      })
+      if (!project) {
+        return NextResponse.json({ error: 'Projekt nicht gefunden' }, { status: 404 })
+      }
 
-    // Verify project belongs to user
-    const project = await prisma.project.findFirst({
-      where: { id: projectId, userId }
-    })
-
-    if (!project) {
-      return NextResponse.json({ error: 'Projekt nicht gefunden' }, { status: 404 })
+      const characters = await prisma.character.findMany({
+        where: { projectId, OR: [{ visibility: 'FAMILY' }, { authorId: context.userId }] },
+        orderBy: { createdAt: 'desc' },
+      })
+      return NextResponse.json(characters)
     }
 
     const characters = await prisma.character.findMany({
-      where: { projectId },
-      orderBy: { createdAt: 'desc' }
+      where: { familyId: context.familyId, OR: [{ visibility: 'FAMILY' }, { authorId: context.userId }] },
+      orderBy: { createdAt: 'desc' },
     })
-
     return NextResponse.json(characters)
   } catch (error) {
     logger.error(error, { route: 'GET /api/characters', userId })
@@ -40,25 +42,30 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/characters - Neuen Charakter erstellen
+// POST /api/characters - Neuen Charakter erstellen (projektgebunden oder als Familien-Bibliothekseintrag)
 export async function POST(request: NextRequest) {
   let userId: string | null = null
   try {
-    userId = await getUserFromRequest(request)
-    if (!userId) {
+    const context = await getAuthContext(request)
+    if (!context) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
+    userId = context.userId
 
     const body = await request.json()
-    const { name, role, description, motivation, projectId } = body
+    const { name, description, motivation, projectId, visibility } = body
 
-    // Verify project belongs to user
-    const project = await prisma.project.findFirst({
-      where: { id: projectId, userId }
-    })
+    if (visibility !== undefined && visibility !== 'PRIVATE' && visibility !== 'FAMILY') {
+      return NextResponse.json({ error: 'Sichtbarkeit muss PRIVATE oder FAMILY sein' }, { status: 400 })
+    }
 
-    if (!project) {
-      return NextResponse.json({ error: 'Projekt nicht gefunden' }, { status: 404 })
+    if (projectId) {
+      const project = await prisma.project.findFirst({
+        where: { id: projectId, user: { familyId: context.familyId } },
+      })
+      if (!project) {
+        return NextResponse.json({ error: 'Projekt nicht gefunden' }, { status: 404 })
+      }
     }
 
     const character = await prisma.character.create({
@@ -66,8 +73,11 @@ export async function POST(request: NextRequest) {
         name: name || 'Neuer Charakter',
         description: description || '',
         motivation: motivation || '',
-        projectId
-      }
+        visibility: visibility || 'PRIVATE',
+        projectId: projectId || null,
+        familyId: context.familyId,
+        authorId: context.userId,
+      },
     })
 
     return NextResponse.json(character, { status: 201 })

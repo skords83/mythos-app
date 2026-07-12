@@ -28,7 +28,10 @@ export interface Character {
   name: string
   description: string | null
   motivation: string | null
-  projectId: string
+  visibility: 'PRIVATE' | 'FAMILY'
+  projectId: string | null
+  familyId: string
+  authorId: string
   createdAt: string
   updatedAt: string
 }
