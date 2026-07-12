@@ -54,6 +54,7 @@ Der App-Container führt beim Start automatisch `prisma db push` aus (siehe `doc
 | `JWT_SECRET` | Secret zum Signieren der Auth-Cookies |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | DB-Zugangsdaten (nur `docker-compose.yml`) |
 | `UPLOAD_DIR` | Zielverzeichnis für hochgeladene Bilder |
+| `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | Optional — leer lassen deaktiviert Sentry, mit DSN eines Sentry-Projekts (sentry.io) befüllen aktiviert Error-Tracking |
 
 ## Projektstruktur
 
