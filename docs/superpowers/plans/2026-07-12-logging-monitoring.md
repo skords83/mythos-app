@@ -1749,3 +1749,152 @@ Expected: build completes successfully (Sentry stays inert, matching the JWT_SEC
 - [ ] **Step 6: Update project memory / backlog**
 
 No code change — after this task, update the `mythos-app-improvement-backlog` memory entry to mark "Logging/Monitoring" as done, noting: no live Sentry account was used for verification (no real DSN available in this environment) — only build-time (init with fake/no DSN) and unit-test-level (mocked `Sentry.captureException`) verification was possible. This mirrors the existing "kein Live-Smoke-Test" caveats on the Redis rate-limiting and god-component entries.
+
+---
+
+### Task 12: Wire `NEXT_PUBLIC_SENTRY_DSN` through the Docker build (client Sentry deploy fix)
+
+**Context:** Task 3 set `NEXT_PUBLIC_SENTRY_DSN` in `docker-compose.yml`'s `environment:` block, but `NEXT_PUBLIC_*` vars are inlined into the client bundle at `npm run build` time, not read at container runtime. The deployed image is built once by CI (`.github/workflows/docker.yml`, `docker/build-push-action@v5`, no `build-args`) and then run via `docker-compose.yml` referencing the prebuilt `ghcr.io/skords83/mythos-app/app:latest` image (no local `build:` context) — so `docker-compose.yml`'s `environment:` entry for this var can never reach the build step that already ran in CI. Without this task, client-side Sentry silently never activates in the documented deploy path, even with a DSN configured. This was discovered during Task 3's review, confirmed by a human decision to fix it now rather than defer it.
+
+**Files:**
+- Modify: `Dockerfile`
+- Modify: `.github/workflows/docker.yml`
+- Modify: `README.md`
+
+**Interfaces:**
+- Consumes: nothing from earlier tasks (independent infra change).
+- Produces: `NEXT_PUBLIC_SENTRY_DSN` reaches the Next.js client bundle when the image is built in CI with the `NEXT_PUBLIC_SENTRY_DSN` GitHub Actions secret set. Falls back to empty (inert client Sentry) if the secret is unset — same fail-safe pattern as the rest of this feature.
+
+- [ ] **Step 1: Add build-time ARG/ENV to `Dockerfile`**
+
+Current `Dockerfile` (full content, for exact context):
+```dockerfile
+FROM node:20
+RUN apt-get update && apt-get install -y openssl
+WORKDIR /app
+
+COPY frontend/package*.json ./
+RUN npm install
+
+COPY frontend/ ./
+
+# Generate Prisma Client as root, then fix permissions
+RUN npx prisma generate
+RUN chmod -R 777 /app/node_modules/.prisma 2>/dev/null || true
+
+RUN npm run build
+
+# Copy startup script
+COPY docker-start.sh /app/docker-start.sh
+RUN chmod +x /app/docker-start.sh
+
+# Copy static files
+RUN cp -r .next/static .next/standalone/.next/static
+RUN mkdir -p .next/standalone/public
+
+EXPOSE 4000
+ENV PORT=4000
+ENV HOSTNAME=0.0.0.0
+CMD ["/app/docker-start.sh"]
+```
+
+Replace:
+```dockerfile
+RUN npm run build
+```
+with:
+```dockerfile
+ARG NEXT_PUBLIC_SENTRY_DSN
+ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
+
+RUN npm run build
+```
+
+(`ARG` must appear before the `RUN npm run build` step to be available to it. `ENV` re-exposes the build arg as a regular env var so `next build`'s webpack `DefinePlugin`-based inlining of `process.env.NEXT_PUBLIC_*` picks it up — an `ARG` alone is not visible to `npm run build`, only `ENV` is. Declaring it near the top of the file would work too but keep it right before the build step it feeds, to keep the causal link visible to a reader.)
+
+- [ ] **Step 2: Pass the build-arg from CI**
+
+Current `.github/workflows/docker.yml` (full content, for exact context):
+```yaml
+name: Build and Push to ghcr.io
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/skords83/mythos-app/app:latest
+```
+
+Replace:
+```yaml
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/skords83/mythos-app/app:latest
+```
+with:
+```yaml
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/skords83/mythos-app/app:latest
+          build-args: |
+            NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+```
+
+(If the `NEXT_PUBLIC_SENTRY_DSN` GitHub Actions secret is not set, this GitHub Actions expression evaluates to an empty string — `build-args` receives `NEXT_PUBLIC_SENTRY_DSN=`, which is the same safe-empty behavior as every other optional DSN in this feature. No hard failure, CI does not need the secret to build successfully.)
+
+- [ ] **Step 3: Document the required GitHub Actions secret in `README.md`**
+
+Find the note added in Task 3 documenting `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` as optional env vars (added next to the existing `JWT_SECRET`/`DATABASE_URL` documentation — search for `SENTRY_DSN` in `README.md` if the exact line has shifted). Immediately after that note, add:
+
+```markdown
+> **Hinweis für den Docker-Deploy-Pfad:** `NEXT_PUBLIC_SENTRY_DSN` wird beim `npm run build` in das Client-Bundle eingebettet, nicht zur Laufzeit gelesen. Im CI-Workflow (`.github/workflows/docker.yml`) muss dafür ein Repository-Secret `NEXT_PUBLIC_SENTRY_DSN` hinterlegt sein — sonst bleibt client-seitiges Sentry im gebauten Image inaktiv, auch wenn `docker-compose.yml` die Variable zur Laufzeit setzt. Server-seitiges Sentry (`SENTRY_DSN`) ist davon nicht betroffen, da es zur Laufzeit gelesen wird.
+```
+
+- [ ] **Step 4: Verify Dockerfile and workflow syntax**
+
+Run:
+```bash
+docker build -f Dockerfile -t mythos-app-syntax-check --check . 2>&1 | head -20 || true
+```
+If `docker` is unavailable in this environment (expected in this sandbox — no Docker daemon), skip the actual build check and instead visually confirm: `ARG NEXT_PUBLIC_SENTRY_DSN` appears before `RUN npm run build` in `Dockerfile`, and `.github/workflows/docker.yml` is valid YAML:
+```bash
+python3 -c "import yaml; yaml.safe_load(open('.github/workflows/docker.yml'))" && echo "YAML OK"
+```
+Expected: `YAML OK` (or, if `docker build --check` ran successfully, no syntax errors reported). Note explicitly in your report that no live CI run or real Docker build was possible in this environment — this is a known verification gap, consistent with every other Docker/CI item in this project's backlog.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add Dockerfile .github/workflows/docker.yml README.md
+git commit -m "Wire NEXT_PUBLIC_SENTRY_DSN through Docker build so client Sentry works in the deployed image"
+```
