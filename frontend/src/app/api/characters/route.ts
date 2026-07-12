@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
+import { logger } from '@/lib/logger'
 
 // GET /api/characters?projectId=xxx - Charaktere eines Projekts abrufen
 export async function GET(request: NextRequest) {
+  let userId: string | null = null
   try {
-    const userId = await getUserFromRequest(request)
+    userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
@@ -33,15 +35,16 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(characters)
   } catch (error) {
-    console.error('Error fetching characters:', error)
+    logger.error(error, { route: 'GET /api/characters', userId })
     return NextResponse.json({ error: 'Fehler beim Laden der Charaktere' }, { status: 500 })
   }
 }
 
 // POST /api/characters - Neuen Charakter erstellen
 export async function POST(request: NextRequest) {
+  let userId: string | null = null
   try {
-    const userId = await getUserFromRequest(request)
+    userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
@@ -69,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(character, { status: 201 })
   } catch (error) {
-    console.error('Error creating character:', error)
+    logger.error(error, { route: 'POST /api/characters', userId })
     return NextResponse.json({ error: 'Fehler beim Erstellen des Charakters' }, { status: 500 })
   }
 }
