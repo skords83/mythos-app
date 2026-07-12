@@ -1,16 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-
-interface Character {
-  id: string
-  name: string
-  description: string | null
-  motivation: string | null
-  projectId: string
-  createdAt: string
-  updatedAt: string
-}
+import { Character } from './types'
 
 interface EditCharacterModalProps {
   isOpen: boolean

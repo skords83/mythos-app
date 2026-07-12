@@ -2,19 +2,8 @@
 
 import React, { useState } from 'react'
 import { Download, FileText, Book, X } from 'lucide-react'
-
-interface Chapter {
-  id: string
-  title: string
-  content: string
-}
-
-interface Project {
-  id: string
-  title: string
-  description: string | null
-  coverImage?: string | null
-}
+import { Chapter, Project } from './types'
+import { stripHtml } from '@/lib/text'
 
 interface ExportModalProps {
   isOpen: boolean
@@ -31,12 +20,6 @@ export function ExportModal({ isOpen, onClose, project, chapters, selectedChapte
   const [exportError, setExportError] = useState<string | null>(null)
 
   if (!isOpen || !project) return null
-
-  const stripHtml = (html: string) => {
-    const tmp = document.createElement('div')
-    tmp.innerHTML = html
-    return tmp.textContent || tmp.innerText || ''
-  }
 
   const exportPDF = async (title: string, content: string) => {
     const { default: html2pdf } = await import('html2pdf.js')
