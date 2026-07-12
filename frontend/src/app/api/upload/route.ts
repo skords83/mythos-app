@@ -4,6 +4,7 @@ import { join } from 'path'
 import { randomUUID } from 'crypto'
 import { getUserFromRequest } from '@/lib/auth'
 import { checkRateLimit } from '@/lib/rateLimit'
+import { logger } from '@/lib/logger'
 
 // Falls back to a local folder outside Docker so `npm run dev` works
 // without the container's absolute /app path existing on disk.
@@ -18,8 +19,8 @@ const ALLOWED_TYPES: Record<string, string> = {
 }
 
 export async function POST(request: NextRequest) {
+  const userId = await getUserFromRequest(request)
   try {
-    const userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
     await writeFile(join(UPLOAD_DIR, filename), buffer)
     return NextResponse.json({ url: `/api/upload/${filename}` })
   } catch (error) {
-    console.error('Upload error:', error)
+    logger.error(error, { context: 'upload', userId })
     return NextResponse.json({ error: 'Upload fehlgeschlagen', details: String(error) }, { status: 500 })
   }
 }

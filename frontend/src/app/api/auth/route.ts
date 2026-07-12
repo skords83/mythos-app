@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { signAuthToken, verifyAuthToken, setAuthCookie, clearAuthCookie } from '@/lib/auth'
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
+import { logger } from '@/lib/logger'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MIN_PASSWORD_LENGTH = 8
@@ -117,7 +118,7 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     )
   } catch (error) {
-    console.error('Auth error:', error)
+    logger.error(error, { context: 'auth' })
     return NextResponse.json(
       { error: 'Serverfehler' },
       { status: 500 }

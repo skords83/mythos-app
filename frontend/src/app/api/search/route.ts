@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
 import { htmlToText, buildSnippet } from '@/lib/text'
+import { logger } from '@/lib/logger'
 
 interface SearchResult {
   id: string
@@ -14,8 +15,8 @@ const MAX_RESULTS_PER_TYPE = 8
 
 // GET /api/search?projectId=xxx&q=yyy - Volltextsuche über Kapitel/Charaktere/Orte/Notizen eines Projekts
 export async function GET(request: NextRequest) {
+  const userId = await getUserFromRequest(request)
   try {
-    const userId = await getUserFromRequest(request)
     if (!userId) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
@@ -121,7 +122,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ chapters, characters, places, notes })
   } catch (error) {
-    console.error('Error searching:', error)
+    logger.error(error, { context: 'search', userId })
     return NextResponse.json({ error: 'Fehler bei der Suche' }, { status: 500 })
   }
 }
