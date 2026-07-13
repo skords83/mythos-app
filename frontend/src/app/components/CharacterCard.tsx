@@ -3,6 +3,7 @@
 import React from 'react'
 import { Trash2 } from 'lucide-react'
 import { Character } from './types'
+import { TEXT_PRIMARY, TEXT_SECONDARY, ACCENT_TEXT, RADIUS, BORDER, CARD_SHADOW, ACCENT } from '@/lib/theme'
 
 interface CharacterCardProps {
   character: Character
@@ -11,14 +12,14 @@ interface CharacterCardProps {
 
 export function CharacterCard({ character, onDelete }: CharacterCardProps) {
   return (
-    <div className="bg-white dark:bg-[#262626] rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700 card-hover group">
+    <div className={`bg-white dark:bg-zinc-900 ${RADIUS} p-4 ${BORDER} ${CARD_SHADOW} group`}>
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#4A7C59] to-[#6B9E7C] flex items-center justify-center text-white font-semibold flex-shrink-0">
+        <div className={`w-10 h-10 ${RADIUS} ${ACCENT} flex items-center justify-center text-white font-semibold flex-shrink-0`}>
           {character.name.charAt(0)}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <h4 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{character.name}</h4>
+            <h4 className={`font-semibold ${TEXT_PRIMARY} truncate`}>{character.name}</h4>
             <button
               onClick={onDelete}
               className="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -27,10 +28,10 @@ export function CharacterCard({ character, onDelete }: CharacterCardProps) {
             </button>
           </div>
           {character.description && (
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{character.description}</p>
+            <p className={`text-sm ${TEXT_SECONDARY} mt-1 line-clamp-2`}>{character.description}</p>
           )}
           {character.motivation && (
-            <p className="text-xs text-[#4A7C59] mt-2 italic">„{character.motivation}"</p>
+            <p className={`text-xs ${ACCENT_TEXT} mt-2 italic`}>„{character.motivation}"</p>
           )}
         </div>
       </div>
