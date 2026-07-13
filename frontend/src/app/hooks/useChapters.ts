@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Chapter, Project } from '../components/types'
 import { stripHtml } from '@/lib/text'
+import { saveDraft, deleteDraft } from '@/lib/chapterDraftStore'
 
 interface UseChaptersArgs {
   selectedProject: Project | null
@@ -31,6 +32,7 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
   const chaptersRef = useRef(chapters)
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const editorSetContentRef = useRef<((content: string) => void) | null>(null)
+  const localDraftTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => { editorContentRef.current = editorContent }, [editorContent])
   useEffect(() => { selectedChapterRef.current = selectedChapter }, [selectedChapter])
@@ -147,6 +149,7 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
         showError('Kapitel konnte nicht gespeichert werden.')
         return
       }
+      await deleteDraft(chapter.id)
       setChapters(prev => prev.map(ch =>
         ch.id === chapter.id ? { ...ch, title: chapter.title, content, wordCount } : ch
       ))
@@ -174,6 +177,18 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
     }, 2000)
     return () => {
       if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
+    }
+  }, [editorContent, selectedChapter?.id])
+
+  // Local-first fallback: always-active IndexedDB backup, independent of server-save outcome
+  useEffect(() => {
+    if (!selectedChapter) return
+    if (localDraftTimer.current) clearTimeout(localDraftTimer.current)
+    localDraftTimer.current = setTimeout(() => {
+      saveDraft(selectedChapter.id, editorContent)
+    }, 400)
+    return () => {
+      if (localDraftTimer.current) clearTimeout(localDraftTimer.current)
     }
   }, [editorContent, selectedChapter?.id])
 
