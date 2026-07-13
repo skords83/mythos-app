@@ -33,7 +33,7 @@ Nach erfolgreichem Server-`PUT` wird der lokale Draft-Eintrag für dieses Kapite
 
 ## Komponenten
 
-- **`frontend/src/lib/chapterDraftStore.ts`** — neues Modul, kapselt IndexedDB via `idb`. Ein Object Store `chapterDrafts`, Key = `chapterId`, Value = `{ chapterId: string, content: JSONContent, updatedAt: number }` (`JSONContent` = Tiptap-Dokumentformat, identisch zu `Chapter.content: Json?` im Prisma-Schema). API: `save(chapterId, content)`, `get(chapterId)`, `delete(chapterId)`.
+- **`frontend/src/lib/chapterDraftStore.ts`** — neues Modul, kapselt IndexedDB via `idb`. Ein Object Store `chapterDrafts`, Key = `chapterId`, Value = `{ chapterId: string, content: string, updatedAt: number }` (`content` ist der HTML-String aus `editor.getHTML()` — exakt derselbe Typ wie `editorContent` in `useChapters.ts`, nicht das rohe Tiptap-JSON; `Chapter.content: Json?` im Prisma-Schema speichert diesen HTML-String verbatim). API: `save(chapterId, content)`, `get(chapterId)`, `delete(chapterId)`.
 - **`useChapters.ts`** — erhält den zweiten (300–500ms) Debounce-Effekt neben dem bestehenden 2s-Effekt; ruft `chapterDraftStore.save()` auf Content-Change, `chapterDraftStore.delete()` nach erfolgreichem PUT.
 - **Recovery-Banner** (neue kleine Komponente, z.B. `DraftRecoveryBanner.tsx`, in `ManuscriptView.tsx` eingebunden) — erscheint nur wenn ein relevanter Draft gefunden wurde, mit den zwei Aktionen Wiederherstellen/Verwerfen.
 
