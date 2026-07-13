@@ -5,6 +5,7 @@ import { RichTextEditor } from './RichTextEditor'
 import { Chapter } from './types'
 import { ChapterDraft } from '@/lib/chapterDraftStore'
 import { DraftRecoveryBanner } from './DraftRecoveryBanner'
+import { TEXT_PRIMARY, TEXT_MUTED, ACCENT, RADIUS } from '@/lib/theme'
 
 interface ManuscriptViewProps {
   selectedChapter: Chapter | null
@@ -41,7 +42,7 @@ export function ManuscriptView({
             placeholder="Kapiteltitel..."
             value={selectedChapter.title}
             onChange={(e) => onTitleChange(e.target.value)}
-            className="w-full text-3xl font-serif font-bold bg-transparent border-none outline-none placeholder-gray-400 dark:placeholder-gray-600 text-gray-800 dark:text-gray-100 mb-8"
+            className={`w-full text-3xl font-serif font-bold bg-transparent border-none outline-none placeholder-zinc-400 dark:placeholder-zinc-600 ${TEXT_PRIMARY} mb-8`}
           />
           <RichTextEditor
             content={editorContent}
@@ -51,11 +52,11 @@ export function ManuscriptView({
           />
         </>
       ) : (
-        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+        <div className={`text-center py-12 ${TEXT_MUTED}`}>
           <p>Erstelle ein neues Kapitel, um zu beginnen.</p>
           <button
             onClick={onCreateChapter}
-            className="mt-4 px-4 py-2 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6349] transition-colors"
+            className={`mt-4 px-4 py-2 ${ACCENT} text-white ${RADIUS} transition-colors`}
           >
             Kapitel erstellen
           </button>
