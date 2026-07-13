@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Character, Project } from '../components/types'
 
 interface UseCharactersArgs {
@@ -9,16 +10,28 @@ interface UseCharactersArgs {
 }
 
 export function useCharacters({ selectedProject, showError, requestConfirm, onConfirmed }: UseCharactersArgs) {
+  const router = useRouter()
   const [characters, setCharacters] = useState<Character[]>([])
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null)
 
   const loadCharacters = async (projectId: string) => {
     try {
       const response = await fetch(`/api/characters?projectId=${projectId}`)
+      if (response.status === 401) {
+        router.push('/login')
+        return
+      }
+      if (!response.ok) {
+        showError('Charaktere konnten nicht geladen werden.')
+        setCharacters([])
+        return
+      }
       const data = await response.json()
       setCharacters(data)
     } catch (error) {
       console.error('Error loading characters:', error)
+      showError('Charaktere konnten nicht geladen werden.')
+      setCharacters([])
     }
   }
 
