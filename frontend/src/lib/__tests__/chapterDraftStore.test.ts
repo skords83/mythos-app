@@ -1,53 +1,38 @@
-import 'fake-indexeddb/auto';
-import { saveDraft, getDraft, deleteDraft } from '../chapterDraftStore';
+import 'fake-indexeddb/auto'
+import { saveDraft, getDraft, deleteDraft } from '../chapterDraftStore'
 
 // Polyfill structuredClone for Jest environment
 if (typeof globalThis.structuredClone === 'undefined') {
   globalThis.structuredClone = (value: any) => {
-    return JSON.parse(JSON.stringify(value));
-  };
+    return JSON.parse(JSON.stringify(value))
+  }
 }
 
 describe('chapterDraftStore', () => {
-  beforeEach(async () => {
-    // Clear IndexedDB before each test
-    const databases = await (indexedDB as any).databases?.();
-    if (databases) {
-      for (const db of databases) {
-        indexedDB.deleteDatabase(db.name);
-      }
-    }
-  });
+  it('saves and retrieves a draft', async () => {
+    await saveDraft('chapter-1', '<p>Hello</p>')
+    const draft = await getDraft('chapter-1')
+    expect(draft?.chapterId).toBe('chapter-1')
+    expect(draft?.content).toBe('<p>Hello</p>')
+    expect(typeof draft?.updatedAt).toBe('number')
+  })
 
-  it('should save and retrieve a chapter draft', async () => {
-    const draft = {
-      chapterId: 'ch-123',
-      content: 'Test chapter content',
-      lastSaved: new Date(),
-    };
+  it('returns undefined for a chapter with no draft', async () => {
+    const draft = await getDraft('chapter-does-not-exist')
+    expect(draft).toBeUndefined()
+  })
 
-    await saveDraft(draft);
-    const retrieved = await getDraft('ch-123');
+  it('overwrites an existing draft for the same chapterId', async () => {
+    await saveDraft('chapter-2', '<p>First</p>')
+    await saveDraft('chapter-2', '<p>Second</p>')
+    const draft = await getDraft('chapter-2')
+    expect(draft?.content).toBe('<p>Second</p>')
+  })
 
-    expect(retrieved).toEqual(draft);
-  });
-
-  it('should delete a chapter draft', async () => {
-    const draft = {
-      chapterId: 'ch-456',
-      content: 'Test chapter content',
-      lastSaved: new Date(),
-    };
-
-    await saveDraft(draft);
-    await deleteDraft('ch-456');
-    const retrieved = await getDraft('ch-456');
-
-    expect(retrieved).toBeUndefined();
-  });
-
-  it('should return undefined for non-existent draft', async () => {
-    const retrieved = await getDraft('non-existent');
-    expect(retrieved).toBeUndefined();
-  });
-});
+  it('deletes a draft', async () => {
+    await saveDraft('chapter-3', '<p>Bye</p>')
+    await deleteDraft('chapter-3')
+    const draft = await getDraft('chapter-3')
+    expect(draft).toBeUndefined()
+  })
+})

@@ -1,57 +1,42 @@
-import { DBSchema, IDBPDatabase, openDB } from 'idb';
+import { openDB, IDBPDatabase } from 'idb'
 
 export interface ChapterDraft {
-  chapterId: string;
-  content: string;
-  lastSaved: Date;
+  chapterId: string
+  content: string
+  updatedAt: number
 }
 
-interface DraftDB extends DBSchema {
-  drafts: {
-    key: string;
-    value: ChapterDraft;
-  };
-}
+const DB_NAME = 'mythos-chapter-drafts'
+const DB_VERSION = 1
+const STORE_NAME = 'chapterDrafts'
 
-let db: IDBPDatabase<DraftDB> | null = null;
+let dbPromise: Promise<IDBPDatabase> | null = null
 
-async function getDB(): Promise<IDBPDatabase<DraftDB>> {
-  if (!db) {
-    db = await openDB<DraftDB>('mythos-chapter-drafts', 1, {
+function getDb(): Promise<IDBPDatabase> {
+  if (!dbPromise) {
+    dbPromise = openDB(DB_NAME, DB_VERSION, {
       upgrade(db) {
-        if (!db.objectStoreNames.contains('drafts')) {
-          db.createObjectStore('drafts', { keyPath: 'chapterId' });
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME, { keyPath: 'chapterId' })
         }
       },
-    });
+    })
   }
-  return db;
+  return dbPromise
 }
 
-export async function saveDraft(draft: ChapterDraft): Promise<void> {
-  const database = await getDB();
-  // Store date as ISO string in database
-  const stored = {
-    ...draft,
-    lastSaved: draft.lastSaved.toISOString(),
-  };
-  await database.put('drafts', stored as any);
+export async function saveDraft(chapterId: string, content: string): Promise<void> {
+  const db = await getDb()
+  const draft: ChapterDraft = { chapterId, content, updatedAt: Date.now() }
+  await db.put(STORE_NAME, draft)
 }
 
-export async function getDraft(
-  chapterId: string
-): Promise<ChapterDraft | undefined> {
-  const database = await getDB();
-  const stored = await database.get('drafts', chapterId);
-  if (!stored) return undefined;
-  // Convert ISO string back to Date
-  return {
-    ...stored,
-    lastSaved: new Date((stored as any).lastSaved),
-  };
+export async function getDraft(chapterId: string): Promise<ChapterDraft | undefined> {
+  const db = await getDb()
+  return db.get(STORE_NAME, chapterId)
 }
 
 export async function deleteDraft(chapterId: string): Promise<void> {
-  const database = await getDB();
-  await database.delete('drafts', chapterId);
+  const db = await getDb()
+  await db.delete(STORE_NAME, chapterId)
 }
