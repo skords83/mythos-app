@@ -34,21 +34,28 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const editorSetContentRef = useRef<((content: string) => void) | null>(null)
   const localDraftTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Tracks the chapterId of the most recently started loadChapterContent call, so a
+  // slow-resolving fetch/getDraft chain for a chapter the user has since switched away
+  // from cannot clobber pendingDraft for the chapter that's actually open.
+  const latestChapterRequestRef = useRef<string | null>(null)
 
   useEffect(() => { editorContentRef.current = editorContent }, [editorContent])
   useEffect(() => { selectedChapterRef.current = selectedChapter }, [selectedChapter])
   useEffect(() => { chaptersRef.current = chapters }, [chapters])
 
   const loadChapterContent = async (chapterId: string) => {
+    latestChapterRequestRef.current = chapterId
     try {
       const response = await fetch(`/api/chapters/${chapterId}`)
       if (!response.ok) return null
       const data = await response.json()
       const draft = await getDraft(chapterId)
       if (draft && draft.updatedAt > new Date(data.updatedAt).getTime()) {
-        setPendingDraft(draft)
+        if (latestChapterRequestRef.current === chapterId) setPendingDraft(draft)
       } else {
-        setPendingDraft(null)
+        if (latestChapterRequestRef.current === chapterId) {
+          setPendingDraft(null)
+        }
         if (draft) await deleteDraft(chapterId)
       }
       return data

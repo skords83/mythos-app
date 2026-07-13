@@ -42,6 +42,25 @@ function mockInitialLoadFetch() {
     .mockResolvedValueOnce({ ok: true, json: async () => chapter } as Response)
 }
 
+// URL/method-aware fetch mock (rather than an ordered mockResolvedValueOnce queue) so
+// interleaved async calls from overlapping switchChapter() invocations resolve correctly
+// regardless of exact call order.
+function mockChapterFetch(chapters: Chapter[]) {
+  const byId = new Map(chapters.map(c => [c.id, c]))
+  global.fetch = jest.fn((url: string, init?: RequestInit) => {
+    if (url.includes('/api/chapters?')) {
+      return Promise.resolve({ ok: true, json: async () => ({ chapters }) } as Response)
+    }
+    const id = url.split('/').pop() as string
+    const method = init?.method ?? 'GET'
+    if (method === 'PUT') {
+      const body = init?.body ? JSON.parse(init.body as string) : {}
+      return Promise.resolve({ ok: true, json: async () => ({ ...byId.get(id), ...body }) } as Response)
+    }
+    return Promise.resolve({ ok: true, json: async () => byId.get(id) } as Response)
+  }) as unknown as typeof fetch
+}
+
 async function flush() {
   for (let i = 0; i < 5; i++) {
     await act(async () => { await Promise.resolve() })
@@ -164,6 +183,51 @@ describe('useChapters — draft recovery', () => {
     await act(async () => { await result.current.discardDraft() })
 
     expect(mockDeleteDraft).toHaveBeenCalledWith('c1')
+    expect(result.current.pendingDraft).toBeNull()
+  })
+
+  it('does not let a stale chapter-switch resolution clobber pendingDraft after switching away (race guard)', async () => {
+    const chapterC: Chapter = { ...chapter, id: 'c0', title: 'Kapitel C' }
+    const chapterA: Chapter = { ...chapter, id: 'cA', title: 'Kapitel A' }
+    const chapterB: Chapter = { ...chapter, id: 'cB', title: 'Kapitel B' }
+
+    mockChapterFetch([chapterC, chapterA, chapterB])
+
+    // Chapter A's getDraft resolution is held open (deferred) to simulate a slow
+    // fetch+getDraft chain that is still in flight when the user switches away.
+    let resolveDraftA!: (value: unknown) => void
+    const draftAPromise = new Promise((resolve) => { resolveDraftA = resolve })
+    ;(getDraft as jest.Mock).mockImplementation((id: string) => {
+      if (id === 'cA') return draftAPromise
+      return Promise.resolve(undefined)
+    })
+
+    const { result } = renderChaptersHook()
+    await flush()
+    expect(result.current.selectedChapter?.id).toBe('c0')
+    expect(result.current.pendingDraft).toBeNull()
+
+    // Switch to A, then immediately to B before A's getDraft has resolved.
+    act(() => { result.current.switchChapter(chapterA) })
+    act(() => { result.current.switchChapter(chapterB) })
+
+    // Let B's switch (whose fetch + getDraft both resolve immediately) fully settle
+    // while A's switch remains suspended on the still-pending draftAPromise.
+    for (let i = 0; i < 10; i++) {
+      await flush()
+    }
+    expect(result.current.pendingDraft).toBeNull()
+
+    // Now A's slow getDraft finally resolves with a "newer than server" draft. Before the
+    // guard, this unconditionally called setPendingDraft(draftA) even though the user had
+    // long since switched to chapter B — offering to restore A's content into B's editor.
+    resolveDraftA({
+      chapterId: 'cA',
+      content: '<p>Verwaister Entwurf von A</p>',
+      updatedAt: new Date('2027-01-01T00:00:00.000Z').getTime(),
+    })
+    await flush()
+
     expect(result.current.pendingDraft).toBeNull()
   })
 })
