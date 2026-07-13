@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Chapter, Project } from '../components/types'
 import { stripHtml } from '@/lib/text'
-import { saveDraft, deleteDraft } from '@/lib/chapterDraftStore'
+import { saveDraft, getDraft, deleteDraft, ChapterDraft } from '@/lib/chapterDraftStore'
 
 interface UseChaptersArgs {
   selectedProject: Project | null
@@ -25,6 +25,7 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
   const [editorContent, setEditorContent] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const [pendingDraft, setPendingDraft] = useState<ChapterDraft | null>(null)
 
   // Refs to always have current values in callbacks (stale closure fix)
   const editorContentRef = useRef(editorContent)
@@ -43,6 +44,13 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
       const response = await fetch(`/api/chapters/${chapterId}`)
       if (!response.ok) return null
       const data = await response.json()
+      const draft = await getDraft(chapterId)
+      if (draft && draft.updatedAt > new Date(data.updatedAt).getTime()) {
+        setPendingDraft(draft)
+      } else {
+        setPendingDraft(null)
+        if (draft) await deleteDraft(chapterId)
+      }
       return data
     } catch (error) {
       console.error('Error loading chapter content:', error)
@@ -87,6 +95,7 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
       setChapters([])
       setSelectedChapter(null)
       setEditorContent('')
+      setPendingDraft(null)
     }
   }, [selectedProject])
 
@@ -227,6 +236,19 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
     setSelectedChapter(loaded)
   }
 
+  const restoreDraft = () => {
+    if (!pendingDraft) return
+    setEditorContent(pendingDraft.content)
+    editorSetContentRef.current?.(pendingDraft.content)
+    setPendingDraft(null)
+  }
+
+  const discardDraft = async () => {
+    if (!pendingDraft) return
+    await deleteDraft(pendingDraft.chapterId)
+    setPendingDraft(null)
+  }
+
   return {
     chapters,
     setChapters,
@@ -243,5 +265,8 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
     deleteChapter,
     switchChapter,
     extractContent,
+    pendingDraft,
+    restoreDraft,
+    discardDraft,
   }
 }

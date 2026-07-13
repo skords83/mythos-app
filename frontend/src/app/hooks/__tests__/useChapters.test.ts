@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react'
 import { useChapters } from '../useChapters'
-import { saveDraft, deleteDraft } from '@/lib/chapterDraftStore'
+import { saveDraft, getDraft, deleteDraft } from '@/lib/chapterDraftStore'
 import type { Project, Chapter } from '../../components/types'
 
 jest.mock('next/navigation', () => ({
@@ -92,5 +92,78 @@ describe('useChapters — local draft fallback', () => {
     await act(async () => { await result.current.saveChapter() })
 
     expect(mockDeleteDraft).toHaveBeenCalledWith('c1')
+  })
+})
+
+describe('useChapters — draft recovery', () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+    mockSaveDraft.mockClear()
+    mockDeleteDraft.mockClear()
+    ;(getDraft as jest.Mock).mockReset()
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  it('exposes pendingDraft when IndexedDB has a newer unsynced draft than the server chapter', async () => {
+    ;(getDraft as jest.Mock).mockResolvedValue({
+      chapterId: 'c1',
+      content: '<p>Lokaler Entwurf</p>',
+      updatedAt: new Date('2026-01-02T00:00:00.000Z').getTime(),
+    })
+    mockInitialLoadFetch()
+    const { result } = renderChaptersHook()
+    await flush()
+
+    expect(result.current.pendingDraft?.chapterId).toBe('c1')
+    expect(result.current.pendingDraft?.content).toBe('<p>Lokaler Entwurf</p>')
+  })
+
+  it('does not expose pendingDraft when the local draft is older than the server chapter', async () => {
+    ;(getDraft as jest.Mock).mockResolvedValue({
+      chapterId: 'c1',
+      content: '<p>Alter Entwurf</p>',
+      updatedAt: new Date('2025-12-31T00:00:00.000Z').getTime(),
+    })
+    mockInitialLoadFetch()
+    const { result } = renderChaptersHook()
+    await flush()
+
+    expect(result.current.pendingDraft).toBeNull()
+    expect(mockDeleteDraft).toHaveBeenCalledWith('c1')
+  })
+
+  it('restoreDraft loads the draft content into the editor and clears pendingDraft', async () => {
+    ;(getDraft as jest.Mock).mockResolvedValue({
+      chapterId: 'c1',
+      content: '<p>Lokaler Entwurf</p>',
+      updatedAt: new Date('2026-01-02T00:00:00.000Z').getTime(),
+    })
+    mockInitialLoadFetch()
+    const { result } = renderChaptersHook()
+    await flush()
+
+    act(() => { result.current.restoreDraft() })
+
+    expect(result.current.editorContent).toBe('<p>Lokaler Entwurf</p>')
+    expect(result.current.pendingDraft).toBeNull()
+  })
+
+  it('discardDraft deletes the IndexedDB entry and clears pendingDraft', async () => {
+    ;(getDraft as jest.Mock).mockResolvedValue({
+      chapterId: 'c1',
+      content: '<p>Lokaler Entwurf</p>',
+      updatedAt: new Date('2026-01-02T00:00:00.000Z').getTime(),
+    })
+    mockInitialLoadFetch()
+    const { result } = renderChaptersHook()
+    await flush()
+
+    await act(async () => { await result.current.discardDraft() })
+
+    expect(mockDeleteDraft).toHaveBeenCalledWith('c1')
+    expect(result.current.pendingDraft).toBeNull()
   })
 })
