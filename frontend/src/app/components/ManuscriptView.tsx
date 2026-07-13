@@ -3,6 +3,8 @@
 import { MutableRefObject } from 'react'
 import { RichTextEditor } from './RichTextEditor'
 import { Chapter } from './types'
+import { ChapterDraft } from '@/lib/chapterDraftStore'
+import { DraftRecoveryBanner } from './DraftRecoveryBanner'
 
 interface ManuscriptViewProps {
   selectedChapter: Chapter | null
@@ -11,6 +13,9 @@ interface ManuscriptViewProps {
   onTitleChange: (title: string) => void
   onCreateChapter: () => void
   editorSetContentRef: MutableRefObject<((content: string) => void) | null>
+  pendingDraft: ChapterDraft | null
+  onRestoreDraft: () => void
+  onDiscardDraft: () => void
 }
 
 export function ManuscriptView({
@@ -20,11 +25,17 @@ export function ManuscriptView({
   onTitleChange,
   onCreateChapter,
   editorSetContentRef,
+  pendingDraft,
+  onRestoreDraft,
+  onDiscardDraft,
 }: ManuscriptViewProps) {
   return (
     <div className="max-w-3xl mx-auto px-8 py-12 relative">
       {selectedChapter ? (
         <>
+          {pendingDraft && pendingDraft.chapterId === selectedChapter.id && (
+            <DraftRecoveryBanner draft={pendingDraft} onRestore={onRestoreDraft} onDiscard={onDiscardDraft} />
+          )}
           <input
             type="text"
             placeholder="Kapiteltitel..."

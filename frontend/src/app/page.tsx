@@ -58,6 +58,9 @@ export default function Page() {
     saveChapter,
     deleteChapter,
     switchChapter,
+    pendingDraft,
+    restoreDraft,
+    discardDraft,
   } = useChapters({ selectedProject, showError, requestConfirm, onConfirmed })
 
   const { characters, editingCharacter, setEditingCharacter, addCharacter, updateCharacter, deleteCharacter } =
@@ -229,6 +232,9 @@ export default function Page() {
               onTitleChange={setChapterTitle}
               onCreateChapter={createChapter}
               editorSetContentRef={editorSetContentRef}
+              pendingDraft={pendingDraft}
+              onRestoreDraft={restoreDraft}
+              onDiscardDraft={discardDraft}
             />
           )}
 
