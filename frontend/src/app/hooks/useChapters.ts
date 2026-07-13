@@ -49,7 +49,13 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
       const response = await fetch(`/api/chapters/${chapterId}`)
       if (!response.ok) return null
       const data = await response.json()
-      const draft = await getDraft(chapterId)
+      let draft
+      try {
+        draft = await getDraft(chapterId)
+      } catch (draftError) {
+        console.error('Error reading local draft:', draftError)
+        draft = undefined
+      }
       if (draft && draft.updatedAt > new Date(data.updatedAt).getTime()) {
         if (latestChapterRequestRef.current === chapterId) setPendingDraft(draft)
       } else {
@@ -199,14 +205,18 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
   // Local-first fallback: always-active IndexedDB backup, independent of server-save outcome
   useEffect(() => {
     if (!selectedChapter) return
+    // Suspend local writes while a recovery draft is pending for this chapter, otherwise
+    // this effect would overwrite the newer local draft with the just-loaded server content
+    // before the user has chosen to restore or discard it.
+    if (pendingDraft && pendingDraft.chapterId === selectedChapter.id) return
     if (localDraftTimer.current) clearTimeout(localDraftTimer.current)
     localDraftTimer.current = setTimeout(() => {
-      saveDraft(selectedChapter.id, editorContent)
+      saveDraft(selectedChapter.id, editorContent).catch(() => {})
     }, 400)
     return () => {
       if (localDraftTimer.current) clearTimeout(localDraftTimer.current)
     }
-  }, [editorContent, selectedChapter?.id])
+  }, [editorContent, selectedChapter?.id, pendingDraft])
 
   const deleteChapter = (chapterId: string) => {
     requestConfirm('Kapitel löschen', 'Möchtest du dieses Kapitel wirklich löschen?', async () => {

@@ -140,6 +140,28 @@ describe('useChapters — draft recovery', () => {
     expect(result.current.pendingDraft?.content).toBe('<p>Lokaler Entwurf</p>')
   })
 
+  it('does not overwrite the pending local draft with server content before the user chooses restore/discard', async () => {
+    ;(getDraft as jest.Mock).mockResolvedValue({
+      chapterId: 'c1',
+      content: '<p>Lokaler Entwurf</p>',
+      updatedAt: new Date('2026-01-02T00:00:00.000Z').getTime(),
+    })
+    mockInitialLoadFetch()
+    const { result } = renderChaptersHook()
+    await flush()
+
+    expect(result.current.pendingDraft?.content).toBe('<p>Lokaler Entwurf</p>')
+    mockSaveDraft.mockClear()
+
+    // The 400ms local-save effect fires on the server content that loadChapterContent
+    // just set into editorContent. Without a guard, this would overwrite the newer
+    // local draft in IndexedDB before the user gets a chance to restore or discard it.
+    act(() => { jest.advanceTimersByTime(400) })
+    await flush()
+
+    expect(mockSaveDraft).not.toHaveBeenCalled()
+  })
+
   it('does not expose pendingDraft when the local draft is older than the server chapter', async () => {
     ;(getDraft as jest.Mock).mockResolvedValue({
       chapterId: 'c1',
