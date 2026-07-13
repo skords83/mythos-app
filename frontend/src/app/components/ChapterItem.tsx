@@ -3,7 +3,7 @@
 import React from 'react'
 import { Trash2 } from 'lucide-react'
 import { Chapter } from './types'
-import { RADIUS, ACTIVE_SURFACE, PANEL_BORDER_L, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, HOVER_SURFACE } from '@/lib/theme'
+import { RADIUS, TEXT_MUTED } from '@/lib/theme'
 
 interface ChapterItemProps {
   chapter: Chapter
@@ -16,12 +16,12 @@ export function ChapterItem({ chapter, active, onClick, onDelete }: ChapterItemP
   return (
     <div className={`group relative w-full text-left px-4 py-3 ${RADIUS} transition-colors flex items-center justify-between ${
       active
-        ? `bg-indigo-600/10 ${TEXT_PRIMARY} border-l-4 ${ACTIVE_SURFACE}`
-        : `${TEXT_SECONDARY} ${HOVER_SURFACE}`
+        ? 'bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 border-l-4 border-indigo-600'
+        : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800'
     }`}>
       <button onClick={onClick} className="flex-1 text-left min-w-0">
         <div className="font-medium truncate">{chapter.title}</div>
-        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        <div className={`text-xs ${TEXT_MUTED} mt-1`}>
           {chapter.wordCount} Wörter
         </div>
       </button>

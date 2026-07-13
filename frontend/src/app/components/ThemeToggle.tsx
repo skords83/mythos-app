@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { Moon, Sun } from 'lucide-react'
-import { RADIUS, HOVER_SURFACE, ACTIVE_SURFACE, TEXT_PRIMARY, TEXT_SECONDARY } from '@/lib/theme'
+import { RADIUS } from '@/lib/theme'
 
 export function ThemeToggle() {
   const [darkMode, setDarkMode] = useState(false)
@@ -67,8 +67,8 @@ export function NavItem({ icon: Icon, label, active, onClick, collapsed }: NavIt
       onClick={onClick}
       className={`w-full flex items-center gap-3 px-4 py-3 ${RADIUS} transition-colors ${
         active
-          ? `${ACTIVE_SURFACE} text-white`
-          : `${TEXT_SECONDARY} ${HOVER_SURFACE}`
+          ? 'bg-indigo-600 text-white'
+          : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800'
       }`}
     >
       <Icon size={20} />

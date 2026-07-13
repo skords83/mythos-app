@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { ChapterItem } from './ChapterItem'
 import { CharacterListItem } from './CharacterListItem'
 import { Chapter, Character } from './types'
-import { SURFACE_ALT, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ACCENT, RADIUS, PANEL_BORDER_R, PANEL_BORDER_L, HOVER_SURFACE } from '@/lib/theme'
+import { SURFACE_ALT, TEXT_SECONDARY, TEXT_MUTED, ACCENT_TEXT, RADIUS, CARD_SHADOW, PANEL_BORDER_L, HOVER_SURFACE } from '@/lib/theme'
 
 interface RightSidebarProps {
   focusMode: boolean
@@ -36,13 +36,13 @@ export function RightSidebar({
   return (
     <>
       <aside
-        className={`${focusMode ? 'w-0 opacity-0 overflow-hidden' : rightSidebarOpen ? 'w-80' : 'w-0'} ${SURFACE_ALT} border-l ${PANEL_BORDER_L} overflow-hidden transition-all duration-300 flex flex-col`}
+        className={`${focusMode ? 'w-0 opacity-0 overflow-hidden' : rightSidebarOpen ? 'w-80' : 'w-0'} ${SURFACE_ALT} ${PANEL_BORDER_L} overflow-hidden transition-all duration-300 flex flex-col`}
       >
         {!focusMode && rightSidebarOpen && (
           <>
             <button
               onClick={() => setRightSidebarOpen(false)}
-              className={`absolute left-0 top-1/2 transform -translate-x-full -translate-y-1/2 ${SURFACE_ALT} p-2 ${RADIUS} border border-r-0 ${PANEL_BORDER_R}`}
+              className={`absolute left-0 top-1/2 transform -translate-x-full -translate-y-1/2 ${SURFACE_ALT} p-2 ${RADIUS} ${CARD_SHADOW} border-2 border-r-0 border-zinc-900 dark:border-zinc-700`}
             >
               <ChevronRight size={20} />
             </button>
@@ -50,7 +50,7 @@ export function RightSidebar({
               <section>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className={`text-sm font-semibold ${TEXT_SECONDARY} uppercase tracking-wider`}>Kapitel</h3>
-                  <button onClick={onCreateChapter} className={`p-1.5 ${ACCENT} hover:bg-indigo-600/10 ${RADIUS} transition-colors`} title="Neues Kapitel">
+                  <button onClick={onCreateChapter} className={`p-1.5 ${ACCENT_TEXT} ${HOVER_SURFACE} ${RADIUS} transition-colors`} title="Neues Kapitel">
                     <Plus size={18} />
                   </button>
                 </div>
@@ -76,7 +76,7 @@ export function RightSidebar({
               <section>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className={`text-sm font-semibold ${TEXT_SECONDARY} uppercase tracking-wider`}>Charaktere</h3>
-                  <button onClick={onAddCharacterClick} className={`p-1.5 ${ACCENT} hover:bg-indigo-600/10 ${RADIUS} transition-colors`} title="Neuer Charakter">
+                  <button onClick={onAddCharacterClick} className={`p-1.5 ${ACCENT_TEXT} ${HOVER_SURFACE} ${RADIUS} transition-colors`} title="Neuer Charakter">
                     <Plus size={18} />
                   </button>
                 </div>
@@ -97,7 +97,7 @@ export function RightSidebar({
       {!focusMode && !rightSidebarOpen && (
         <button
           onClick={() => setRightSidebarOpen(true)}
-          className={`fixed right-0 top-1/2 transform -translate-y-1/2 ${SURFACE_ALT} p-2 ${RADIUS} border border-r-0 ${PANEL_BORDER_R} z-50`}
+          className={`fixed right-0 top-1/2 transform -translate-y-1/2 ${SURFACE_ALT} p-2 ${RADIUS} ${CARD_SHADOW} border-2 border-r-0 border-zinc-900 dark:border-zinc-700 z-50`}
         >
           <ChevronLeft size={20} />
         </button>

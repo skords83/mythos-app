@@ -4,7 +4,7 @@ import { Book, ChevronLeft, ChevronRight, Download, MapPin, Search, Settings, St
 import { NavItem } from './ThemeToggle'
 import { WordProgress } from './WordProgress'
 import { Project } from './types'
-import { SURFACE_ALT, TEXT_PRIMARY, TEXT_SECONDARY, RADIUS, HOVER_SURFACE } from '@/lib/theme'
+import { SURFACE_ALT, TEXT_PRIMARY, RADIUS, HOVER_SURFACE } from '@/lib/theme'
 
 export type ActiveTab = 'manuscript' | 'characters' | 'places' | 'notes'
 
@@ -37,39 +37,39 @@ export function LeftSidebar({
 }: LeftSidebarProps) {
   return (
     <aside
-      className={`${focusMode ? 'w-0 opacity-0 overflow-hidden' : leftSidebarOpen ? 'w-64' : 'w-16'} ${SURFACE_ALT} border-r border-zinc-700 flex flex-col transition-all duration-300`}
+      className={`${focusMode ? 'w-0 opacity-0 overflow-hidden' : leftSidebarOpen ? 'w-64' : 'w-16'} ${SURFACE_ALT} border-r-2 border-zinc-900 dark:border-zinc-700 flex flex-col transition-all duration-300`}
     >
-      <div className="p-4 border-b border-zinc-700">
+      <div className="p-4 border-b border-zinc-300 dark:border-zinc-700">
         {leftSidebarOpen ? (
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-serif font-bold text-gray-800 dark:text-gray-100 truncate flex-1 min-w-0">
+            <h1 className={`text-xl font-serif font-bold ${TEXT_PRIMARY} truncate flex-1 min-w-0`}>
               {selectedProject.title}
             </h1>
             <div className="flex items-center gap-1 flex-shrink-0 ml-2">
               <button
                 onClick={onGoToDashboard}
-                className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors ${TEXT_SECONDARY}`}
+                className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors text-zinc-500 dark:text-zinc-400`}
                 title="Zurück zum Dashboard"
               >
                 <HomeIcon size={20} />
               </button>
               <button
                 onClick={onOpenSearch}
-                className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors ${TEXT_SECONDARY}`}
+                className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors text-zinc-500 dark:text-zinc-400`}
                 title="Suchen (Strg+K)"
               >
                 <Search size={20} />
               </button>
               <button
                 onClick={onOpenEditProject}
-                className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors ${TEXT_SECONDARY}`}
+                className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors text-zinc-500 dark:text-zinc-400`}
                 title="Projekteinstellungen"
               >
                 <Settings size={20} />
               </button>
               <button
                 onClick={onOpenExport}
-                className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors ${TEXT_SECONDARY}`}
+                className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors text-zinc-500 dark:text-zinc-400`}
                 title="Exportieren"
               >
                 <Download size={20} />
@@ -102,7 +102,7 @@ export function LeftSidebar({
       </nav>
 
       {leftSidebarOpen && selectedProject && (
-        <div className="p-4 border-t border-zinc-700">
+        <div className="p-4 border-t border-zinc-300 dark:border-zinc-700">
           <WordProgress current={totalWordCount} goal={selectedProject.wordGoal} />
         </div>
       )}
