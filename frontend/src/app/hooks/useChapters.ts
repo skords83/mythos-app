@@ -149,7 +149,7 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
         showError('Kapitel konnte nicht gespeichert werden.')
         return
       }
-      await deleteDraft(chapter.id)
+      await deleteDraft(chapter.id).catch(() => {})
       setChapters(prev => prev.map(ch =>
         ch.id === chapter.id ? { ...ch, title: chapter.title, content, wordCount } : ch
       ))
