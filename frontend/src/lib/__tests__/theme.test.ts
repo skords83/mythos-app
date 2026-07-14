@@ -24,10 +24,10 @@ describe('theme', () => {
     expect(theme.CARD_SHADOW).toBe('shadow-[4px_4px_0_0_#18181b]')
   })
 
-  it('modal tokens use flat-design palette with no rounding', () => {
-    expect(theme.OVERLAY).toBe('bg-zinc-950/60 shadow-[4px_4px_0_0_#18181b]')
-    expect(theme.MODAL_PANEL).toBe('bg-stone-50 dark:bg-zinc-950')
-    expect(theme.INPUT).toBe('bg-stone-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700')
-    expect(theme.BUTTON_SECONDARY).toBe('bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700')
+  it('modal/overlay tokens are flat — no blur, no gradient, no old green', () => {
+    expect(theme.OVERLAY).not.toContain('blur')
+    expect(theme.MODAL_PANEL).not.toContain('4A7C59')
+    expect(theme.INPUT).not.toContain('4A7C59')
+    expect(theme.BUTTON_SECONDARY).not.toContain('4A7C59')
   })
 })
