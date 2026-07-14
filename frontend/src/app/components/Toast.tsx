@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { AlertCircle, X } from 'lucide-react'
+import { RADIUS, CARD_SHADOW } from '@/lib/theme'
 
 interface ToastProps {
   message: string | null
@@ -19,7 +20,7 @@ export function Toast({ message, onDismiss }: ToastProps) {
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] animate-fade-in">
-      <div className="flex items-center gap-3 bg-red-600 text-white rounded-lg shadow-lg px-4 py-3 max-w-md">
+      <div className={`flex items-center gap-3 bg-red-600 text-white ${RADIUS} ${CARD_SHADOW} px-4 py-3 max-w-md`}>
         <AlertCircle size={18} className="flex-shrink-0" />
         <p className="text-sm">{message}</p>
         <button onClick={onDismiss} className="flex-shrink-0 opacity-80 hover:opacity-100">
