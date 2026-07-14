@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY } from '@/lib/theme'
 
 interface CreateProjectModalProps {
   isOpen: boolean
@@ -25,46 +26,46 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }: CreateProjectM
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
-      <div className="bg-white dark:bg-[#262626] rounded-xl shadow-xl p-6 w-full max-w-md">
-        <h2 className="text-2xl font-serif font-bold mb-4 text-gray-900 dark:text-gray-100">
+    <div className={OVERLAY}>
+      <div className={`${MODAL_PANEL} p-6 w-full max-w-md`}>
+        <h2 className={`text-2xl font-serif font-bold mb-4 ${TEXT_PRIMARY}`}>
           Neues Projekt
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>
               Titel
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#1A1A1B] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#4A7C59] outline-none"
+              className={INPUT}
               placeholder="Name deines Projekts"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>
               Beschreibung
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#1A1A1B] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#4A7C59] outline-none resize-none"
+              className={`${INPUT} resize-none`}
               placeholder="Kurze Beschreibung..."
               rows={3}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>
               Tagesziel (Wörter)
             </label>
             <input
               type="number"
               value={wordGoal}
               onChange={(e) => setWordGoal(parseInt(e.target.value) || 500)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#1A1A1B] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#4A7C59] outline-none"
+              className={INPUT}
               min={100}
               max={10000}
               step={100}
@@ -74,13 +75,13 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }: CreateProjectM
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className={`flex-1 px-4 py-2 ${BUTTON_SECONDARY} ${RADIUS}`}
             >
               Abbrechen
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6349] transition-colors"
+              className={`flex-1 px-4 py-2 ${ACCENT} text-white ${RADIUS} transition-colors`}
             >
               Erstellen
             </button>
