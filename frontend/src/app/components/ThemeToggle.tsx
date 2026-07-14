@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { Moon, Sun } from 'lucide-react'
-import { RADIUS } from '@/lib/theme'
+import { RADIUS, HOVER_SURFACE } from '@/lib/theme'
 
 export function ThemeToggle() {
   const [darkMode, setDarkMode] = useState(false)
@@ -20,7 +20,7 @@ export function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+      className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors`}
       aria-label="Theme wechseln"
     >
       {darkMode ? <Sun size={20} /> : <Moon size={20} />}
@@ -32,7 +32,7 @@ export function FocusToggle({ isFocusMode, onToggle }: { isFocusMode: boolean, o
   return (
     <button
       onClick={onToggle}
-      className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+      className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors`}
       title={isFocusMode ? "Fokusmodus beenden" : "Fokusmodus"}
     >
       <svg 
