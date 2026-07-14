@@ -22,7 +22,7 @@ const mockedPrisma = prisma as unknown as {
   place: { findMany: jest.Mock; create: jest.Mock }
 }
 
-function authedRequest(url: string, init: RequestInit = {}) {
+function authedRequest(url: string, init: Omit<RequestInit, 'signal'> = {}) {
   process.env.JWT_SECRET = 'test-secret'
   const token = signAuthToken({ userId: 'user-1', email: 'a@example.com', familyId: 'fam-1', role: 'ADULT' })
   return new NextRequest(url, { ...init, headers: { ...(init.headers || {}), cookie: `auth-token=${token}` } })

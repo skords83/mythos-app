@@ -32,7 +32,7 @@ const mockedPrisma = prisma as unknown as {
   }
 }
 
-function requestWithRole(role: 'OWNER' | 'ADULT' | 'CHILD', url = 'http://localhost/api/family/members', init: RequestInit = {}) {
+function requestWithRole(role: 'OWNER' | 'ADULT' | 'CHILD', url = 'http://localhost/api/family/members', init: Omit<RequestInit, 'signal'> = {}) {
   process.env.JWT_SECRET = 'test-secret'
   const token = signAuthToken({ userId: 'user-1', email: 'a@example.com', familyId: 'fam-1', role })
   return new NextRequest(url, {
