@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { Trash2, AlertTriangle } from 'lucide-react'
 import { Project } from './types'
-import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, RADIUS, BADGE_RADIUS, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED } from '@/lib/theme'
+import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED } from '@/lib/theme'
 
 interface EditProjectModalProps {
   isOpen: boolean

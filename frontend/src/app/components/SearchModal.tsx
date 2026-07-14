@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from 'react'
 import { Book, MapPin, Search, StickyNote, Users, X } from 'lucide-react'
 import { SearchResultItem, SearchResults } from '../hooks/useSearch'
-import { MODAL_PANEL, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED } from '@/lib/theme'
+import { MODAL_PANEL, RADIUS, TEXT_PRIMARY, TEXT_MUTED } from '@/lib/theme'
 
 interface SearchModalProps {
   isOpen: boolean
