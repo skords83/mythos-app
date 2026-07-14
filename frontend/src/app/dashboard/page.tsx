@@ -410,7 +410,7 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="text-center py-16">
-            <Book size={64} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+            <Book size={64} className={`mx-auto ${TEXT_MUTED} mb-4`} />
             <h2 className={`text-xl font-serif ${TEXT_SECONDARY} mb-2`}>
               Noch keine Projekte
             </h2>
