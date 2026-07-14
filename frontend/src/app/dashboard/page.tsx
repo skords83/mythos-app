@@ -16,6 +16,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Toast } from '../components/Toast'
+import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, ACCENT_TEXT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, BORDER, CARD_SHADOW, HOVER_SURFACE } from '@/lib/theme'
 
 interface Project {
   id: string
@@ -53,7 +54,7 @@ function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+      className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors`}
       aria-label="Theme wechseln"
     >
       {darkMode ? <Sun size={20} /> : <Moon size={20} />}
@@ -83,46 +84,46 @@ function CreateProjectModal({ isOpen, onClose, onCreate }: {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
-      <div className="bg-white dark:bg-[#262626] rounded-xl shadow-xl p-6 w-full max-w-md">
-        <h2 className="text-2xl font-serif font-bold mb-4 text-gray-900 dark:text-gray-100">
+    <div className={OVERLAY}>
+      <div className={`${MODAL_PANEL} p-6 w-full max-w-md`}>
+        <h2 className={`text-2xl font-serif font-bold mb-4 ${TEXT_PRIMARY}`}>
           Neues Projekt
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>
               Titel
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#1A1A1B] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#4A7C59] outline-none"
+              className={INPUT}
               placeholder="Name deines Projekts"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>
               Beschreibung
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#1A1A1B] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#4A7C59] outline-none resize-none"
+              className={`${INPUT} resize-none`}
               placeholder="Kurze Beschreibung..."
               rows={3}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>
               Tagesziel (Wörter)
             </label>
             <input
               type="number"
               value={wordGoal}
               onChange={(e) => setWordGoal(parseInt(e.target.value) || 500)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#1A1A1B] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#4A7C59] outline-none"
+              className={INPUT}
               min={100}
               max={10000}
               step={100}
@@ -132,13 +133,13 @@ function CreateProjectModal({ isOpen, onClose, onCreate }: {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className={`flex-1 px-4 py-2 ${BUTTON_SECONDARY} ${RADIUS}`}
             >
               Abbrechen
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6349] transition-colors"
+              className={`flex-1 px-4 py-2 ${ACCENT} text-white ${RADIUS} transition-colors`}
             >
               Erstellen
             </button>
@@ -156,32 +157,32 @@ function ProjectCard({ project, onDelete, onOpen }: {
   onOpen: () => void
 }) {
   return (
-    <div className="bg-white dark:bg-[#262626] rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow group">
+    <div className={`bg-white dark:bg-zinc-900 ${RADIUS} p-6 ${BORDER} ${CARD_SHADOW} group`}>
       <div className="flex items-start justify-between mb-4">
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#4A7C59] to-[#6B9E7C] flex items-center justify-center text-white">
+        <div className={`w-12 h-12 ${RADIUS} bg-indigo-600 flex items-center justify-center text-white`}>
           <Book size={24} />
         </div>
         <button
           onClick={onDelete}
-          className="p-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+          className={`p-2 ${TEXT_MUTED} hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity`}
           title="Projekt löschen"
         >
           <Trash2 size={18} />
         </button>
       </div>
 
-      <h3 className="text-xl font-serif font-bold text-gray-900 dark:text-gray-100 mb-2">
+      <h3 className={`text-xl font-serif font-bold ${TEXT_PRIMARY} mb-2`}>
         {project.title}
       </h3>
-      
+
       {project.description && (
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+        <p className={`text-sm ${TEXT_SECONDARY} mb-4 line-clamp-2`}>
           {project.description}
         </p>
       )}
 
       {/* Stats */}
-      <div className="flex items-center gap-4 mb-4 text-sm text-gray-500 dark:text-gray-400">
+      <div className={`flex items-center gap-4 mb-4 text-sm ${TEXT_MUTED}`}>
         <div className="flex items-center gap-1">
           <FileText size={16} />
           <span>{project._count?.chapters || 0} Kapitel</span>
@@ -195,7 +196,7 @@ function ProjectCard({ project, onDelete, onOpen }: {
       {/* Open Button */}
       <button
         onClick={onOpen}
-        className="w-full py-2 px-4 bg-[#4A7C59]/10 hover:bg-[#4A7C59]/20 text-[#4A7C59] rounded-lg transition-colors flex items-center justify-center gap-2 font-medium"
+        className={`w-full py-2 px-4 bg-indigo-600/10 hover:bg-indigo-600/20 ${ACCENT_TEXT} ${RADIUS} transition-colors flex items-center justify-center gap-2 font-medium`}
       >
         Öffnen
         <ArrowRight size={18} />
@@ -326,7 +327,7 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#F5F5F5] dark:bg-[#1A1A1B] flex items-center justify-center">
-        <Loader2 size={32} className="animate-spin text-[#4A7C59]" />
+        <Loader2 size={32} className={`animate-spin ${ACCENT_TEXT}`} />
       </div>
     )
   }
@@ -334,15 +335,15 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#F5F5F5] dark:bg-[#1A1A1B]">
       {/* Header */}
-      <header className="bg-white/80 dark:bg-[#262626]/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
+      <header className="bg-white dark:bg-zinc-900 border-b border-zinc-300 dark:border-zinc-700 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#4A7C59] to-[#6B9E7C] flex items-center justify-center">
+              <div className={`w-10 h-10 ${RADIUS} bg-indigo-600 flex items-center justify-center`}>
                 <Book size={20} className="text-white" />
               </div>
-              <span className="text-xl font-serif font-bold text-gray-900 dark:text-gray-100">
+              <span className={`text-xl font-serif font-bold ${TEXT_PRIMARY}`}>
                 Mythos
               </span>
             </div>
@@ -350,21 +351,21 @@ export default function DashboardPage() {
             {/* User info & Actions */}
             <div className="flex items-center gap-3">
               {user && (
-                <span className="text-sm text-gray-600 dark:text-gray-400 hidden sm:block">
+                <span className={`text-sm ${TEXT_SECONDARY} hidden sm:block`}>
                   {user.name || user.email}
                 </span>
               )}
               <ThemeToggle />
               <button
                 onClick={() => router.push('/family')}
-                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400"
+                className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors ${TEXT_SECONDARY}`}
                 title="Familie verwalten"
               >
                 <Users size={20} />
               </button>
               <button
                 onClick={handleLogout}
-                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400"
+                className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors ${TEXT_SECONDARY}`}
                 title="Abmelden"
               >
                 <LogOut size={20} />
@@ -379,16 +380,16 @@ export default function DashboardPage() {
         {/* Page Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-serif font-bold text-gray-900 dark:text-gray-100 mb-2">
+            <h1 className={`text-3xl font-serif font-bold ${TEXT_PRIMARY} mb-2`}>
               Deine Projekte
             </h1>
-            <p className="text-gray-500 dark:text-gray-400">
+            <p className={TEXT_MUTED}>
               {projects.length} {projects.length === 1 ? 'Projekt' : 'Projekte'}
             </p>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6349] transition-colors flex items-center gap-2"
+            className={`px-4 py-2 ${ACCENT} text-white ${RADIUS} transition-colors flex items-center gap-2`}
           >
             <Plus size={20} />
             <span className="hidden sm:inline">Neues Projekt</span>
@@ -410,15 +411,15 @@ export default function DashboardPage() {
         ) : (
           <div className="text-center py-16">
             <Book size={64} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-            <h2 className="text-xl font-serif text-gray-700 dark:text-gray-300 mb-2">
+            <h2 className={`text-xl font-serif ${TEXT_SECONDARY} mb-2`}>
               Noch keine Projekte
             </h2>
-            <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+            <p className={`${TEXT_MUTED} mb-6 max-w-md mx-auto`}>
               Erstelle dein erstes Projekt und beginne mit deinem nächsten Meisterwerk.
             </p>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-6 py-3 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6349] transition-colors inline-flex items-center gap-2"
+              className={`px-6 py-3 ${ACCENT} text-white ${RADIUS} transition-colors inline-flex items-center gap-2`}
             >
               <Plus size={20} />
               Erstes Projekt erstellen

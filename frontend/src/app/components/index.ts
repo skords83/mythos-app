@@ -1,5 +1,4 @@
 export { ThemeToggle, FocusToggle, NavItem } from './ThemeToggle'
-export { ProjectCard } from './ProjectCard'
 export { ChapterItem } from './ChapterItem'
 export { CharacterCard } from './CharacterCard'
 export { WordProgress, FloatingToolbar } from './WordProgress'
