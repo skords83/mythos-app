@@ -44,7 +44,7 @@ cp .env.example .env   # POSTGRES_PASSWORD, JWT_SECRET setzen
 docker compose up -d
 ```
 
-Der App-Container führt beim Start automatisch `prisma db push` aus (siehe `docker-start.sh`) und lauscht auf Port 4000.
+Der App-Container führt beim Start automatisch `prisma migrate deploy` aus (siehe `docker-start.sh`) und lauscht auf Port 4000.
 
 ### Relevante Umgebungsvariablen
 
