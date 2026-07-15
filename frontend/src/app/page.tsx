@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Book, Plus, Save } from 'lucide-react'
+import { ACCENT, RADIUS, SURFACE_ALT, TEXT_PRIMARY, TEXT_MUTED } from '@/lib/theme'
 import {
   QuickCardState,
   ThemeToggle,
@@ -131,7 +132,7 @@ export default function Page() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#F5F5F5] dark:bg-[#1A1A1B] flex items-center justify-center">
-        <div className="text-gray-500 dark:text-gray-400">Laden...</div>
+        <div className={TEXT_MUTED}>Laden...</div>
       </div>
     )
   }
@@ -141,22 +142,22 @@ export default function Page() {
       <div className="min-h-screen bg-[#F5F5F5] dark:bg-[#1A1A1B] p-8">
         <div className="max-w-6xl mx-auto">
           <header className="flex items-center justify-between mb-8">
-            <h1 className="text-3xl font-serif font-bold text-gray-900 dark:text-gray-100">
+            <h1 className={`text-3xl font-serif font-bold ${TEXT_PRIMARY}`}>
               Mythos
             </h1>
             <ThemeToggle />
           </header>
           <div className="text-center py-12">
-            <Book size={64} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-            <h2 className="text-2xl font-serif text-gray-700 dark:text-gray-300 mb-2">
+            <Book size={64} className={`mx-auto ${TEXT_MUTED} mb-4`} />
+            <h2 className={`text-2xl font-serif ${TEXT_PRIMARY} mb-2`}>
               Willkommen bei Mythos
             </h2>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">
+            <p className={`${TEXT_MUTED} mb-6`}>
               Erstelle dein erstes Projekt und beginne zu schreiben.
             </p>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-6 py-3 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6349] transition-colors flex items-center gap-2 mx-auto"
+              className={`px-6 py-3 ${ACCENT} text-white ${RADIUS} transition-colors flex items-center gap-2 mx-auto`}
             >
               <Plus size={20} />
               Neues Projekt erstellen
@@ -190,20 +191,20 @@ export default function Page() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 bg-white/50 dark:bg-[#262626]/50 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6">
+        <header className={`h-16 ${SURFACE_ALT} border-b border-zinc-300 dark:border-zinc-700 flex items-center justify-between px-6`}>
           <div className="flex items-center gap-4">
             {activeTab === 'manuscript' && selectedChapter && (
               <>
-                <h2 className="text-lg font-serif text-gray-800 dark:text-gray-200">{selectedChapter.title}</h2>
-                <span className="text-sm text-gray-500 dark:text-gray-400">{selectedChapter.wordCount || 0} Wörter</span>
+                <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>{selectedChapter.title}</h2>
+                <span className={`text-sm ${TEXT_MUTED}`}>{selectedChapter.wordCount || 0} Wörter</span>
               </>
             )}
             {activeTab === 'manuscript' && !selectedChapter && (
-              <span className="text-gray-500 dark:text-gray-400">Kein Kapitel ausgewählt</span>
+              <span className={TEXT_MUTED}>Kein Kapitel ausgewählt</span>
             )}
-            {activeTab === 'characters' && <h2 className="text-lg font-serif text-gray-800 dark:text-gray-200">Charakter-Verwaltung</h2>}
-            {activeTab === 'places' && <h2 className="text-lg font-serif text-gray-800 dark:text-gray-200">Orte</h2>}
-            {activeTab === 'notes' && <h2 className="text-lg font-serif text-gray-800 dark:text-gray-200">Notizen</h2>}
+            {activeTab === 'characters' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Charakter-Verwaltung</h2>}
+            {activeTab === 'places' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Orte</h2>}
+            {activeTab === 'notes' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Notizen</h2>}
           </div>
           <div className="flex items-center gap-3">
             {activeTab === 'manuscript' && (
@@ -214,7 +215,7 @@ export default function Page() {
               <button
                 onClick={() => saveChapter()}
                 disabled={isSaving || !selectedChapter}
-                className="px-4 py-2 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6349] transition-colors text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`px-4 py-2 ${ACCENT} text-white ${RADIUS} transition-colors text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 <Save size={16} />
                 {isSaving ? 'Speichern...' : autoSaveStatus === 'saved' ? '✓ Gespeichert' : 'Speichern'}
