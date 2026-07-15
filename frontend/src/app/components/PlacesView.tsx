@@ -30,7 +30,7 @@ export function PlacesView({ places, onAddClick, onDelete }: PlacesViewProps) {
         ))}
         {places.length === 0 && (
           <div className={`col-span-2 text-center py-12 ${TEXT_MUTED}`}>
-            <MapPin size={48} className="mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+            <MapPin size={48} className={`mx-auto mb-4 ${TEXT_MUTED}`} />
             <p>Noch keine Orte vorhanden.</p>
             <button onClick={onAddClick} className={`mt-4 px-4 py-2 ${ACCENT} text-white ${RADIUS} transition-colors`}>
               Ersten Ort erstellen

@@ -29,12 +29,12 @@ export function NotesView({ notes, selectedChapter, onAddClick, onUpdate, onDele
       </div>
       {!selectedChapter ? (
         <div className={`text-center py-12 ${TEXT_MUTED}`}>
-          <StickyNote size={48} className="mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+          <StickyNote size={48} className={`mx-auto mb-4 ${TEXT_MUTED}`} />
           <p>Bitte wähle zuerst ein Kapitel aus, um Notizen anzuzeigen.</p>
         </div>
       ) : notes.length === 0 ? (
         <div className={`text-center py-12 ${TEXT_MUTED}`}>
-          <StickyNote size={48} className="mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+          <StickyNote size={48} className={`mx-auto mb-4 ${TEXT_MUTED}`} />
           <p>Noch keine Notizen für dieses Kapitel.</p>
           <p className="text-sm mt-2">Klicke auf &quot;Neue Notiz&quot; um eine zu erstellen.</p>
         </div>
