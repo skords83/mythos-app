@@ -2,7 +2,7 @@
 
 import { MutableRefObject } from 'react'
 import { RichTextEditor } from './RichTextEditor'
-import { Chapter } from './types'
+import { Chapter, Character } from './types'
 import { ChapterDraft } from '@/lib/chapterDraftStore'
 import { DraftRecoveryBanner } from './DraftRecoveryBanner'
 import { TEXT_PRIMARY, TEXT_MUTED, ACCENT, RADIUS } from '@/lib/theme'
@@ -17,6 +17,8 @@ interface ManuscriptViewProps {
   pendingDraft: ChapterDraft | null
   onRestoreDraft: () => void
   onDiscardDraft: () => void
+  characters: Character[]
+  onMentionClick: (characterId: string, position: { x: number; y: number }) => void
 }
 
 export function ManuscriptView({
@@ -29,6 +31,8 @@ export function ManuscriptView({
   pendingDraft,
   onRestoreDraft,
   onDiscardDraft,
+  characters,
+  onMentionClick,
 }: ManuscriptViewProps) {
   return (
     <div className="max-w-3xl mx-auto px-8 py-12 relative">
@@ -49,6 +53,8 @@ export function ManuscriptView({
             onChange={setEditorContent}
             placeholder="Beginne zu schreiben... (Klicke auf Charakternamen für Quick-Card)"
             onEditorReady={(setter) => { editorSetContentRef.current = setter }}
+            characters={characters}
+            onMentionClick={onMentionClick}
           />
         </>
       ) : (

@@ -236,6 +236,12 @@ export default function Page() {
               pendingDraft={pendingDraft}
               onRestoreDraft={restoreDraft}
               onDiscardDraft={discardDraft}
+              characters={characters}
+              onMentionClick={(characterId, position) => setQuickCard({
+                character: characters.find(c => c.id === characterId) ?? null,
+                position,
+                visible: true,
+              })}
             />
           )}
 

@@ -7,20 +7,37 @@ import Image from '@tiptap/extension-image'
 import { Bold, Italic, List, Quote, Heading1, Heading2, Undo, Redo, Image as ImageIcon } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { SURFACE, SURFACE_ALT, RADIUS, BORDER, ACCENT_TEXT, HOVER_SURFACE, ACTIVE_SURFACE, DIVIDER } from '@/lib/theme'
+import { CharacterMention } from '@/lib/tiptap/characterMentionExtension'
+import { createCharacterMentionSuggestion } from '@/lib/tiptap/characterMentionSuggestion'
+import { resolveCharacterMentionClick } from '@/lib/tiptap/mentionClick'
+import type { Character } from './types'
 
 interface RichTextEditorProps {
   content: string
   onChange: (content: string) => void
   placeholder?: string
   onEditorReady?: (setter: (content: string) => void) => void
+  characters: Character[]
+  onMentionClick: (characterId: string, position: { x: number; y: number }) => void
 }
 
-export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu schreiben...', onEditorReady }: RichTextEditorProps) {
+export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu schreiben...', onEditorReady, characters, onMentionClick }: RichTextEditorProps) {
+  // useEditor has no deps array below (editor is created once) — mirror useChapters.ts's
+  // stale-closure fix so suggestion filtering and click handling always see current data.
+  const charactersRef = useRef(characters)
+  useEffect(() => { charactersRef.current = characters }, [characters])
+
+  const onMentionClickRef = useRef(onMentionClick)
+  useEffect(() => { onMentionClickRef.current = onMentionClick }, [onMentionClick])
+
   const editor = useEditor({
     extensions: [
       StarterKit,
       Placeholder.configure({ placeholder }),
       Image,
+      CharacterMention.configure({
+        suggestion: createCharacterMentionSuggestion(charactersRef),
+      }),
     ],
     content: content || '',
     onUpdate: ({ editor }) => {
@@ -29,6 +46,12 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
     editorProps: {
       attributes: {
         class: 'prose prose-lg dark:prose-invert max-w-none focus:outline-none min-h-[400px] p-4',
+      },
+      handleClickOn: (_view, _pos, node, _nodePos, event) => {
+        const result = resolveCharacterMentionClick(node, event)
+        if (!result) return false
+        onMentionClickRef.current(result.characterId, result.position)
+        return true
       },
     },
   })

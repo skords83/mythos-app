@@ -102,3 +102,12 @@ h1, h2, h3, h4, h5, h6 {
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out;
 }
+
+/* MentionSuggestionList renders its own fully-styled panel; strip tippy's default chrome. */
+.tippy-box[data-theme~='transparent'] {
+  background-color: transparent;
+}
+
+.tippy-box[data-theme~='transparent'] > .tippy-content {
+  padding: 0;
+}
