@@ -2,7 +2,7 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import type { Character } from './types'
-import { SURFACE, BORDER, RADIUS, CARD_SHADOW, HOVER_SURFACE, ACTIVE_SURFACE, ACCENT_TEXT, TEXT_MUTED } from '@/lib/theme'
+import { SURFACE, BORDER, RADIUS, CARD_SHADOW, HOVER_SURFACE, ACTIVE_SURFACE, ACCENT_TEXT, TEXT_MUTED, TEXT_PRIMARY } from '@/lib/theme'
 
 export interface MentionSuggestionListProps {
   items: Character[]
@@ -56,7 +56,7 @@ export const MentionSuggestionList = forwardRef<MentionSuggestionListHandle, Men
               type="button"
               onClick={() => selectItem(index)}
               className={`w-full text-left px-3 py-2 text-sm ${HOVER_SURFACE} ${
-                index === selectedIndex ? `${ACTIVE_SURFACE} ${ACCENT_TEXT}` : ''
+                index === selectedIndex ? `${ACTIVE_SURFACE} ${ACCENT_TEXT}` : TEXT_PRIMARY
               }`}
             >
               {character.name}
