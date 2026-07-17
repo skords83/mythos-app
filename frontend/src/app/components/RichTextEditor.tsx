@@ -4,12 +4,13 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Image from '@tiptap/extension-image'
-import { Bold, Italic, List, Quote, Heading1, Heading2, Undo, Redo, Image as ImageIcon } from 'lucide-react'
+import { Bold, Italic, List, Quote, Heading1, Heading2, Undo, Redo, Image as ImageIcon, ArrowUp, ArrowDown } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { SURFACE, SURFACE_ALT, RADIUS, BORDER, ACCENT_TEXT, HOVER_SURFACE, ACTIVE_SURFACE, DIVIDER } from '@/lib/theme'
 import { CharacterMention } from '@/lib/tiptap/characterMentionExtension'
 import { createCharacterMentionSuggestion } from '@/lib/tiptap/characterMentionSuggestion'
 import { resolveCharacterMentionClick } from '@/lib/tiptap/mentionClick'
+import { BlockDragHandle, findTopLevelBlockAt, moveTopLevelBlock } from '@/lib/tiptap/blockDragHandleExtension'
 import type { Character } from './types'
 
 interface RichTextEditorProps {
@@ -38,6 +39,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
       CharacterMention.configure({
         suggestion: createCharacterMentionSuggestion(charactersRef),
       }),
+      BlockDragHandle,
     ],
     content: content || '',
     onUpdate: ({ editor }) => {
@@ -45,7 +47,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-lg dark:prose-invert max-w-none focus:outline-none min-h-[400px] p-4',
+        class: 'prose prose-lg dark:prose-invert max-w-none focus:outline-none min-h-[400px] pt-4 pr-4 pb-4 pl-9',
       },
       handleClickOn: (_view, _pos, node, _nodePos, event) => {
         const result = resolveCharacterMentionClick(node, event)
@@ -64,6 +66,29 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
       })
     }
   }, [editor])
+
+  const moveSelectedBlock = (direction: 'up' | 'down') => {
+    if (!editor) return
+    const { state } = editor
+    const found = findTopLevelBlockAt(state.doc, state.selection.from)
+    if (!found) return
+
+    const { doc } = state
+    let targetPos: number | null = null
+    if (direction === 'up' && found.index > 0) {
+      targetPos = found.pos - doc.child(found.index - 1).nodeSize
+    } else if (direction === 'down' && found.index < doc.childCount - 1) {
+      targetPos = found.pos + found.node.nodeSize + doc.child(found.index + 1).nodeSize
+    }
+    if (targetPos === null) return
+
+    const tr = moveTopLevelBlock(state, found.pos, targetPos)
+    if (tr) editor.view.dispatch(tr)
+  }
+
+  const selectedBlock = editor ? findTopLevelBlockAt(editor.state.doc, editor.state.selection.from) : null
+  const canMoveUp = !!selectedBlock && selectedBlock.index > 0
+  const canMoveDown = !!selectedBlock && selectedBlock.index < (editor?.state.doc.childCount ?? 0) - 1
 
   const imageInputRef = useRef<HTMLInputElement>(null)
 
@@ -124,8 +149,17 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
         <button onClick={() => imageInputRef.current?.click()}
           className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors`}
           title="Bild einfügen"><ImageIcon size={16} /></button>
+        <div className={`w-px h-6 ${DIVIDER} mx-1`} />
+        <button onClick={() => moveSelectedBlock('up')}
+          disabled={!canMoveUp}
+          className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors disabled:opacity-50`}
+          title="Block nach oben verschieben"><ArrowUp size={16} /></button>
+        <button onClick={() => moveSelectedBlock('down')}
+          disabled={!canMoveDown}
+          className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors disabled:opacity-50`}
+          title="Block nach unten verschieben"><ArrowDown size={16} /></button>
       </div>
-      <EditorContent editor={editor} className="min-h-[400px]" />
+      <EditorContent editor={editor} className="min-h-[400px] relative" />
     </div>
   )
 }
