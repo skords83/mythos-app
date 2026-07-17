@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Book, Plus, Save } from 'lucide-react'
-import { ACCENT, RADIUS, SURFACE_ALT, TEXT_PRIMARY, TEXT_MUTED } from '@/lib/theme'
+import { ACCENT, RADIUS, SURFACE, SURFACE_ALT, TEXT_PRIMARY, TEXT_MUTED } from '@/lib/theme'
 import {
   QuickCardState,
   ThemeToggle,
@@ -131,7 +131,7 @@ export default function Page() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#F5F5F5] dark:bg-[#1A1A1B] flex items-center justify-center">
+      <div className={`min-h-screen ${SURFACE} flex items-center justify-center`}>
         <div className={TEXT_MUTED}>Laden...</div>
       </div>
     )
@@ -139,7 +139,7 @@ export default function Page() {
 
   if (!selectedProject) {
     return (
-      <div className="min-h-screen bg-[#F5F5F5] dark:bg-[#1A1A1B] p-8">
+      <div className={`min-h-screen ${SURFACE} p-8`}>
         <div className="max-w-6xl mx-auto">
           <header className="flex items-center justify-between mb-8">
             <h1 className={`text-3xl font-serif font-bold ${TEXT_PRIMARY}`}>
@@ -174,7 +174,7 @@ export default function Page() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] dark:bg-[#1A1A1B] flex">
+    <div className={`min-h-screen ${SURFACE} flex`}>
       <LeftSidebar
         focusMode={focusMode}
         leftSidebarOpen={leftSidebarOpen}

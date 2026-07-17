@@ -16,7 +16,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Toast } from '../components/Toast'
-import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, ACCENT_TEXT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, BORDER, CARD_SHADOW, HOVER_SURFACE } from '@/lib/theme'
+import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, ACCENT_TEXT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, BORDER, CARD_SHADOW, HOVER_SURFACE, SURFACE } from '@/lib/theme'
 
 interface Project {
   id: string
@@ -326,14 +326,14 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#F5F5F5] dark:bg-[#1A1A1B] flex items-center justify-center">
+      <div className={`min-h-screen ${SURFACE} flex items-center justify-center`}>
         <Loader2 size={32} className={`animate-spin ${ACCENT_TEXT}`} />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] dark:bg-[#1A1A1B]">
+    <div className={`min-h-screen ${SURFACE}`}>
       {/* Header */}
       <header className="bg-white dark:bg-zinc-900 border-b border-zinc-300 dark:border-zinc-700 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

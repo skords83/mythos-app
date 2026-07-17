@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import * as Sentry from '@sentry/nextjs'
-import { MODAL_PANEL, TEXT_PRIMARY, TEXT_MUTED, ACCENT, RADIUS } from '@/lib/theme'
+import { MODAL_PANEL, TEXT_PRIMARY, TEXT_MUTED, ACCENT, RADIUS, SURFACE } from '@/lib/theme'
 
 export default function Error({
   error,
@@ -16,7 +16,7 @@ export default function Error({
   }, [error])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F5F5F5] dark:bg-[#1A1A1B]">
+    <div className={`min-h-screen flex items-center justify-center ${SURFACE}`}>
       <div className={`${MODAL_PANEL} p-8 max-w-md text-center`}>
         <h2 className={`${TEXT_PRIMARY} text-lg font-semibold mb-2`}>Etwas ist schiefgelaufen</h2>
         <p className={`text-sm ${TEXT_MUTED} mb-4`}>

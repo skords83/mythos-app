@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { Book, Eye, EyeOff, LogIn, UserPlus, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { MODAL_PANEL, INPUT, ACCENT, ACCENT_TEXT, RADIUS, CARD_SHADOW, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED } from '@/lib/theme'
+import { MODAL_PANEL, INPUT, ACCENT, ACCENT_TEXT, RADIUS, CARD_SHADOW, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, SURFACE } from '@/lib/theme'
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true)
@@ -48,7 +48,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] dark:bg-[#1A1A1B] flex items-center justify-center p-4">
+    <div className={`min-h-screen ${SURFACE} flex items-center justify-center p-4`}>
       <div className="w-full max-w-md">
         {/* Logo & Header */}
         <div className="text-center mb-8">
