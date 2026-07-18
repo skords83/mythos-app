@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { Character, Place } from './types'
 import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY } from '@/lib/theme'
 import CharacterFieldTabs, { CharacterFieldKey } from './CharacterFieldTabs'
@@ -13,11 +13,14 @@ interface EditCharacterModalProps {
   character: Character | null
   characters: Character[]
   places: Place[]
-  onUpdate: (id: string, name: string, appearance: string, personality: string, backstory: string, motivation: string, visibility: 'PRIVATE' | 'FAMILY') => void
+  onUpdate: (id: string, name: string, appearance: string, personality: string, backstory: string, motivation: string, visibility: 'PRIVATE' | 'FAMILY', avatarUrl?: string | null) => void
 }
 
 export function EditCharacterModal({ isOpen, onClose, character, characters, places, onUpdate }: EditCharacterModalProps) {
   const [name, setName] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
   const [activeFieldTab, setActiveFieldTab] = useState<CharacterFieldKey>('appearance')
   const [appearance, setAppearance] = useState('')
   const [personality, setPersonality] = useState('')
@@ -39,6 +42,7 @@ export function EditCharacterModal({ isOpen, onClose, character, characters, pla
       setBackstory(character.backstory || '')
       setMotivation(character.motivation || '')
       setVisibility(character.visibility)
+      setAvatarUrl(character.avatarUrl || null)
       setActiveFieldTab('appearance')
     }
   }, [character])
@@ -47,8 +51,30 @@ export function EditCharacterModal({ isOpen, onClose, character, characters, pla
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onUpdate(character.id, name, appearance, personality, backstory, motivation, visibility)
+    onUpdate(character.id, name, appearance, personality, backstory, motivation, visibility, avatarUrl)
     onClose()
+  }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    setUploadingAvatar(true)
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (data.url) {
+        setAvatarUrl(data.url)
+      }
+    } catch (err) {
+      console.error('Avatar-Upload fehlgeschlagen:', err)
+    } finally {
+      setUploadingAvatar(false)
+      e.target.value = ''
+    }
   }
 
   return (
@@ -58,6 +84,36 @@ export function EditCharacterModal({ isOpen, onClose, character, characters, pla
           Charakter bearbeiten
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex items-center gap-4">
+            <div className={`w-16 h-16 ${RADIUS} ${ACCENT} flex items-center justify-center text-white font-semibold text-xl flex-shrink-0 overflow-hidden`}>
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+              ) : (
+                name.charAt(0)
+              )}
+            </div>
+            <div>
+              <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className={`px-3 py-1.5 text-sm ${BUTTON_SECONDARY} ${RADIUS} disabled:opacity-50`}
+              >
+                {uploadingAvatar ? 'Lädt hoch…' : avatarUrl ? 'Avatar ändern' : 'Avatar hochladen'}
+              </button>
+              {avatarUrl && (
+                <button
+                  type="button"
+                  onClick={() => setAvatarUrl(null)}
+                  className={`ml-2 px-3 py-1.5 text-sm ${TEXT_SECONDARY} hover:underline`}
+                >
+                  Entfernen
+                </button>
+              )}
+            </div>
+          </div>
           <div>
             <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>
               Name *

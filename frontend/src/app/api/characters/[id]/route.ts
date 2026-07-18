@@ -29,7 +29,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { name, appearance, personality, backstory, motivation, visibility } = body
+    const { name, appearance, personality, backstory, motivation, avatarUrl, visibility } = body
 
     if (visibility !== undefined && !isValidVisibility(visibility)) {
       return NextResponse.json({ error: 'Sichtbarkeit muss PRIVATE oder FAMILY sein' }, { status: 400 })
@@ -41,6 +41,7 @@ export async function PUT(
     if (personality !== undefined) updateData.personality = personality
     if (backstory !== undefined) updateData.backstory = backstory
     if (motivation !== undefined) updateData.motivation = motivation
+    if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl
     if (visibility !== undefined) updateData.visibility = visibility
 
     const updated = await prisma.character.update({ where: { id: params.id }, data: updateData })

@@ -63,12 +63,12 @@ export function useCharacters({ selectedProject, showError, requestConfirm, onCo
     }
   }
 
-  const updateCharacter = async (id: string, name: string, appearance: string, personality: string, backstory: string, motivation: string, visibility: 'PRIVATE' | 'FAMILY') => {
+  const updateCharacter = async (id: string, name: string, appearance: string, personality: string, backstory: string, motivation: string, visibility: 'PRIVATE' | 'FAMILY', avatarUrl?: string | null) => {
     try {
       const response = await fetch(`/api/characters/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, appearance, personality, backstory, motivation, visibility })
+        body: JSON.stringify({ name, appearance, personality, backstory, motivation, visibility, avatarUrl })
       })
       if (!response.ok) {
         showError('Charakter konnte nicht gespeichert werden.')

@@ -20,8 +20,13 @@ export function CharacterCard({ character, onEdit, onDelete }: CharacterCardProp
       className={`bg-white dark:bg-zinc-900 ${RADIUS} p-4 ${BORDER} ${CARD_SHADOW} group cursor-pointer`}
     >
       <div className="flex items-start gap-3">
-        <div className={`w-10 h-10 ${RADIUS} ${ACCENT} flex items-center justify-center text-white font-semibold flex-shrink-0`}>
-          {character.name.charAt(0)}
+        <div className={`w-10 h-10 ${RADIUS} ${ACCENT} flex items-center justify-center text-white font-semibold flex-shrink-0 overflow-hidden`}>
+          {character.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={character.avatarUrl} alt={character.name} className="w-full h-full object-cover" />
+          ) : (
+            character.name.charAt(0)
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
