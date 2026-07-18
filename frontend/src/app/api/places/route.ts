@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthContext } from '@/lib/auth'
 import { logger } from '@/lib/logger'
+import { isChildVisibilityAllowed, isValidVisibility, visibilityWhere } from '@/lib/visibility'
 
 // GET /api/places?projectId=xxx - Orte eines Projekts, sonst die Familien-Bibliothek
 export async function GET(request: NextRequest) {
@@ -25,14 +26,14 @@ export async function GET(request: NextRequest) {
       }
 
       const places = await prisma.place.findMany({
-        where: { projectId, OR: [{ visibility: 'FAMILY' }, { authorId: context.userId }] },
+        where: { projectId, OR: visibilityWhere(context) },
         orderBy: { createdAt: 'desc' },
       })
       return NextResponse.json(places)
     }
 
     const places = await prisma.place.findMany({
-      where: { familyId: context.familyId, OR: [{ visibility: 'FAMILY' }, { authorId: context.userId }] },
+      where: { familyId: context.familyId, OR: visibilityWhere(context) },
       orderBy: { createdAt: 'desc' },
     })
     return NextResponse.json(places)
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { name, description, location, climate, importance, projectId, visibility, parentId } = body
 
-    if (visibility !== undefined && visibility !== 'PRIVATE' && visibility !== 'FAMILY') {
+    if (visibility !== undefined && !isValidVisibility(visibility)) {
       return NextResponse.json({ error: 'Sichtbarkeit muss PRIVATE oder FAMILY sein' }, { status: 400 })
     }
 
@@ -68,12 +69,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const effectiveVisibility = visibility || 'PRIVATE'
+
     if (parentId) {
       const parent = await prisma.place.findFirst({
         where: { id: parentId, familyId: context.familyId },
       })
       if (!parent) {
         return NextResponse.json({ error: 'Übergeordneter Ort nicht gefunden' }, { status: 404 })
+      }
+      if (!isChildVisibilityAllowed(parent.visibility, effectiveVisibility)) {
+        return NextResponse.json(
+          { error: 'Ein Ort unter einem privaten übergeordneten Ort kann nicht auf Familie sichtbar sein' },
+          { status: 400 }
+        )
       }
     }
 
@@ -84,7 +93,7 @@ export async function POST(request: NextRequest) {
         location: location || '',
         climate: climate || '',
         importance: importance || '',
-        visibility: visibility || 'PRIVATE',
+        visibility: effectiveVisibility,
         projectId: projectId || null,
         familyId: context.familyId,
         authorId: context.userId,

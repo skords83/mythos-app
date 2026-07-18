@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthContext } from '@/lib/auth'
 import { logger } from '@/lib/logger'
+import { isValidVisibility, visibilityWhere } from '@/lib/visibility'
 
 // GET /api/characters?projectId=xxx - Charaktere eines Projekts, sonst die Familien-Bibliothek
 export async function GET(request: NextRequest) {
@@ -25,14 +26,14 @@ export async function GET(request: NextRequest) {
       }
 
       const characters = await prisma.character.findMany({
-        where: { projectId, OR: [{ visibility: 'FAMILY' }, { authorId: context.userId }] },
+        where: { projectId, OR: visibilityWhere(context) },
         orderBy: { createdAt: 'desc' },
       })
       return NextResponse.json(characters)
     }
 
     const characters = await prisma.character.findMany({
-      where: { familyId: context.familyId, OR: [{ visibility: 'FAMILY' }, { authorId: context.userId }] },
+      where: { familyId: context.familyId, OR: visibilityWhere(context) },
       orderBy: { createdAt: 'desc' },
     })
     return NextResponse.json(characters)
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { name, appearance, personality, backstory, motivation, projectId, visibility } = body
 
-    if (visibility !== undefined && visibility !== 'PRIVATE' && visibility !== 'FAMILY') {
+    if (visibility !== undefined && !isValidVisibility(visibility)) {
       return NextResponse.json({ error: 'Sichtbarkeit muss PRIVATE oder FAMILY sein' }, { status: 400 })
     }
 

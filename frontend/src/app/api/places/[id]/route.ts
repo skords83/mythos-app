@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthContext } from '@/lib/auth'
 import { logger } from '@/lib/logger'
+import {
+  cascadePrivateToPlaceDescendants,
+  isChildVisibilityAllowed,
+  isValidVisibility,
+  visibilityWhere,
+} from '@/lib/visibility'
 
 // GET /api/places/[id] - Einzelnen Ort abrufen
 export async function GET(
@@ -20,7 +26,7 @@ export async function GET(
       where: {
         id: params.id,
         familyId: context.familyId,
-        OR: [{ visibility: 'FAMILY' }, { authorId: context.userId }],
+        OR: visibilityWhere(context),
       },
     })
     if (!place) {
@@ -60,9 +66,12 @@ export async function PUT(
     const body = await request.json()
     const { name, description, location, climate, importance, visibility, parentId } = body
 
-    if (visibility !== undefined && visibility !== 'PRIVATE' && visibility !== 'FAMILY') {
+    if (visibility !== undefined && !isValidVisibility(visibility)) {
       return NextResponse.json({ error: 'Sichtbarkeit muss PRIVATE oder FAMILY sein' }, { status: 400 })
     }
+
+    const nextVisibility = visibility !== undefined ? visibility : place.visibility
+    let parentForVisibilityCheck: { visibility: typeof place.visibility } | null = null
 
     if (parentId !== undefined && parentId !== null) {
       if (parentId === params.id) {
@@ -84,6 +93,19 @@ export async function PUT(
           ? await prisma.place.findUnique({ where: { id: ancestor.parentId }, select: { id: true, parentId: true } })
           : null
       }
+      parentForVisibilityCheck = parent
+    } else if (parentId === undefined && place.parentId) {
+      // parent unchanged — still need it to validate a visibility change against the existing parent
+      parentForVisibilityCheck = await prisma.place.findFirst({
+        where: { id: place.parentId, familyId: context.familyId },
+      })
+    }
+
+    if (parentForVisibilityCheck && !isChildVisibilityAllowed(parentForVisibilityCheck.visibility, nextVisibility)) {
+      return NextResponse.json(
+        { error: 'Ein Ort unter einem privaten übergeordneten Ort kann nicht auf Familie sichtbar sein' },
+        { status: 400 }
+      )
     }
 
     const updateData: any = {}
@@ -96,6 +118,11 @@ export async function PUT(
     if (parentId !== undefined) updateData.parentId = parentId
 
     const updated = await prisma.place.update({ where: { id: params.id }, data: updateData })
+
+    if (place.visibility === 'FAMILY' && nextVisibility === 'PRIVATE') {
+      await cascadePrivateToPlaceDescendants(prisma, params.id, context.familyId)
+    }
+
     return NextResponse.json(updated)
   } catch (error) {
     logger.error(error, { route: 'PUT /api/places/[id]', userId })

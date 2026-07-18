@@ -8,7 +8,7 @@ import { prisma } from '@/lib/prisma'
 
 jest.mock('@/lib/prisma', () => ({
   prisma: {
-    place: { findFirst: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
+    place: { findFirst: jest.fn(), findUnique: jest.fn(), update: jest.fn(), findMany: jest.fn(), updateMany: jest.fn() },
   },
 }))
 
@@ -17,7 +17,7 @@ jest.mock('@/lib/logger', () => ({
 }))
 
 const mockedPrisma = prisma as unknown as {
-  place: { findFirst: jest.Mock; findUnique: jest.Mock; update: jest.Mock }
+  place: { findFirst: jest.Mock; findUnique: jest.Mock; update: jest.Mock; findMany: jest.Mock; updateMany: jest.Mock }
 }
 
 function authedRequest(url: string, init: Omit<RequestInit, 'signal'> = {}) {
@@ -88,5 +88,57 @@ describe('PUT /api/places/[id]', () => {
     const response = await PUT(request, { params: { id: 'place-1' } })
     expect(response.status).toBe(400)
     expect(mockedPrisma.place.update).not.toHaveBeenCalled()
+  })
+
+  it('rejects setting visibility to FAMILY when the (unchanged) parent is PRIVATE', async () => {
+    mockedPrisma.place.findFirst
+      .mockResolvedValueOnce({ id: 'place-1', authorId: 'user-1', visibility: 'PRIVATE', parentId: 'place-parent' })
+      .mockResolvedValueOnce({ id: 'place-parent', visibility: 'PRIVATE' })
+
+    const request = authedRequest('http://localhost/api/places/place-1', {
+      method: 'PUT',
+      body: JSON.stringify({ visibility: 'FAMILY' }),
+    })
+    const response = await PUT(request, { params: { id: 'place-1' } })
+    expect(response.status).toBe(400)
+    expect(mockedPrisma.place.update).not.toHaveBeenCalled()
+  })
+
+  it('rejects reassigning to a PRIVATE parent while keeping FAMILY visibility', async () => {
+    mockedPrisma.place.findFirst
+      .mockResolvedValueOnce({ id: 'place-1', authorId: 'user-1', visibility: 'FAMILY', parentId: null })
+      .mockResolvedValueOnce({ id: 'place-parent', parentId: null, visibility: 'PRIVATE' })
+
+    const request = authedRequest('http://localhost/api/places/place-1', {
+      method: 'PUT',
+      body: JSON.stringify({ parentId: 'place-parent' }),
+    })
+    const response = await PUT(request, { params: { id: 'place-1' } })
+    expect(response.status).toBe(400)
+    expect(mockedPrisma.place.update).not.toHaveBeenCalled()
+  })
+
+  it('cascades a FAMILY -> PRIVATE demotion to FAMILY descendants', async () => {
+    mockedPrisma.place.findFirst.mockResolvedValueOnce({
+      id: 'place-1',
+      authorId: 'user-1',
+      visibility: 'FAMILY',
+      parentId: null,
+    })
+    mockedPrisma.place.update.mockResolvedValue({ id: 'place-1', visibility: 'PRIVATE' })
+    mockedPrisma.place.findMany
+      .mockResolvedValueOnce([{ id: 'place-child' }])
+      .mockResolvedValueOnce([])
+
+    const request = authedRequest('http://localhost/api/places/place-1', {
+      method: 'PUT',
+      body: JSON.stringify({ visibility: 'PRIVATE' }),
+    })
+    const response = await PUT(request, { params: { id: 'place-1' } })
+    expect(response.status).toBe(200)
+    expect(mockedPrisma.place.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ['place-child'] } },
+      data: { visibility: 'PRIVATE' },
+    })
   })
 })

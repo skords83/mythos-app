@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthContext } from '@/lib/auth'
 import { logger } from '@/lib/logger'
+import { isValidVisibility } from '@/lib/visibility'
 
 // PUT /api/characters/[id] - Charakter aktualisieren (nur Autor)
 export async function PUT(
@@ -29,7 +30,7 @@ export async function PUT(
     const body = await request.json()
     const { name, appearance, personality, backstory, motivation, visibility } = body
 
-    if (visibility !== undefined && visibility !== 'PRIVATE' && visibility !== 'FAMILY') {
+    if (visibility !== undefined && !isValidVisibility(visibility)) {
       return NextResponse.json({ error: 'Sichtbarkeit muss PRIVATE oder FAMILY sein' }, { status: 400 })
     }
 

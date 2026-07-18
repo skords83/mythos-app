@@ -112,4 +112,26 @@ describe('POST /api/places', () => {
     expect(response.status).toBe(404)
     expect(mockedPrisma.place.create).not.toHaveBeenCalled()
   })
+
+  it('rejects creating a FAMILY place under a PRIVATE parent', async () => {
+    mockedPrisma.place.findFirst.mockResolvedValue({ id: 'place-parent', visibility: 'PRIVATE' })
+    const request = authedRequest('http://localhost/api/places', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Eldoria-Marktviertel', parentId: 'place-parent', visibility: 'FAMILY' }),
+    })
+    const response = await POST(request)
+    expect(response.status).toBe(400)
+    expect(mockedPrisma.place.create).not.toHaveBeenCalled()
+  })
+
+  it('allows creating a PRIVATE place under a PRIVATE parent', async () => {
+    mockedPrisma.place.findFirst.mockResolvedValue({ id: 'place-parent', visibility: 'PRIVATE' })
+    mockedPrisma.place.create.mockResolvedValue({ id: 'place-3' })
+    const request = authedRequest('http://localhost/api/places', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Eldoria-Marktviertel', parentId: 'place-parent', visibility: 'PRIVATE' }),
+    })
+    const response = await POST(request)
+    expect(response.status).toBe(201)
+  })
 })
