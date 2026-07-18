@@ -248,6 +248,7 @@ export default function Page() {
               selectedChapter={selectedChapter}
               chapters={chapters}
               places={places}
+              items={items}
               editorContent={editorContent}
               setEditorContent={setEditorContent}
               onTitleChange={setChapterTitle}
@@ -263,6 +264,9 @@ export default function Page() {
                 visible: true,
               })}
               focusMode={focusMode}
+              showError={showError}
+              requestConfirm={requestConfirm}
+              onConfirmed={onConfirmed}
             />
           )}
 

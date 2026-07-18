@@ -3,7 +3,8 @@
 import { MutableRefObject, useState } from 'react'
 import { RichTextEditor } from './RichTextEditor'
 import { ReferencePanel } from './ReferencePanel'
-import { Chapter, Character, Place } from './types'
+import { ScenesPanel } from './ScenesPanel'
+import { Chapter, Character, Item, Place } from './types'
 import { ChapterDraft } from '@/lib/chapterDraftStore'
 import { DraftRecoveryBanner } from './DraftRecoveryBanner'
 import { TEXT_PRIMARY, TEXT_MUTED, ACCENT, RADIUS } from '@/lib/theme'
@@ -12,6 +13,7 @@ interface ManuscriptViewProps {
   selectedChapter: Chapter | null
   chapters: Chapter[]
   places: Place[]
+  items: Item[]
   editorContent: string
   setEditorContent: (content: string) => void
   onTitleChange: (title: string) => void
@@ -23,12 +25,16 @@ interface ManuscriptViewProps {
   characters: Character[]
   onMentionClick: (characterId: string, position: { x: number; y: number }) => void
   focusMode: boolean
+  showError: (message: string) => void
+  requestConfirm: (title: string, message: string, onConfirm: () => void) => void
+  onConfirmed: () => void
 }
 
 export function ManuscriptView({
   selectedChapter,
   chapters,
   places,
+  items,
   editorContent,
   setEditorContent,
   onTitleChange,
@@ -40,6 +46,9 @@ export function ManuscriptView({
   characters,
   onMentionClick,
   focusMode,
+  showError,
+  requestConfirm,
+  onConfirmed,
 }: ManuscriptViewProps) {
   const [splitScreenOpen, setSplitScreenOpen] = useState(false)
 
@@ -68,6 +77,15 @@ export function ManuscriptView({
               splitScreenActive={splitScreenOpen}
               onToggleSplitScreen={() => setSplitScreenOpen((open) => !open)}
               typewriterMode={focusMode}
+            />
+            <ScenesPanel
+              chapterId={selectedChapter.id}
+              characters={characters}
+              places={places}
+              items={items}
+              showError={showError}
+              requestConfirm={requestConfirm}
+              onConfirmed={onConfirmed}
             />
           </div>
           {splitScreenOpen && (

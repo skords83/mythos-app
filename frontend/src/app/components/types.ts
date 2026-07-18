@@ -90,6 +90,19 @@ export interface Faction {
   updatedAt: string
 }
 
+export interface Scene {
+  id: string
+  name: string
+  description: string | null
+  order: number
+  visibility: 'PRIVATE' | 'FAMILY'
+  chapterId: string
+  familyId: string
+  authorId: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Note {
   id: string
   title: string

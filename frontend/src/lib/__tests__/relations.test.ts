@@ -8,11 +8,12 @@ import {
 } from '../relations'
 
 describe('isValidEntityType', () => {
-  it('accepts CHARACTER, PLACE, ITEM and FACTION', () => {
+  it('accepts CHARACTER, PLACE, ITEM, FACTION and SCENE', () => {
     expect(isValidEntityType('CHARACTER')).toBe(true)
     expect(isValidEntityType('PLACE')).toBe(true)
     expect(isValidEntityType('ITEM')).toBe(true)
     expect(isValidEntityType('FACTION')).toBe(true)
+    expect(isValidEntityType('SCENE')).toBe(true)
   })
 
   it('rejects anything else', () => {
@@ -65,7 +66,7 @@ describe('isRelationVisible (Z2 Association rule)', () => {
 describe('resolveEntity', () => {
   it('queries the character table for CHARACTER and scopes by familyId', async () => {
     const findFirst = jest.fn().mockResolvedValue({ id: 'c1', familyId: 'fam-1', authorId: 'user-1', visibility: 'FAMILY' })
-    const prisma = { character: { findFirst }, place: { findFirst: jest.fn() }, item: { findFirst: jest.fn() }, faction: { findFirst: jest.fn() } }
+    const prisma = { character: { findFirst }, place: { findFirst: jest.fn() }, item: { findFirst: jest.fn() }, faction: { findFirst: jest.fn() }, scene: { findFirst: jest.fn() } }
 
     const result = await resolveEntity(prisma, 'CHARACTER', 'c1', 'fam-1')
 
@@ -77,7 +78,7 @@ describe('resolveEntity', () => {
 
   it('queries the place table for PLACE', async () => {
     const findFirst = jest.fn().mockResolvedValue(null)
-    const prisma = { character: { findFirst: jest.fn() }, place: { findFirst }, item: { findFirst: jest.fn() }, faction: { findFirst: jest.fn() } }
+    const prisma = { character: { findFirst: jest.fn() }, place: { findFirst }, item: { findFirst: jest.fn() }, faction: { findFirst: jest.fn() }, scene: { findFirst: jest.fn() } }
 
     const result = await resolveEntity(prisma, 'PLACE', 'p1', 'fam-1')
 
@@ -89,7 +90,7 @@ describe('resolveEntity', () => {
 
   it('queries the faction table for FACTION', async () => {
     const findFirst = jest.fn().mockResolvedValue({ id: 'f1', familyId: 'fam-1', authorId: 'user-1', visibility: 'FAMILY' })
-    const prisma = { character: { findFirst: jest.fn() }, place: { findFirst: jest.fn() }, item: { findFirst: jest.fn() }, faction: { findFirst } }
+    const prisma = { character: { findFirst: jest.fn() }, place: { findFirst: jest.fn() }, item: { findFirst: jest.fn() }, faction: { findFirst }, scene: { findFirst: jest.fn() } }
 
     const result = await resolveEntity(prisma, 'FACTION', 'f1', 'fam-1')
 
@@ -97,6 +98,18 @@ describe('resolveEntity', () => {
       expect.objectContaining({ where: { id: 'f1', familyId: 'fam-1' } })
     )
     expect(result).toEqual({ id: 'f1', familyId: 'fam-1', authorId: 'user-1', visibility: 'FAMILY' })
+  })
+
+  it('queries the scene table for SCENE', async () => {
+    const findFirst = jest.fn().mockResolvedValue({ id: 's1', familyId: 'fam-1', authorId: 'user-1', visibility: 'FAMILY' })
+    const prisma = { character: { findFirst: jest.fn() }, place: { findFirst: jest.fn() }, item: { findFirst: jest.fn() }, faction: { findFirst: jest.fn() }, scene: { findFirst } }
+
+    const result = await resolveEntity(prisma, 'SCENE', 's1', 'fam-1')
+
+    expect(findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 's1', familyId: 'fam-1' } })
+    )
+    expect(result).toEqual({ id: 's1', familyId: 'fam-1', authorId: 'user-1', visibility: 'FAMILY' })
   })
 })
 
