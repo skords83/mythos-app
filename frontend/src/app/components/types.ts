@@ -68,6 +68,19 @@ export interface Item {
   updatedAt: string
 }
 
+export interface Faction {
+  id: string
+  name: string
+  description: string | null
+  goal: string | null
+  visibility: 'PRIVATE' | 'FAMILY'
+  projectId: string | null
+  familyId: string
+  authorId: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Note {
   id: string
   title: string

@@ -14,6 +14,8 @@ import {
   AddPlaceModal,
   AddItemModal,
   EditItemModal,
+  AddFactionModal,
+  EditFactionModal,
   EditProjectModal,
   ExportModal,
   CharacterQuickCard,
@@ -25,6 +27,7 @@ import {
   CharactersView,
   PlacesView,
   ItemsView,
+  FactionsView,
   NotesView,
   SearchModal,
 } from './components'
@@ -35,6 +38,7 @@ import { useChapters } from './hooks/useChapters'
 import { useCharacters } from './hooks/useCharacters'
 import { usePlaces } from './hooks/usePlaces'
 import { useItems } from './hooks/useItems'
+import { useFactions } from './hooks/useFactions'
 import { useNotes } from './hooks/useNotes'
 import { useSearch } from './hooks/useSearch'
 import { ActiveTab } from './components/LeftSidebar'
@@ -76,6 +80,9 @@ export default function Page() {
   const { items, editingItem, setEditingItem, addItem, updateItem, deleteItem } =
     useItems({ selectedProject, showError, requestConfirm, onConfirmed })
 
+  const { factions, editingFaction, setEditingFaction, addFaction, updateFaction, deleteFaction } =
+    useFactions({ selectedProject, showError, requestConfirm, onConfirmed })
+
   const { notes, addNote, updateNote, deleteNote } =
     useNotes({ selectedChapterId: selectedChapter?.id, showError, requestConfirm, onConfirmed })
 
@@ -90,6 +97,7 @@ export default function Page() {
   const [showCharacterModal, setShowCharacterModal] = useState(false)
   const [showPlaceModal, setShowPlaceModal] = useState(false)
   const [showItemModal, setShowItemModal] = useState(false)
+  const [showFactionModal, setShowFactionModal] = useState(false)
   const [showEditProjectModal, setShowEditProjectModal] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
   const [showSearchModal, setShowSearchModal] = useState(false)
@@ -213,6 +221,7 @@ export default function Page() {
             {activeTab === 'characters' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Charakter-Verwaltung</h2>}
             {activeTab === 'places' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Orte</h2>}
             {activeTab === 'items' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Items & Artefakte</h2>}
+            {activeTab === 'factions' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Fraktionen & Organisationen</h2>}
             {activeTab === 'notes' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Notizen</h2>}
           </div>
           <div className="flex items-center gap-3">
@@ -285,6 +294,15 @@ export default function Page() {
             />
           )}
 
+          {activeTab === 'factions' && (
+            <FactionsView
+              factions={factions}
+              onAddClick={() => setShowFactionModal(true)}
+              onEdit={setEditingFaction}
+              onDelete={deleteFaction}
+            />
+          )}
+
           {activeTab === 'notes' && (
             <NotesView
               notes={notes}
@@ -323,6 +341,14 @@ export default function Page() {
       <AddPlaceModal isOpen={showPlaceModal} places={places} onClose={() => setShowPlaceModal(false)} onAdd={addPlace} />
       <AddItemModal isOpen={showItemModal} onClose={() => setShowItemModal(false)} onAdd={addItem} />
       <EditItemModal isOpen={!!editingItem} onClose={() => setEditingItem(null)} item={editingItem} onUpdate={updateItem} />
+      <AddFactionModal isOpen={showFactionModal} onClose={() => setShowFactionModal(false)} onAdd={addFaction} />
+      <EditFactionModal
+        isOpen={!!editingFaction}
+        onClose={() => setEditingFaction(null)}
+        faction={editingFaction}
+        characters={characters}
+        onUpdate={updateFaction}
+      />
       <CharacterQuickCard state={quickCard} onClose={() => setQuickCard(prev => ({ ...prev, visible: false }))} />
       <EditProjectModal
         isOpen={showEditProjectModal}

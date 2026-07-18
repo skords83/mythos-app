@@ -17,10 +17,11 @@ const ENTITY_MODEL = {
   CHARACTER: 'character',
   PLACE: 'place',
   ITEM: 'item',
-} as const satisfies Record<RelatableEntityType, 'character' | 'place' | 'item'>
+  FACTION: 'faction',
+} as const satisfies Record<RelatableEntityType, 'character' | 'place' | 'item' | 'faction'>
 
 export function isValidEntityType(value: unknown): value is RelatableEntityType {
-  return value === 'CHARACTER' || value === 'PLACE' || value === 'ITEM'
+  return value === 'CHARACTER' || value === 'PLACE' || value === 'ITEM' || value === 'FACTION'
 }
 
 export function isSameEntity(
@@ -43,6 +44,7 @@ type RelationEntityClient = {
   character: { findFirst: (args: any) => Promise<ResolvedEntity | null> }
   place: { findFirst: (args: any) => Promise<ResolvedEntity | null> }
   item: { findFirst: (args: any) => Promise<ResolvedEntity | null> }
+  faction: { findFirst: (args: any) => Promise<ResolvedEntity | null> }
 }
 
 /** Look up either endpoint of a Relation by its polymorphic (type, id) pair, scoped to a family. */

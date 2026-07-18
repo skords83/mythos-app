@@ -76,7 +76,7 @@ describe('POST /api/relations', () => {
   it('returns 400 for an invalid sourceType/targetType', async () => {
     const request = authedRequest('http://localhost/api/relations', {
       method: 'POST',
-      body: JSON.stringify({ sourceType: 'FACTION', sourceId: 'x', targetType: 'PLACE', targetId: 'y', relationType: 'MEMBER_OF' }),
+      body: JSON.stringify({ sourceType: 'ORGANIZATION', sourceId: 'x', targetType: 'PLACE', targetId: 'y', relationType: 'MEMBER_OF' }),
     })
     const response = await POST(request)
     expect(response.status).toBe(400)
