@@ -4,7 +4,7 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Image from '@tiptap/extension-image'
-import { Bold, Italic, List, Quote, Heading1, Heading2, Undo, Redo, Image as ImageIcon, ArrowUp, ArrowDown } from 'lucide-react'
+import { Bold, Italic, List, Quote, Heading1, Heading2, Undo, Redo, Image as ImageIcon, ArrowUp, ArrowDown, SeparatorHorizontal } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { SURFACE, SURFACE_ALT, RADIUS, BORDER, ACCENT_TEXT, HOVER_SURFACE, ACTIVE_SURFACE, DIVIDER } from '@/lib/theme'
 import { CharacterMention } from '@/lib/tiptap/characterMentionExtension'
@@ -136,6 +136,10 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
         <button onClick={() => editor.chain().focus().toggleBlockquote().run()}
           className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors ${editor.isActive('blockquote') ? `${ACTIVE_SURFACE} ${ACCENT_TEXT}` : ''}`}
           title="Zitat"><Quote size={16} /></button>
+        <div className={`w-px h-6 ${DIVIDER} mx-1`} />
+        <button onClick={() => editor.chain().focus().setHorizontalRule().run()}
+          className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors`}
+          title="Szenentrenner"><SeparatorHorizontal size={16} /></button>
         <div className={`w-px h-6 ${DIVIDER} mx-1`} />
         <button onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().undo()}
