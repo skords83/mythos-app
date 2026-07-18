@@ -16,6 +16,8 @@ import {
   EditItemModal,
   AddFactionModal,
   EditFactionModal,
+  AddTimelineEventModal,
+  EditTimelineEventModal,
   EditProjectModal,
   ExportModal,
   CharacterQuickCard,
@@ -28,6 +30,7 @@ import {
   PlacesView,
   ItemsView,
   FactionsView,
+  TimelineView,
   NotesView,
   SearchModal,
 } from './components'
@@ -39,6 +42,7 @@ import { useCharacters } from './hooks/useCharacters'
 import { usePlaces } from './hooks/usePlaces'
 import { useItems } from './hooks/useItems'
 import { useFactions } from './hooks/useFactions'
+import { useTimelineEvents } from './hooks/useTimelineEvents'
 import { useNotes } from './hooks/useNotes'
 import { useSearch } from './hooks/useSearch'
 import { ActiveTab } from './components/LeftSidebar'
@@ -83,6 +87,9 @@ export default function Page() {
   const { factions, editingFaction, setEditingFaction, addFaction, updateFaction, deleteFaction } =
     useFactions({ selectedProject, showError, requestConfirm, onConfirmed })
 
+  const { timelineEvents, editingTimelineEvent, setEditingTimelineEvent, addTimelineEvent, updateTimelineEvent, deleteTimelineEvent } =
+    useTimelineEvents({ selectedProject, showError, requestConfirm, onConfirmed })
+
   const { notes, addNote, updateNote, deleteNote } =
     useNotes({ selectedChapterId: selectedChapter?.id, showError, requestConfirm, onConfirmed })
 
@@ -98,6 +105,7 @@ export default function Page() {
   const [showPlaceModal, setShowPlaceModal] = useState(false)
   const [showItemModal, setShowItemModal] = useState(false)
   const [showFactionModal, setShowFactionModal] = useState(false)
+  const [showTimelineEventModal, setShowTimelineEventModal] = useState(false)
   const [showEditProjectModal, setShowEditProjectModal] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
   const [showSearchModal, setShowSearchModal] = useState(false)
@@ -222,6 +230,7 @@ export default function Page() {
             {activeTab === 'places' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Orte</h2>}
             {activeTab === 'items' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Items & Artefakte</h2>}
             {activeTab === 'factions' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Fraktionen & Organisationen</h2>}
+            {activeTab === 'timeline' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Der Zeitstrahl</h2>}
             {activeTab === 'notes' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Notizen</h2>}
           </div>
           <div className="flex items-center gap-3">
@@ -309,6 +318,15 @@ export default function Page() {
             />
           )}
 
+          {activeTab === 'timeline' && (
+            <TimelineView
+              timelineEvents={timelineEvents}
+              onAddClick={() => setShowTimelineEventModal(true)}
+              onEdit={setEditingTimelineEvent}
+              onDelete={deleteTimelineEvent}
+            />
+          )}
+
           {activeTab === 'notes' && (
             <NotesView
               notes={notes}
@@ -354,6 +372,17 @@ export default function Page() {
         faction={editingFaction}
         characters={characters}
         onUpdate={updateFaction}
+      />
+      <AddTimelineEventModal isOpen={showTimelineEventModal} onClose={() => setShowTimelineEventModal(false)} onAdd={addTimelineEvent} />
+      <EditTimelineEventModal
+        isOpen={!!editingTimelineEvent}
+        onClose={() => setEditingTimelineEvent(null)}
+        timelineEvent={editingTimelineEvent}
+        characters={characters}
+        places={places}
+        items={items}
+        factions={factions}
+        onUpdate={updateTimelineEvent}
       />
       <CharacterQuickCard state={quickCard} onClose={() => setQuickCard(prev => ({ ...prev, visible: false }))} />
       <EditProjectModal

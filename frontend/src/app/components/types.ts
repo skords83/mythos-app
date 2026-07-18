@@ -103,6 +103,21 @@ export interface Scene {
   updatedAt: string
 }
 
+export interface TimelineEvent {
+  id: string
+  title: string
+  description: string | null
+  date: string | null
+  order: number
+  type: 'LORE' | 'PLOT'
+  visibility: 'PRIVATE' | 'FAMILY'
+  projectId: string | null
+  familyId: string
+  authorId: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Note {
   id: string
   title: string

@@ -1,0 +1,50 @@
+'use client'
+
+import React from 'react'
+import { Trash2 } from 'lucide-react'
+import { TimelineEvent } from './types'
+import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ACCENT_TEXT, RADIUS, BORDER, CARD_SHADOW, BADGE_RADIUS } from '@/lib/theme'
+
+interface TimelineEventCardProps {
+  timelineEvent: TimelineEvent
+  onEdit: () => void
+  onDelete: () => void
+}
+
+export function TimelineEventCard({ timelineEvent, onEdit, onDelete }: TimelineEventCardProps) {
+  return (
+    <div
+      onClick={onEdit}
+      className={`bg-white dark:bg-zinc-900 ${RADIUS} p-4 ${BORDER} ${CARD_SHADOW} group cursor-pointer`}
+    >
+      <div className="flex items-start gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <h4 className={`font-semibold ${TEXT_PRIMARY} truncate`}>{timelineEvent.title}</h4>
+              <span
+                className={`text-xs px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 ${BADGE_RADIUS} flex-shrink-0 ${
+                  timelineEvent.type === 'PLOT' ? ACCENT_TEXT : TEXT_SECONDARY
+                }`}
+              >
+                {timelineEvent.type === 'PLOT' ? 'Plot' : 'Lore'}
+              </span>
+            </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete() }}
+              className="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+          {timelineEvent.date && (
+            <p className={`text-xs ${TEXT_MUTED} mt-1`}>{timelineEvent.date}</p>
+          )}
+          {timelineEvent.description && (
+            <p className={`text-sm ${TEXT_SECONDARY} mt-1 line-clamp-2`}>{timelineEvent.description}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

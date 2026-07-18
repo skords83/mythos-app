@@ -1,12 +1,12 @@
 'use client'
 
-import { Book, ChevronLeft, ChevronRight, Download, Gem, MapPin, Search, Settings, Shield, StickyNote, Users, Home as HomeIcon } from 'lucide-react'
+import { Book, ChevronLeft, ChevronRight, Clock, Download, Gem, MapPin, Search, Settings, Shield, StickyNote, Users, Home as HomeIcon } from 'lucide-react'
 import { NavItem } from './ThemeToggle'
 import { WordProgress } from './WordProgress'
 import { Project } from './types'
 import { SURFACE_ALT, TEXT_PRIMARY, RADIUS, HOVER_SURFACE } from '@/lib/theme'
 
-export type ActiveTab = 'manuscript' | 'characters' | 'places' | 'items' | 'factions' | 'notes'
+export type ActiveTab = 'manuscript' | 'characters' | 'places' | 'items' | 'factions' | 'notes' | 'timeline'
 
 interface LeftSidebarProps {
   focusMode: boolean
@@ -100,6 +100,7 @@ export function LeftSidebar({
         <NavItem icon={MapPin} label="Orte" active={activeTab === 'places'} onClick={() => setActiveTab('places')} collapsed={!leftSidebarOpen} />
         <NavItem icon={Gem} label="Items" active={activeTab === 'items'} onClick={() => setActiveTab('items')} collapsed={!leftSidebarOpen} />
         <NavItem icon={Shield} label="Fraktionen" active={activeTab === 'factions'} onClick={() => setActiveTab('factions')} collapsed={!leftSidebarOpen} />
+        <NavItem icon={Clock} label="Zeitstrahl" active={activeTab === 'timeline'} onClick={() => setActiveTab('timeline')} collapsed={!leftSidebarOpen} />
         <NavItem icon={StickyNote} label="Notizen" active={activeTab === 'notes'} onClick={() => setActiveTab('notes')} collapsed={!leftSidebarOpen} />
       </nav>
 
