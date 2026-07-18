@@ -8,6 +8,7 @@ import {
   isValidVisibility,
   visibilityWhere,
 } from '@/lib/visibility'
+import { deleteRelationsForEntity } from '@/lib/relations'
 
 // GET /api/places/[id] - Einzelnen Ort abrufen
 export async function GET(
@@ -153,6 +154,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
     }
 
+    await deleteRelationsForEntity(prisma, 'PLACE', params.id)
     await prisma.place.delete({ where: { id: params.id } })
     return NextResponse.json({ success: true })
   } catch (error) {

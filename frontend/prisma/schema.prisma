@@ -18,6 +18,13 @@ enum Visibility {
   FAMILY
 }
 
+// Entity types that can participate in a generic Relation (Z5). Extend this
+// as new relatable models are added (e.g. FACTION with A6, ITEM with A5).
+enum RelatableEntityType {
+  CHARACTER
+  PLACE
+}
+
 model Family {
   id         String      @id @default(cuid())
   name       String
@@ -26,6 +33,7 @@ model Family {
   members    User[]
   characters Character[]
   places     Place[]
+  relations  Relation[]
 }
 
 model User {
@@ -41,6 +49,7 @@ model User {
   role       FamilyRole  @default(ADULT)
   characters Character[]
   places     Place[]
+  relations  Relation[]
 }
 
 model Project {
@@ -118,4 +127,35 @@ model Place {
   children    Place[]    @relation("PlaceHierarchy")
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+}
+
+// Generic relation/join infrastructure (Z5). A single polymorphic edge type
+// shared by future association features (A1 character relationships, A3
+// character-place links, A6 faction membership) instead of one bespoke join
+// table per feature. `relationType` carries the feature-specific vocabulary
+// (e.g. "PARENT_OF", "LIVES_IN", "MEMBER_OF") — Z5 itself is agnostic to it.
+//
+// No `visibility` field here on purpose: per the Association rule in
+// lib/visibility.ts, an edge's visibility is derived live from both
+// endpoints, never stored. Referential integrity to Character/Place is
+// enforced in application code (see lib/relations.ts), not via Prisma FKs,
+// since a single field can't reference more than one model — deleting a
+// Character or Place must explicitly clean up its Relation rows too.
+model Relation {
+  id           String              @id @default(cuid())
+  familyId     String
+  family       Family              @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  authorId     String
+  author       User                @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  sourceType   RelatableEntityType
+  sourceId     String
+  targetType   RelatableEntityType
+  targetId     String
+  relationType String
+  label        String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([familyId, sourceType, sourceId])
+  @@index([familyId, targetType, targetId])
 }
