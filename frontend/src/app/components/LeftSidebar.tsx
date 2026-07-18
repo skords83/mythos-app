@@ -1,12 +1,12 @@
 'use client'
 
-import { Book, ChevronLeft, ChevronRight, Download, MapPin, Search, Settings, StickyNote, Users, Home as HomeIcon } from 'lucide-react'
+import { Book, ChevronLeft, ChevronRight, Download, Gem, MapPin, Search, Settings, StickyNote, Users, Home as HomeIcon } from 'lucide-react'
 import { NavItem } from './ThemeToggle'
 import { WordProgress } from './WordProgress'
 import { Project } from './types'
 import { SURFACE_ALT, TEXT_PRIMARY, RADIUS, HOVER_SURFACE } from '@/lib/theme'
 
-export type ActiveTab = 'manuscript' | 'characters' | 'places' | 'notes'
+export type ActiveTab = 'manuscript' | 'characters' | 'places' | 'items' | 'notes'
 
 interface LeftSidebarProps {
   focusMode: boolean
@@ -98,6 +98,7 @@ export function LeftSidebar({
         <NavItem icon={Book} label="Manuskript" active={activeTab === 'manuscript'} onClick={() => setActiveTab('manuscript')} collapsed={!leftSidebarOpen} />
         <NavItem icon={Users} label="Charaktere" active={activeTab === 'characters'} onClick={() => setActiveTab('characters')} collapsed={!leftSidebarOpen} />
         <NavItem icon={MapPin} label="Orte" active={activeTab === 'places'} onClick={() => setActiveTab('places')} collapsed={!leftSidebarOpen} />
+        <NavItem icon={Gem} label="Items" active={activeTab === 'items'} onClick={() => setActiveTab('items')} collapsed={!leftSidebarOpen} />
         <NavItem icon={StickyNote} label="Notizen" active={activeTab === 'notes'} onClick={() => setActiveTab('notes')} collapsed={!leftSidebarOpen} />
       </nav>
 

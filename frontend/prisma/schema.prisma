@@ -19,10 +19,11 @@ enum Visibility {
 }
 
 // Entity types that can participate in a generic Relation (Z5). Extend this
-// as new relatable models are added (e.g. FACTION with A6, ITEM with A5).
+// as new relatable models are added (e.g. FACTION with A6).
 enum RelatableEntityType {
   CHARACTER
   PLACE
+  ITEM
 }
 
 model Family {
@@ -33,6 +34,7 @@ model Family {
   members    User[]
   characters Character[]
   places     Place[]
+  items      Item[]
   relations  Relation[]
 }
 
@@ -49,6 +51,7 @@ model User {
   role       FamilyRole  @default(ADULT)
   characters Character[]
   places     Place[]
+  items      Item[]
   relations  Relation[]
 }
 
@@ -65,6 +68,7 @@ model Project {
   chapters Chapter[]
   characters Character[]
   places Place[]
+  items Item[]
 }
 
 model Chapter {
@@ -127,6 +131,23 @@ model Place {
   children    Place[]    @relation("PlaceHierarchy")
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+}
+
+model Item {
+  id           String     @id @default(cuid())
+  name         String
+  description  String?
+  origin       String?
+  significance String?
+  visibility   Visibility @default(PRIVATE)
+  projectId    String?
+  project      Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  familyId     String
+  family       Family     @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  authorId     String
+  author       User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
 // Generic relation/join infrastructure (Z5). A single polymorphic edge type

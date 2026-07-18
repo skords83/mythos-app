@@ -63,7 +63,7 @@ describe('isRelationVisible (Z2 Association rule)', () => {
 describe('resolveEntity', () => {
   it('queries the character table for CHARACTER and scopes by familyId', async () => {
     const findFirst = jest.fn().mockResolvedValue({ id: 'c1', familyId: 'fam-1', authorId: 'user-1', visibility: 'FAMILY' })
-    const prisma = { character: { findFirst }, place: { findFirst: jest.fn() } }
+    const prisma = { character: { findFirst }, place: { findFirst: jest.fn() }, item: { findFirst: jest.fn() } }
 
     const result = await resolveEntity(prisma, 'CHARACTER', 'c1', 'fam-1')
 
@@ -75,7 +75,7 @@ describe('resolveEntity', () => {
 
   it('queries the place table for PLACE', async () => {
     const findFirst = jest.fn().mockResolvedValue(null)
-    const prisma = { character: { findFirst: jest.fn() }, place: { findFirst } }
+    const prisma = { character: { findFirst: jest.fn() }, place: { findFirst }, item: { findFirst: jest.fn() } }
 
     const result = await resolveEntity(prisma, 'PLACE', 'p1', 'fam-1')
 

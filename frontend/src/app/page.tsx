@@ -12,6 +12,8 @@ import {
   AddCharacterModal,
   EditCharacterModal,
   AddPlaceModal,
+  AddItemModal,
+  EditItemModal,
   EditProjectModal,
   ExportModal,
   CharacterQuickCard,
@@ -22,6 +24,7 @@ import {
   ManuscriptView,
   CharactersView,
   PlacesView,
+  ItemsView,
   NotesView,
   SearchModal,
 } from './components'
@@ -31,6 +34,7 @@ import { useProjects } from './hooks/useProjects'
 import { useChapters } from './hooks/useChapters'
 import { useCharacters } from './hooks/useCharacters'
 import { usePlaces } from './hooks/usePlaces'
+import { useItems } from './hooks/useItems'
 import { useNotes } from './hooks/useNotes'
 import { useSearch } from './hooks/useSearch'
 import { ActiveTab } from './components/LeftSidebar'
@@ -69,6 +73,9 @@ export default function Page() {
 
   const { places, addPlace, deletePlace, updatePlaceParent } = usePlaces({ selectedProject, showError, requestConfirm, onConfirmed })
 
+  const { items, editingItem, setEditingItem, addItem, updateItem, deleteItem } =
+    useItems({ selectedProject, showError, requestConfirm, onConfirmed })
+
   const { notes, addNote, updateNote, deleteNote } =
     useNotes({ selectedChapterId: selectedChapter?.id, showError, requestConfirm, onConfirmed })
 
@@ -82,6 +89,7 @@ export default function Page() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showCharacterModal, setShowCharacterModal] = useState(false)
   const [showPlaceModal, setShowPlaceModal] = useState(false)
+  const [showItemModal, setShowItemModal] = useState(false)
   const [showEditProjectModal, setShowEditProjectModal] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
   const [showSearchModal, setShowSearchModal] = useState(false)
@@ -204,6 +212,7 @@ export default function Page() {
             )}
             {activeTab === 'characters' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Charakter-Verwaltung</h2>}
             {activeTab === 'places' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Orte</h2>}
+            {activeTab === 'items' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Items & Artefakte</h2>}
             {activeTab === 'notes' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Notizen</h2>}
           </div>
           <div className="flex items-center gap-3">
@@ -267,6 +276,15 @@ export default function Page() {
             />
           )}
 
+          {activeTab === 'items' && (
+            <ItemsView
+              items={items}
+              onAddClick={() => setShowItemModal(true)}
+              onEdit={setEditingItem}
+              onDelete={deleteItem}
+            />
+          )}
+
           {activeTab === 'notes' && (
             <NotesView
               notes={notes}
@@ -303,6 +321,8 @@ export default function Page() {
       <AddCharacterModal isOpen={showCharacterModal} onClose={() => setShowCharacterModal(false)} onAdd={addCharacter} />
       <EditCharacterModal isOpen={!!editingCharacter} onClose={() => setEditingCharacter(null)} character={editingCharacter} characters={characters} places={places} onUpdate={updateCharacter} />
       <AddPlaceModal isOpen={showPlaceModal} places={places} onClose={() => setShowPlaceModal(false)} onAdd={addPlace} />
+      <AddItemModal isOpen={showItemModal} onClose={() => setShowItemModal(false)} onAdd={addItem} />
+      <EditItemModal isOpen={!!editingItem} onClose={() => setEditingItem(null)} item={editingItem} onUpdate={updateItem} />
       <CharacterQuickCard state={quickCard} onClose={() => setQuickCard(prev => ({ ...prev, visible: false }))} />
       <EditProjectModal
         isOpen={showEditProjectModal}

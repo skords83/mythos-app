@@ -16,10 +16,11 @@ import type { AuthContext } from './auth'
 const ENTITY_MODEL = {
   CHARACTER: 'character',
   PLACE: 'place',
-} as const satisfies Record<RelatableEntityType, 'character' | 'place'>
+  ITEM: 'item',
+} as const satisfies Record<RelatableEntityType, 'character' | 'place' | 'item'>
 
 export function isValidEntityType(value: unknown): value is RelatableEntityType {
-  return value === 'CHARACTER' || value === 'PLACE'
+  return value === 'CHARACTER' || value === 'PLACE' || value === 'ITEM'
 }
 
 export function isSameEntity(
@@ -41,6 +42,7 @@ export type ResolvedEntity = {
 type RelationEntityClient = {
   character: { findFirst: (args: any) => Promise<ResolvedEntity | null> }
   place: { findFirst: (args: any) => Promise<ResolvedEntity | null> }
+  item: { findFirst: (args: any) => Promise<ResolvedEntity | null> }
 }
 
 /** Look up either endpoint of a Relation by its polymorphic (type, id) pair, scoped to a family. */

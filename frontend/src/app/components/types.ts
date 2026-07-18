@@ -54,6 +54,20 @@ export interface Place {
   updatedAt: string
 }
 
+export interface Item {
+  id: string
+  name: string
+  description: string | null
+  origin: string | null
+  significance: string | null
+  visibility: 'PRIVATE' | 'FAMILY'
+  projectId: string | null
+  familyId: string
+  authorId: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Note {
   id: string
   title: string
