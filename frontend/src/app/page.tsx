@@ -228,6 +228,8 @@ export default function Page() {
           {activeTab === 'manuscript' && (
             <ManuscriptView
               selectedChapter={selectedChapter}
+              chapters={chapters}
+              places={places}
               editorContent={editorContent}
               setEditorContent={setEditorContent}
               onTitleChange={setChapterTitle}

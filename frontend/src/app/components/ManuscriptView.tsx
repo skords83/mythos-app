@@ -1,14 +1,17 @@
 'use client'
 
-import { MutableRefObject } from 'react'
+import { MutableRefObject, useState } from 'react'
 import { RichTextEditor } from './RichTextEditor'
-import { Chapter, Character } from './types'
+import { ReferencePanel } from './ReferencePanel'
+import { Chapter, Character, Place } from './types'
 import { ChapterDraft } from '@/lib/chapterDraftStore'
 import { DraftRecoveryBanner } from './DraftRecoveryBanner'
 import { TEXT_PRIMARY, TEXT_MUTED, ACCENT, RADIUS } from '@/lib/theme'
 
 interface ManuscriptViewProps {
   selectedChapter: Chapter | null
+  chapters: Chapter[]
+  places: Place[]
   editorContent: string
   setEditorContent: (content: string) => void
   onTitleChange: (title: string) => void
@@ -23,6 +26,8 @@ interface ManuscriptViewProps {
 
 export function ManuscriptView({
   selectedChapter,
+  chapters,
+  places,
   editorContent,
   setEditorContent,
   onTitleChange,
@@ -34,29 +39,44 @@ export function ManuscriptView({
   characters,
   onMentionClick,
 }: ManuscriptViewProps) {
+  const [splitScreenOpen, setSplitScreenOpen] = useState(false)
+
   return (
-    <div className="max-w-3xl mx-auto px-8 py-12 relative">
+    <div className={`${splitScreenOpen ? 'max-w-6xl' : 'max-w-3xl'} mx-auto px-8 py-12 relative`}>
       {selectedChapter ? (
-        <>
-          {pendingDraft && pendingDraft.chapterId === selectedChapter.id && (
-            <DraftRecoveryBanner draft={pendingDraft} onRestore={onRestoreDraft} onDiscard={onDiscardDraft} />
+        <div className={splitScreenOpen ? 'flex gap-6 items-start' : ''}>
+          <div className={splitScreenOpen ? 'flex-1 min-w-0' : ''}>
+            {pendingDraft && pendingDraft.chapterId === selectedChapter.id && (
+              <DraftRecoveryBanner draft={pendingDraft} onRestore={onRestoreDraft} onDiscard={onDiscardDraft} />
+            )}
+            <input
+              type="text"
+              placeholder="Kapiteltitel..."
+              value={selectedChapter.title}
+              onChange={(e) => onTitleChange(e.target.value)}
+              className={`w-full text-3xl font-serif font-bold bg-transparent border-none outline-none placeholder-zinc-400 dark:placeholder-zinc-600 ${TEXT_PRIMARY} mb-8`}
+            />
+            <RichTextEditor
+              content={editorContent}
+              onChange={setEditorContent}
+              placeholder="Beginne zu schreiben... (Klicke auf Charakternamen für Quick-Card)"
+              onEditorReady={(setter) => { editorSetContentRef.current = setter }}
+              characters={characters}
+              onMentionClick={onMentionClick}
+              splitScreenActive={splitScreenOpen}
+              onToggleSplitScreen={() => setSplitScreenOpen((open) => !open)}
+            />
+          </div>
+          {splitScreenOpen && (
+            <ReferencePanel
+              chapters={chapters}
+              characters={characters}
+              places={places}
+              currentChapterId={selectedChapter.id}
+              onClose={() => setSplitScreenOpen(false)}
+            />
           )}
-          <input
-            type="text"
-            placeholder="Kapiteltitel..."
-            value={selectedChapter.title}
-            onChange={(e) => onTitleChange(e.target.value)}
-            className={`w-full text-3xl font-serif font-bold bg-transparent border-none outline-none placeholder-zinc-400 dark:placeholder-zinc-600 ${TEXT_PRIMARY} mb-8`}
-          />
-          <RichTextEditor
-            content={editorContent}
-            onChange={setEditorContent}
-            placeholder="Beginne zu schreiben... (Klicke auf Charakternamen für Quick-Card)"
-            onEditorReady={(setter) => { editorSetContentRef.current = setter }}
-            characters={characters}
-            onMentionClick={onMentionClick}
-          />
-        </>
+        </div>
       ) : (
         <div className={`text-center py-12 ${TEXT_MUTED}`}>
           <p>Erstelle ein neues Kapitel, um zu beginnen.</p>
