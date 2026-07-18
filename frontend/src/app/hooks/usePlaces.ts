@@ -34,13 +34,13 @@ export function usePlaces({ selectedProject, showError, requestConfirm, onConfir
     }
   }, [selectedProject])
 
-  const addPlace = async (name: string, description: string, location: string, climate: string, importance: string, visibility: 'PRIVATE' | 'FAMILY') => {
+  const addPlace = async (name: string, description: string, location: string, climate: string, importance: string, visibility: 'PRIVATE' | 'FAMILY', parentId: string | null = null) => {
     if (!selectedProject) return
     try {
       const response = await fetch('/api/places', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, location, climate, importance, visibility, projectId: selectedProject.id })
+        body: JSON.stringify({ name, description, location, climate, importance, visibility, parentId, projectId: selectedProject.id })
       })
       if (!response.ok) {
         showError('Ort konnte nicht erstellt werden.')
@@ -51,6 +51,25 @@ export function usePlaces({ selectedProject, showError, requestConfirm, onConfir
     } catch (error) {
       console.error('Error adding place:', error)
       showError('Ort konnte nicht erstellt werden.')
+    }
+  }
+
+  const updatePlaceParent = async (placeId: string, parentId: string | null) => {
+    try {
+      const response = await fetch(`/api/places/${placeId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parentId })
+      })
+      if (!response.ok) {
+        showError('Übergeordneter Ort konnte nicht geändert werden.')
+        return
+      }
+      const updated = await response.json()
+      setPlaces(places.map(p => p.id === placeId ? updated : p))
+    } catch (error) {
+      console.error('Error updating place parent:', error)
+      showError('Übergeordneter Ort konnte nicht geändert werden.')
     }
   }
 
@@ -75,5 +94,6 @@ export function usePlaces({ selectedProject, showError, requestConfirm, onConfir
     places,
     addPlace,
     deletePlace,
+    updatePlaceParent,
   }
 }

@@ -49,6 +49,7 @@ export interface Place {
   projectId: string | null
   familyId: string
   authorId: string
+  parentId: string | null
   createdAt: string
   updatedAt: string
 }

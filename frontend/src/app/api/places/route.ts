@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     userId = context.userId
 
     const body = await request.json()
-    const { name, description, location, climate, importance, projectId, visibility } = body
+    const { name, description, location, climate, importance, projectId, visibility, parentId } = body
 
     if (visibility !== undefined && visibility !== 'PRIVATE' && visibility !== 'FAMILY') {
       return NextResponse.json({ error: 'Sichtbarkeit muss PRIVATE oder FAMILY sein' }, { status: 400 })
@@ -68,6 +68,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (parentId) {
+      const parent = await prisma.place.findFirst({
+        where: { id: parentId, familyId: context.familyId },
+      })
+      if (!parent) {
+        return NextResponse.json({ error: 'Übergeordneter Ort nicht gefunden' }, { status: 404 })
+      }
+    }
+
     const place = await prisma.place.create({
       data: {
         name: name || 'Neuer Ort',
@@ -79,6 +88,7 @@ export async function POST(request: NextRequest) {
         projectId: projectId || null,
         familyId: context.familyId,
         authorId: context.userId,
+        parentId: parentId || null,
       },
     })
 

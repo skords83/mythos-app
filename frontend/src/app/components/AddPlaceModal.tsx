@@ -2,32 +2,36 @@
 
 import React, { useState } from 'react'
 import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY } from '@/lib/theme'
+import { Place } from './types'
 
 interface AddPlaceModalProps {
   isOpen: boolean
+  places: Place[]
   onClose: () => void
-  onAdd: (name: string, description: string, location: string, climate: string, importance: string, visibility: 'PRIVATE' | 'FAMILY') => void
+  onAdd: (name: string, description: string, location: string, climate: string, importance: string, visibility: 'PRIVATE' | 'FAMILY', parentId: string | null) => void
 }
 
-export function AddPlaceModal({ isOpen, onClose, onAdd }: AddPlaceModalProps) {
+export function AddPlaceModal({ isOpen, places, onClose, onAdd }: AddPlaceModalProps) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [location, setLocation] = useState('')
   const [climate, setClimate] = useState('')
   const [importance, setImportance] = useState('')
   const [visibility, setVisibility] = useState<'PRIVATE' | 'FAMILY'>('PRIVATE')
+  const [parentId, setParentId] = useState('')
 
   if (!isOpen) return null
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onAdd(name, description, location, climate, importance, visibility)
+    onAdd(name, description, location, climate, importance, visibility, parentId || null)
     setName('')
     setDescription('')
     setLocation('')
     setClimate('')
     setImportance('')
     setVisibility('PRIVATE')
+    setParentId('')
     onClose()
   }
 
@@ -105,6 +109,21 @@ export function AddPlaceModal({ isOpen, onClose, onAdd }: AddPlaceModalProps) {
               <option value="Wald">Wald</option>
               <option value="Berg">Berg</option>
               <option value="Höhle">Höhle</option>
+            </select>
+          </div>
+          <div>
+            <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>
+              Übergeordneter Ort
+            </label>
+            <select
+              value={parentId}
+              onChange={(e) => setParentId(e.target.value)}
+              className={INPUT}
+            >
+              <option value="">Kein übergeordneter Ort</option>
+              {places.map((place) => (
+                <option key={place.id} value={place.id}>{place.name}</option>
+              ))}
             </select>
           </div>
           <div>

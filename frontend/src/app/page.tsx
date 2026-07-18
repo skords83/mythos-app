@@ -67,7 +67,7 @@ export default function Page() {
   const { characters, editingCharacter, setEditingCharacter, addCharacter, updateCharacter, deleteCharacter } =
     useCharacters({ selectedProject, showError, requestConfirm, onConfirmed })
 
-  const { places, addPlace, deletePlace } = usePlaces({ selectedProject, showError, requestConfirm, onConfirmed })
+  const { places, addPlace, deletePlace, updatePlaceParent } = usePlaces({ selectedProject, showError, requestConfirm, onConfirmed })
 
   const { notes, addNote, updateNote, deleteNote } =
     useNotes({ selectedChapterId: selectedChapter?.id, showError, requestConfirm, onConfirmed })
@@ -259,6 +259,7 @@ export default function Page() {
               places={places}
               onAddClick={() => setShowPlaceModal(true)}
               onDelete={deletePlace}
+              onUpdateParent={updatePlaceParent}
             />
           )}
 
@@ -297,7 +298,7 @@ export default function Page() {
       <CreateProjectModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} onCreate={createProject} />
       <AddCharacterModal isOpen={showCharacterModal} onClose={() => setShowCharacterModal(false)} onAdd={addCharacter} />
       <EditCharacterModal isOpen={!!editingCharacter} onClose={() => setEditingCharacter(null)} character={editingCharacter} onUpdate={updateCharacter} />
-      <AddPlaceModal isOpen={showPlaceModal} onClose={() => setShowPlaceModal(false)} onAdd={addPlace} />
+      <AddPlaceModal isOpen={showPlaceModal} places={places} onClose={() => setShowPlaceModal(false)} onAdd={addPlace} />
       <CharacterQuickCard state={quickCard} onClose={() => setQuickCard(prev => ({ ...prev, visible: false }))} />
       <EditProjectModal
         isOpen={showEditProjectModal}

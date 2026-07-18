@@ -3,14 +3,29 @@
 import React, { useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { Place } from './types'
-import { TEXT_PRIMARY, TEXT_SECONDARY, ACCENT_TEXT, RADIUS, BADGE_RADIUS, BORDER, CARD_SHADOW, ACCENT } from '@/lib/theme'
+import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ACCENT_TEXT, RADIUS, BADGE_RADIUS, BORDER, CARD_SHADOW, ACCENT } from '@/lib/theme'
 
 interface PlaceCardProps {
   place: Place
+  places: Place[]
   onDelete: () => void
+  onUpdateParent: (parentId: string | null) => void
 }
 
-export function PlaceCard({ place, onDelete }: PlaceCardProps) {
+function isDescendant(candidateId: string, ancestorId: string, places: Place[]): boolean {
+  let current = places.find((p) => p.id === candidateId)
+  while (current?.parentId) {
+    if (current.parentId === ancestorId) return true
+    current = places.find((p) => p.id === current!.parentId)
+  }
+  return false
+}
+
+export function PlaceCard({ place, places, onDelete, onUpdateParent }: PlaceCardProps) {
+  const [editingParent, setEditingParent] = useState(false)
+  const parent = place.parentId ? places.find((p) => p.id === place.parentId) : null
+  const parentOptions = places.filter((p) => p.id !== place.id && !isDescendant(p.id, place.id, places))
+
   return (
     <div className={`bg-white dark:bg-zinc-900 ${RADIUS} p-4 ${BORDER} ${CARD_SHADOW} group`}>
       <div className="flex items-start gap-3">
@@ -40,6 +55,32 @@ export function PlaceCard({ place, onDelete }: PlaceCardProps) {
               <span className={`text-xs px-2 py-1 bg-indigo-600/10 ${ACCENT_TEXT} ${BADGE_RADIUS}`}>
                 {place.importance}
               </span>
+            )}
+          </div>
+          <div className="mt-2">
+            {editingParent ? (
+              <select
+                autoFocus
+                value={place.parentId || ''}
+                onChange={(e) => {
+                  onUpdateParent(e.target.value || null)
+                  setEditingParent(false)
+                }}
+                onBlur={() => setEditingParent(false)}
+                className={`text-xs border border-zinc-300 dark:border-zinc-700 rounded-none bg-stone-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-200 px-1 py-0.5 outline-none`}
+              >
+                <option value="">Kein übergeordneter Ort</option>
+                {parentOptions.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            ) : (
+              <button
+                onClick={() => setEditingParent(true)}
+                className={`text-xs ${TEXT_MUTED} hover:${ACCENT_TEXT} transition-colors`}
+              >
+                {parent ? `Teil von: ${parent.name}` : '+ Übergeordneten Ort zuweisen'}
+              </button>
             )}
           </div>
         </div>

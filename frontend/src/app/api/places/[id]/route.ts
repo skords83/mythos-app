@@ -58,10 +58,32 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { name, description, location, climate, importance, visibility } = body
+    const { name, description, location, climate, importance, visibility, parentId } = body
 
     if (visibility !== undefined && visibility !== 'PRIVATE' && visibility !== 'FAMILY') {
       return NextResponse.json({ error: 'Sichtbarkeit muss PRIVATE oder FAMILY sein' }, { status: 400 })
+    }
+
+    if (parentId !== undefined && parentId !== null) {
+      if (parentId === params.id) {
+        return NextResponse.json({ error: 'Ein Ort kann nicht sein eigener übergeordneter Ort sein' }, { status: 400 })
+      }
+      const parent = await prisma.place.findFirst({
+        where: { id: parentId, familyId: context.familyId },
+      })
+      if (!parent) {
+        return NextResponse.json({ error: 'Übergeordneter Ort nicht gefunden' }, { status: 404 })
+      }
+
+      let ancestor: { id: string; parentId: string | null } | null = parent
+      while (ancestor) {
+        if (ancestor.id === params.id) {
+          return NextResponse.json({ error: 'Diese Zuordnung würde einen Kreis in der Orts-Hierarchie erzeugen' }, { status: 400 })
+        }
+        ancestor = ancestor.parentId
+          ? await prisma.place.findUnique({ where: { id: ancestor.parentId }, select: { id: true, parentId: true } })
+          : null
+      }
     }
 
     const updateData: any = {}
@@ -71,6 +93,7 @@ export async function PUT(
     if (climate !== undefined) updateData.climate = climate
     if (importance !== undefined) updateData.importance = importance
     if (visibility !== undefined) updateData.visibility = visibility
+    if (parentId !== undefined) updateData.parentId = parentId
 
     const updated = await prisma.place.update({ where: { id: params.id }, data: updateData })
     return NextResponse.json(updated)

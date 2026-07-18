@@ -113,6 +113,9 @@ model Place {
   family      Family     @relation(fields: [familyId], references: [id], onDelete: Cascade)
   authorId    String
   author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parentId    String?
+  parent      Place?     @relation("PlaceHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Place[]    @relation("PlaceHierarchy")
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 }

@@ -9,7 +9,7 @@ import { prisma } from '@/lib/prisma'
 jest.mock('@/lib/prisma', () => ({
   prisma: {
     project: { findFirst: jest.fn() },
-    place: { findMany: jest.fn(), create: jest.fn() },
+    place: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn() },
   },
 }))
 
@@ -19,7 +19,7 @@ jest.mock('@/lib/logger', () => ({
 
 const mockedPrisma = prisma as unknown as {
   project: { findFirst: jest.Mock }
-  place: { findMany: jest.Mock; create: jest.Mock }
+  place: { findMany: jest.Mock; findFirst: jest.Mock; create: jest.Mock }
 }
 
 function authedRequest(url: string, init: Omit<RequestInit, 'signal'> = {}) {
@@ -83,5 +83,33 @@ describe('POST /api/places', () => {
     })
     const response = await POST(request)
     expect(response.status).toBe(400)
+  })
+
+  it('creates a place with a valid parentId', async () => {
+    mockedPrisma.place.findFirst.mockResolvedValue({ id: 'place-parent' })
+    mockedPrisma.place.create.mockResolvedValue({ id: 'place-2' })
+    const request = authedRequest('http://localhost/api/places', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Eldoria-Marktviertel', parentId: 'place-parent' }),
+    })
+    const response = await POST(request)
+    expect(response.status).toBe(201)
+    expect(mockedPrisma.place.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'place-parent', familyId: 'fam-1' } })
+    )
+    expect(mockedPrisma.place.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ parentId: 'place-parent' }) })
+    )
+  })
+
+  it('rejects a parentId that does not belong to the family', async () => {
+    mockedPrisma.place.findFirst.mockResolvedValue(null)
+    const request = authedRequest('http://localhost/api/places', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Eldoria', parentId: 'missing-place' }),
+    })
+    const response = await POST(request)
+    expect(response.status).toBe(404)
+    expect(mockedPrisma.place.create).not.toHaveBeenCalled()
   })
 })
