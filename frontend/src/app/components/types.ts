@@ -145,3 +145,15 @@ export interface QuickCardState {
   position: { x: number, y: number }
   visible: boolean
 }
+
+export interface PlaceQuickCardState {
+  place: Place | null
+  position: { x: number, y: number }
+  visible: boolean
+}
+
+export interface ItemQuickCardState {
+  item: Item | null
+  position: { x: number, y: number }
+  visible: boolean
+}

@@ -8,6 +8,7 @@ import { Chapter, Character, Item, Place } from './types'
 import { ChapterDraft } from '@/lib/chapterDraftStore'
 import { DraftRecoveryBanner } from './DraftRecoveryBanner'
 import { TEXT_PRIMARY, TEXT_MUTED, ACCENT, RADIUS } from '@/lib/theme'
+import type { MentionClickResult } from '@/lib/tiptap/mentionClick'
 
 interface ManuscriptViewProps {
   selectedChapter: Chapter | null
@@ -23,7 +24,7 @@ interface ManuscriptViewProps {
   onRestoreDraft: () => void
   onDiscardDraft: () => void
   characters: Character[]
-  onMentionClick: (characterId: string, position: { x: number; y: number }) => void
+  onMentionClick: (result: MentionClickResult) => void
   focusMode: boolean
   showError: (message: string) => void
   requestConfirm: (title: string, message: string, onConfirm: () => void) => void
@@ -70,9 +71,11 @@ export function ManuscriptView({
             <RichTextEditor
               content={editorContent}
               onChange={setEditorContent}
-              placeholder="Beginne zu schreiben... (Klicke auf Charakternamen für Quick-Card)"
+              placeholder="Beginne zu schreiben... (@ für Charaktere, Orte, Objekte)"
               onEditorReady={(setter) => { editorSetContentRef.current = setter }}
               characters={characters}
+              places={places}
+              items={items}
               onMentionClick={onMentionClick}
               splitScreenActive={splitScreenOpen}
               onToggleSplitScreen={() => setSplitScreenOpen((open) => !open)}

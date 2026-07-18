@@ -6,6 +6,8 @@ import { Book, Plus, Save } from 'lucide-react'
 import { ACCENT, RADIUS, SURFACE, SURFACE_ALT, TEXT_PRIMARY, TEXT_MUTED } from '@/lib/theme'
 import {
   QuickCardState,
+  PlaceQuickCardState,
+  ItemQuickCardState,
   ThemeToggle,
   FocusToggle,
   CreateProjectModal,
@@ -23,6 +25,8 @@ import {
   EditProjectModal,
   ExportModal,
   CharacterQuickCard,
+  PlaceQuickCard,
+  ItemQuickCard,
   ConfirmDialog,
   Toast,
   LeftSidebar,
@@ -119,6 +123,16 @@ export default function Page() {
   const [showSearchModal, setShowSearchModal] = useState(false)
   const [quickCard, setQuickCard] = useState<QuickCardState>({
     character: null,
+    position: { x: 0, y: 0 },
+    visible: false
+  })
+  const [placeQuickCard, setPlaceQuickCard] = useState<PlaceQuickCardState>({
+    place: null,
+    position: { x: 0, y: 0 },
+    visible: false
+  })
+  const [itemQuickCard, setItemQuickCard] = useState<ItemQuickCardState>({
+    item: null,
     position: { x: 0, y: 0 },
     visible: false
   })
@@ -276,11 +290,27 @@ export default function Page() {
               onRestoreDraft={restoreDraft}
               onDiscardDraft={discardDraft}
               characters={characters}
-              onMentionClick={(characterId, position) => setQuickCard({
-                character: characters.find(c => c.id === characterId) ?? null,
-                position,
-                visible: true,
-              })}
+              onMentionClick={(result) => {
+                if (result.kind === 'CHARACTER') {
+                  setQuickCard({
+                    character: characters.find(c => c.id === result.id) ?? null,
+                    position: result.position,
+                    visible: true,
+                  })
+                } else if (result.kind === 'PLACE') {
+                  setPlaceQuickCard({
+                    place: places.find(p => p.id === result.id) ?? null,
+                    position: result.position,
+                    visible: true,
+                  })
+                } else {
+                  setItemQuickCard({
+                    item: items.find(i => i.id === result.id) ?? null,
+                    position: result.position,
+                    visible: true,
+                  })
+                }
+              }}
               focusMode={focusMode}
               showError={showError}
               requestConfirm={requestConfirm}
@@ -414,6 +444,8 @@ export default function Page() {
         onUpdate={updateLoreEntry}
       />
       <CharacterQuickCard state={quickCard} onClose={() => setQuickCard(prev => ({ ...prev, visible: false }))} />
+      <PlaceQuickCard state={placeQuickCard} onClose={() => setPlaceQuickCard(prev => ({ ...prev, visible: false }))} />
+      <ItemQuickCard state={itemQuickCard} onClose={() => setItemQuickCard(prev => ({ ...prev, visible: false }))} />
       <EditProjectModal
         isOpen={showEditProjectModal}
         onClose={() => setShowEditProjectModal(false)}

@@ -1,12 +1,20 @@
 'use client'
 
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
-import type { Character } from './types'
+import { User, MapPin, Gem } from 'lucide-react'
 import { SURFACE, BORDER, RADIUS, CARD_SHADOW, HOVER_SURFACE, ACTIVE_SURFACE, ACCENT_TEXT, TEXT_MUTED, TEXT_PRIMARY } from '@/lib/theme'
 
+export interface MentionSuggestionItem {
+  kind: 'CHARACTER' | 'PLACE' | 'ITEM'
+  id: string
+  label: string
+}
+
+const KIND_ICON = { CHARACTER: User, PLACE: MapPin, ITEM: Gem }
+
 export interface MentionSuggestionListProps {
-  items: Character[]
-  command: (item: { characterId: string; label: string }) => void
+  items: MentionSuggestionItem[]
+  command: (item: MentionSuggestionItem) => void
 }
 
 export interface MentionSuggestionListHandle {
@@ -22,9 +30,9 @@ export const MentionSuggestionList = forwardRef<MentionSuggestionListHandle, Men
     }, [items])
 
     const selectItem = (index: number) => {
-      const character = items[index]
-      if (!character) return
-      command({ characterId: character.id, label: character.name })
+      const item = items[index]
+      if (!item) return
+      command(item)
     }
 
     useImperativeHandle(ref, () => ({
@@ -48,20 +56,24 @@ export const MentionSuggestionList = forwardRef<MentionSuggestionListHandle, Men
     return (
       <div className={`${SURFACE} ${BORDER} ${RADIUS} ${CARD_SHADOW} w-64 max-h-64 overflow-y-auto p-1`}>
         {items.length === 0 ? (
-          <div className={`px-3 py-2 text-sm ${TEXT_MUTED}`}>Keine Charaktere gefunden</div>
+          <div className={`px-3 py-2 text-sm ${TEXT_MUTED}`}>Keine Treffer gefunden</div>
         ) : (
-          items.map((character, index) => (
-            <button
-              key={character.id}
-              type="button"
-              onClick={() => selectItem(index)}
-              className={`w-full text-left px-3 py-2 text-sm ${HOVER_SURFACE} ${
-                index === selectedIndex ? `${ACTIVE_SURFACE} ${ACCENT_TEXT}` : TEXT_PRIMARY
-              }`}
-            >
-              {character.name}
-            </button>
-          ))
+          items.map((item, index) => {
+            const Icon = KIND_ICON[item.kind]
+            return (
+              <button
+                key={`${item.kind}-${item.id}`}
+                type="button"
+                onClick={() => selectItem(index)}
+                className={`w-full flex items-center gap-2 text-left px-3 py-2 text-sm ${HOVER_SURFACE} ${
+                  index === selectedIndex ? `${ACTIVE_SURFACE} ${ACCENT_TEXT}` : TEXT_PRIMARY
+                }`}
+              >
+                <Icon size={14} className="flex-shrink-0 opacity-70" />
+                <span className="truncate">{item.label}</span>
+              </button>
+            )
+          })
         )}
       </div>
     )

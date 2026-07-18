@@ -8,10 +8,11 @@ import { Bold, Italic, List, Quote, Heading1, Heading2, Undo, Redo, Image as Ima
 import { useEffect, useRef } from 'react'
 import { SURFACE, SURFACE_ALT, RADIUS, BORDER, ACCENT_TEXT, HOVER_SURFACE, ACTIVE_SURFACE, DIVIDER } from '@/lib/theme'
 import { CharacterMention } from '@/lib/tiptap/characterMentionExtension'
-import { createCharacterMentionSuggestion } from '@/lib/tiptap/characterMentionSuggestion'
-import { resolveCharacterMentionClick } from '@/lib/tiptap/mentionClick'
+import { EntityMention } from '@/lib/tiptap/entityMentionExtension'
+import { createMentionSuggestion, MentionableData } from '@/lib/tiptap/mentionSuggestion'
+import { resolveMentionClick, MentionClickResult } from '@/lib/tiptap/mentionClick'
 import { BlockDragHandle, findTopLevelBlockAt, moveTopLevelBlock } from '@/lib/tiptap/blockDragHandleExtension'
-import type { Character } from './types'
+import type { Character, Item, Place } from './types'
 
 interface RichTextEditorProps {
   content: string
@@ -19,17 +20,19 @@ interface RichTextEditorProps {
   placeholder?: string
   onEditorReady?: (setter: (content: string) => void) => void
   characters: Character[]
-  onMentionClick: (characterId: string, position: { x: number; y: number }) => void
+  places: Place[]
+  items: Item[]
+  onMentionClick: (result: MentionClickResult) => void
   splitScreenActive: boolean
   onToggleSplitScreen: () => void
   typewriterMode?: boolean
 }
 
-export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu schreiben...', onEditorReady, characters, onMentionClick, splitScreenActive, onToggleSplitScreen, typewriterMode = false }: RichTextEditorProps) {
+export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu schreiben...', onEditorReady, characters, places, items, onMentionClick, splitScreenActive, onToggleSplitScreen, typewriterMode = false }: RichTextEditorProps) {
   // useEditor has no deps array below (editor is created once) — mirror useChapters.ts's
   // stale-closure fix so suggestion filtering and click handling always see current data.
-  const charactersRef = useRef(characters)
-  useEffect(() => { charactersRef.current = characters }, [characters])
+  const mentionDataRef = useRef<MentionableData>({ characters, places, items })
+  useEffect(() => { mentionDataRef.current = { characters, places, items } }, [characters, places, items])
 
   const onMentionClickRef = useRef(onMentionClick)
   useEffect(() => { onMentionClickRef.current = onMentionClick }, [onMentionClick])
@@ -40,8 +43,9 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
       Placeholder.configure({ placeholder }),
       Image,
       CharacterMention.configure({
-        suggestion: createCharacterMentionSuggestion(charactersRef),
+        suggestion: createMentionSuggestion(mentionDataRef),
       }),
+      EntityMention,
       BlockDragHandle,
     ],
     content: content || '',
@@ -53,9 +57,9 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
         class: 'prose prose-lg dark:prose-invert max-w-none focus:outline-none min-h-[400px] pt-4 pr-4 pb-4 pl-9',
       },
       handleClickOn: (_view, _pos, node, _nodePos, event) => {
-        const result = resolveCharacterMentionClick(node, event)
+        const result = resolveMentionClick(node, event)
         if (!result) return false
-        onMentionClickRef.current(result.characterId, result.position)
+        onMentionClickRef.current(result)
         return true
       },
     },
