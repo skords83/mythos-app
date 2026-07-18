@@ -22,9 +22,10 @@ interface RichTextEditorProps {
   onMentionClick: (characterId: string, position: { x: number; y: number }) => void
   splitScreenActive: boolean
   onToggleSplitScreen: () => void
+  typewriterMode?: boolean
 }
 
-export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu schreiben...', onEditorReady, characters, onMentionClick, splitScreenActive, onToggleSplitScreen }: RichTextEditorProps) {
+export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu schreiben...', onEditorReady, characters, onMentionClick, splitScreenActive, onToggleSplitScreen, typewriterMode = false }: RichTextEditorProps) {
   // useEditor has no deps array below (editor is created once) — mirror useChapters.ts's
   // stale-closure fix so suggestion filtering and click handling always see current data.
   const charactersRef = useRef(characters)
@@ -68,6 +69,22 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
       })
     }
   }, [editor])
+
+  // Schreibmaschinen-Effekt: hält die aktuelle Zeile beim Schreiben vertikal zentriert
+  useEffect(() => {
+    if (!editor || !typewriterMode) return
+
+    const centerCursor = () => {
+      const { from } = editor.state.selection
+      const { node } = editor.view.domAtPos(from)
+      const el = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node) as HTMLElement | null
+      el?.scrollIntoView({ block: 'center' })
+    }
+
+    editor.on('transaction', centerCursor)
+    centerCursor()
+    return () => { editor.off('transaction', centerCursor) }
+  }, [editor, typewriterMode])
 
   const moveSelectedBlock = (direction: 'up' | 'down') => {
     if (!editor) return

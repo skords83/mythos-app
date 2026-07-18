@@ -22,6 +22,7 @@ interface ManuscriptViewProps {
   onDiscardDraft: () => void
   characters: Character[]
   onMentionClick: (characterId: string, position: { x: number; y: number }) => void
+  focusMode: boolean
 }
 
 export function ManuscriptView({
@@ -38,6 +39,7 @@ export function ManuscriptView({
   onDiscardDraft,
   characters,
   onMentionClick,
+  focusMode,
 }: ManuscriptViewProps) {
   const [splitScreenOpen, setSplitScreenOpen] = useState(false)
 
@@ -65,6 +67,7 @@ export function ManuscriptView({
               onMentionClick={onMentionClick}
               splitScreenActive={splitScreenOpen}
               onToggleSplitScreen={() => setSplitScreenOpen((open) => !open)}
+              typewriterMode={focusMode}
             />
           </div>
           {splitScreenOpen && (

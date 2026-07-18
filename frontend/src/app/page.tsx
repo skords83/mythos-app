@@ -244,6 +244,7 @@ export default function Page() {
                 position,
                 visible: true,
               })}
+              focusMode={focusMode}
             />
           )}
 
