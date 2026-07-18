@@ -49,13 +49,33 @@ export function CharacterQuickCard({ state, onClose }: CharacterQuickCardProps) 
           </button>
         </div>
         <div className="space-y-3">
-          {state.character.description && (
+          {state.character.appearance && (
             <div>
               <h4 className={`text-xs font-semibold ${TEXT_SECONDARY} uppercase tracking-wider mb-1`}>
-                Beschreibung
+                Äußeres
               </h4>
               <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
-                {state.character.description}
+                {state.character.appearance}
+              </p>
+            </div>
+          )}
+          {state.character.personality && (
+            <div>
+              <h4 className={`text-xs font-semibold ${TEXT_SECONDARY} uppercase tracking-wider mb-1`}>
+                Persönlichkeit
+              </h4>
+              <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                {state.character.personality}
+              </p>
+            </div>
+          )}
+          {state.character.backstory && (
+            <div>
+              <h4 className={`text-xs font-semibold ${TEXT_SECONDARY} uppercase tracking-wider mb-1`}>
+                Vergangenheit
+              </h4>
+              <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                {state.character.backstory}
               </p>
             </div>
           )}

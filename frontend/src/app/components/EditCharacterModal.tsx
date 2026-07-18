@@ -3,26 +3,39 @@
 import React, { useState } from 'react'
 import { Character } from './types'
 import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY } from '@/lib/theme'
+import CharacterFieldTabs, { CharacterFieldKey } from './CharacterFieldTabs'
 
 interface EditCharacterModalProps {
   isOpen: boolean
   onClose: () => void
   character: Character | null
-  onUpdate: (id: string, name: string, description: string, motivation: string, visibility: 'PRIVATE' | 'FAMILY') => void
+  onUpdate: (id: string, name: string, appearance: string, personality: string, backstory: string, motivation: string, visibility: 'PRIVATE' | 'FAMILY') => void
 }
 
 export function EditCharacterModal({ isOpen, onClose, character, onUpdate }: EditCharacterModalProps) {
   const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
+  const [activeFieldTab, setActiveFieldTab] = useState<CharacterFieldKey>('appearance')
+  const [appearance, setAppearance] = useState('')
+  const [personality, setPersonality] = useState('')
+  const [backstory, setBackstory] = useState('')
   const [motivation, setMotivation] = useState('')
   const [visibility, setVisibility] = useState<'PRIVATE' | 'FAMILY'>('PRIVATE')
+
+  const fieldSetters: Record<CharacterFieldKey, (value: string) => void> = {
+    appearance: setAppearance,
+    personality: setPersonality,
+    backstory: setBackstory,
+  }
 
   React.useEffect(() => {
     if (character) {
       setName(character.name)
-      setDescription(character.description || '')
+      setAppearance(character.appearance || '')
+      setPersonality(character.personality || '')
+      setBackstory(character.backstory || '')
       setMotivation(character.motivation || '')
       setVisibility(character.visibility)
+      setActiveFieldTab('appearance')
     }
   }, [character])
 
@@ -30,7 +43,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onUpdate }: Edi
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onUpdate(character.id, name, description, motivation, visibility)
+    onUpdate(character.id, name, appearance, personality, backstory, motivation, visibility)
     onClose()
   }
 
@@ -54,18 +67,12 @@ export function EditCharacterModal({ isOpen, onClose, character, onUpdate }: Edi
               required
             />
           </div>
-          <div>
-            <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>
-              Beschreibung
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className={`${INPUT} resize-none`}
-              placeholder="Aussehen, Hintergrund, etc."
-              rows={3}
-            />
-          </div>
+          <CharacterFieldTabs
+            activeTab={activeFieldTab}
+            onTabChange={setActiveFieldTab}
+            values={{ appearance, personality, backstory }}
+            onChange={(tab, value) => fieldSetters[tab](value)}
+          />
           <div>
             <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>
               Motivation

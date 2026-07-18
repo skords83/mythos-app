@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     userId = context.userId
 
     const body = await request.json()
-    const { name, description, motivation, projectId, visibility } = body
+    const { name, appearance, personality, backstory, motivation, projectId, visibility } = body
 
     if (visibility !== undefined && visibility !== 'PRIVATE' && visibility !== 'FAMILY') {
       return NextResponse.json({ error: 'Sichtbarkeit muss PRIVATE oder FAMILY sein' }, { status: 400 })
@@ -71,7 +71,9 @@ export async function POST(request: NextRequest) {
     const character = await prisma.character.create({
       data: {
         name: name || 'Neuer Charakter',
-        description: description || '',
+        appearance: appearance || '',
+        personality: personality || '',
+        backstory: backstory || '',
         motivation: motivation || '',
         visibility: visibility || 'PRIVATE',
         projectId: projectId || null,

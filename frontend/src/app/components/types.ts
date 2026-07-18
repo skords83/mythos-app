@@ -26,7 +26,9 @@ export interface Chapter {
 export interface Character {
   id: string
   name: string
-  description: string | null
+  appearance: string | null
+  personality: string | null
+  backstory: string | null
   motivation: string | null
   visibility: 'PRIVATE' | 'FAMILY'
   projectId: string | null

@@ -5,7 +5,9 @@ function makeCharacter(overrides: Partial<Character>): Character {
   return {
     id: 'char-1',
     name: 'Frodo',
-    description: null,
+    appearance: null,
+    personality: null,
+    backstory: null,
     motivation: null,
     visibility: 'PRIVATE',
     projectId: 'proj-1',

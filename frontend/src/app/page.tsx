@@ -249,6 +249,7 @@ export default function Page() {
             <CharactersView
               characters={characters}
               onAddClick={() => setShowCharacterModal(true)}
+              onEdit={setEditingCharacter}
               onDelete={deleteCharacter}
             />
           )}

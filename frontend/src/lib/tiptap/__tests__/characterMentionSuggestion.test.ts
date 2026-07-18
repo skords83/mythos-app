@@ -6,7 +6,9 @@ function makeCharacter(id: string, name: string): Character {
   return {
     id,
     name,
-    description: null,
+    appearance: null,
+    personality: null,
+    backstory: null,
     motivation: null,
     visibility: 'PRIVATE',
     projectId: 'proj-1',

@@ -48,12 +48,14 @@ export async function GET(request: NextRequest) {
           projectId,
           OR: [
             { name: { contains: q, mode: 'insensitive' } },
-            { description: { contains: q, mode: 'insensitive' } },
+            { appearance: { contains: q, mode: 'insensitive' } },
+            { personality: { contains: q, mode: 'insensitive' } },
+            { backstory: { contains: q, mode: 'insensitive' } },
             { motivation: { contains: q, mode: 'insensitive' } },
           ]
         },
         take: MAX_RESULTS_PER_TYPE,
-        select: { id: true, name: true, description: true, motivation: true }
+        select: { id: true, name: true, appearance: true, personality: true, backstory: true, motivation: true }
       }),
       prisma.place.findMany({
         where: {
@@ -89,7 +91,7 @@ export async function GET(request: NextRequest) {
     const characters: SearchResult[] = characterMatches.map(c => ({
       id: c.id,
       title: c.name,
-      snippet: buildSnippet([c.description, c.motivation].filter(Boolean).join(' — ') || c.name, q)
+      snippet: buildSnippet([c.appearance, c.personality, c.backstory, c.motivation].filter(Boolean).join(' — ') || c.name, q)
     }))
 
     const places: SearchResult[] = placeMatches.map(p => ({

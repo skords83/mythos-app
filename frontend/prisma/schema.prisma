@@ -74,7 +74,9 @@ model Chapter {
 model Character {
   id          String     @id @default(cuid())
   name        String
-  description String?
+  appearance  String?
+  personality String?
+  backstory   String?
   motivation  String?
   visibility  Visibility @default(PRIVATE)
   projectId   String?

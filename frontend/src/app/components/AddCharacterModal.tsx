@@ -2,26 +2,38 @@
 
 import React, { useState } from 'react'
 import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY } from '@/lib/theme'
+import CharacterFieldTabs, { CharacterFieldKey } from './CharacterFieldTabs'
 
 interface AddCharacterModalProps {
   isOpen: boolean
   onClose: () => void
-  onAdd: (name: string, description: string, motivation: string, visibility: 'PRIVATE' | 'FAMILY') => void
+  onAdd: (name: string, appearance: string, personality: string, backstory: string, motivation: string, visibility: 'PRIVATE' | 'FAMILY') => void
 }
 
 export function AddCharacterModal({ isOpen, onClose, onAdd }: AddCharacterModalProps) {
   const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
+  const [activeFieldTab, setActiveFieldTab] = useState<CharacterFieldKey>('appearance')
+  const [appearance, setAppearance] = useState('')
+  const [personality, setPersonality] = useState('')
+  const [backstory, setBackstory] = useState('')
   const [motivation, setMotivation] = useState('')
   const [visibility, setVisibility] = useState<'PRIVATE' | 'FAMILY'>('PRIVATE')
 
   if (!isOpen) return null
 
+  const fieldSetters: Record<CharacterFieldKey, (value: string) => void> = {
+    appearance: setAppearance,
+    personality: setPersonality,
+    backstory: setBackstory,
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onAdd(name, description, motivation, visibility)
+    onAdd(name, appearance, personality, backstory, motivation, visibility)
     setName('')
-    setDescription('')
+    setAppearance('')
+    setPersonality('')
+    setBackstory('')
     setMotivation('')
     setVisibility('PRIVATE')
     onClose()
@@ -47,18 +59,12 @@ export function AddCharacterModal({ isOpen, onClose, onAdd }: AddCharacterModalP
               required
             />
           </div>
-          <div>
-            <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>
-              Beschreibung
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className={`${INPUT} resize-none`}
-              placeholder="Aussehen, Hintergrund, etc."
-              rows={3}
-            />
-          </div>
+          <CharacterFieldTabs
+            activeTab={activeFieldTab}
+            onTabChange={setActiveFieldTab}
+            values={{ appearance, personality, backstory }}
+            onChange={(tab, value) => fieldSetters[tab](value)}
+          />
           <div>
             <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>
               Motivation
