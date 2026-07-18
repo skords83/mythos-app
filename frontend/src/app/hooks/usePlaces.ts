@@ -47,7 +47,7 @@ export function usePlaces({ selectedProject, showError, requestConfirm, onConfir
         return
       }
       const newPlace = await response.json()
-      setPlaces([newPlace, ...places])
+      setPlaces([{ ...newPlace, images: newPlace.images || [] }, ...places])
     } catch (error) {
       console.error('Error adding place:', error)
       showError('Ort konnte nicht erstellt werden.')
@@ -73,6 +73,48 @@ export function usePlaces({ selectedProject, showError, requestConfirm, onConfir
     }
   }
 
+  const addPlaceImage = async (placeId: string, file: File) => {
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const uploadResponse = await fetch('/api/upload', { method: 'POST', body: formData })
+      const uploadData = await uploadResponse.json()
+      if (!uploadResponse.ok || !uploadData.url) {
+        showError('Bild konnte nicht hochgeladen werden.')
+        return
+      }
+
+      const response = await fetch(`/api/places/${placeId}/images`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: uploadData.url }),
+      })
+      if (!response.ok) {
+        showError('Bild konnte nicht hinzugefügt werden.')
+        return
+      }
+      const image = await response.json()
+      setPlaces(places.map(p => p.id === placeId ? { ...p, images: [...p.images, image] } : p))
+    } catch (error) {
+      console.error('Error adding place image:', error)
+      showError('Bild konnte nicht hinzugefügt werden.')
+    }
+  }
+
+  const deletePlaceImage = async (placeId: string, imageId: string) => {
+    try {
+      const response = await fetch(`/api/places/${placeId}/images/${imageId}`, { method: 'DELETE' })
+      if (!response.ok) {
+        showError('Bild konnte nicht gelöscht werden.')
+        return
+      }
+      setPlaces(places.map(p => p.id === placeId ? { ...p, images: p.images.filter(img => img.id !== imageId) } : p))
+    } catch (error) {
+      console.error('Error deleting place image:', error)
+      showError('Bild konnte nicht gelöscht werden.')
+    }
+  }
+
   const deletePlace = (placeId: string) => {
     requestConfirm('Ort löschen', 'Möchtest du diesen Ort wirklich löschen?', async () => {
       onConfirmed()
@@ -95,5 +137,7 @@ export function usePlaces({ selectedProject, showError, requestConfirm, onConfir
     addPlace,
     deletePlace,
     updatePlaceParent,
+    addPlaceImage,
+    deletePlaceImage,
   }
 }

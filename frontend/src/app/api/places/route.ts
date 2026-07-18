@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
       const places = await prisma.place.findMany({
         where: { projectId, OR: visibilityWhere(context) },
         orderBy: { createdAt: 'desc' },
+        include: { images: { orderBy: { createdAt: 'asc' } } },
       })
       return NextResponse.json(places)
     }
@@ -35,6 +36,7 @@ export async function GET(request: NextRequest) {
     const places = await prisma.place.findMany({
       where: { familyId: context.familyId, OR: visibilityWhere(context) },
       orderBy: { createdAt: 'desc' },
+      include: { images: { orderBy: { createdAt: 'asc' } } },
     })
     return NextResponse.json(places)
   } catch (error) {

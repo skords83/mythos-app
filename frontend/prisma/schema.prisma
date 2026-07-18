@@ -37,6 +37,7 @@ model Family {
   items      Item[]
   factions   Faction[]
   relations  Relation[]
+  placeImages PlaceImage[]
 }
 
 model User {
@@ -55,6 +56,7 @@ model User {
   items      Item[]
   factions   Faction[]
   relations  Relation[]
+  placeImages PlaceImage[]
 }
 
 model Project {
@@ -133,8 +135,27 @@ model Place {
   parentId    String?
   parent      Place?     @relation("PlaceHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
   children    Place[]    @relation("PlaceHierarchy")
+  images      PlaceImage[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+}
+
+// A10: map/visualization images for a Place (1:n). Kept as a plain, directly
+// FK'd model rather than routed through the generic Relation (Z5) table
+// since it's a single-entity-typed attachment, not a cross-entity edge —
+// Prisma/Postgres cascade deletes it automatically when the Place is deleted.
+model PlaceImage {
+  id        String   @id @default(cuid())
+  placeId   String
+  place     Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  familyId  String
+  family    Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  url       String
+  createdAt DateTime @default(now())
+
+  @@index([placeId])
 }
 
 model Item {

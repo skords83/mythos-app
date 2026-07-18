@@ -5,6 +5,7 @@ import { Trash2 } from 'lucide-react'
 import { Character, Place } from './types'
 import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ACCENT_TEXT, RADIUS, BADGE_RADIUS, BORDER, CARD_SHADOW, ACCENT } from '@/lib/theme'
 import { PlaceCharacterLinks } from './PlaceCharacterLinks'
+import { PlaceImageGallery } from './PlaceImageGallery'
 
 interface PlaceCardProps {
   place: Place
@@ -12,6 +13,8 @@ interface PlaceCardProps {
   characters: Character[]
   onDelete: () => void
   onUpdateParent: (parentId: string | null) => void
+  onAddImage: (file: File) => Promise<void>
+  onDeleteImage: (imageId: string) => void
 }
 
 function isDescendant(candidateId: string, ancestorId: string, places: Place[]): boolean {
@@ -23,16 +26,22 @@ function isDescendant(candidateId: string, ancestorId: string, places: Place[]):
   return false
 }
 
-export function PlaceCard({ place, places, characters, onDelete, onUpdateParent }: PlaceCardProps) {
+export function PlaceCard({ place, places, characters, onDelete, onUpdateParent, onAddImage, onDeleteImage }: PlaceCardProps) {
   const [editingParent, setEditingParent] = useState(false)
   const parent = place.parentId ? places.find((p) => p.id === place.parentId) : null
   const parentOptions = places.filter((p) => p.id !== place.id && !isDescendant(p.id, place.id, places))
+  const coverImage = place.images[0]
 
   return (
     <div className={`bg-white dark:bg-zinc-900 ${RADIUS} p-4 ${BORDER} ${CARD_SHADOW} group`}>
       <div className="flex items-start gap-3">
-        <div className={`w-10 h-10 ${RADIUS} ${ACCENT} flex items-center justify-center text-white font-semibold flex-shrink-0`}>
+        <div className={`w-10 h-10 ${RADIUS} ${ACCENT} flex items-center justify-center text-white font-semibold flex-shrink-0 overflow-hidden`}>
+          {coverImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={coverImage.url} alt={place.name} className="w-full h-full object-cover" />
+          ) : (
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
@@ -88,6 +97,7 @@ export function PlaceCard({ place, places, characters, onDelete, onUpdateParent 
           <div className="mt-2">
             <PlaceCharacterLinks place={place} characters={characters} />
           </div>
+          <PlaceImageGallery images={place.images} onAdd={onAddImage} onDelete={onDeleteImage} />
         </div>
       </div>
     </div>

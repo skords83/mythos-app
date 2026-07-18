@@ -29,6 +29,7 @@ export async function GET(
         familyId: context.familyId,
         OR: visibilityWhere(context),
       },
+      include: { images: { orderBy: { createdAt: 'asc' } } },
     })
     if (!place) {
       return NextResponse.json({ error: 'Ort nicht gefunden' }, { status: 404 })
@@ -118,7 +119,11 @@ export async function PUT(
     if (visibility !== undefined) updateData.visibility = visibility
     if (parentId !== undefined) updateData.parentId = parentId
 
-    const updated = await prisma.place.update({ where: { id: params.id }, data: updateData })
+    const updated = await prisma.place.update({
+      where: { id: params.id },
+      data: updateData,
+      include: { images: { orderBy: { createdAt: 'asc' } } },
+    })
 
     if (place.visibility === 'FAMILY' && nextVisibility === 'PRIVATE') {
       await cascadePrivateToPlaceDescendants(prisma, params.id, context.familyId)

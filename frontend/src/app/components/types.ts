@@ -39,6 +39,13 @@ export interface Character {
   updatedAt: string
 }
 
+export interface PlaceImage {
+  id: string
+  placeId: string
+  url: string
+  createdAt: string
+}
+
 export interface Place {
   id: string
   name: string
@@ -51,6 +58,7 @@ export interface Place {
   familyId: string
   authorId: string
   parentId: string | null
+  images: PlaceImage[]
   createdAt: string
   updatedAt: string
 }

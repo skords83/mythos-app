@@ -75,7 +75,7 @@ export default function Page() {
   const { characters, editingCharacter, setEditingCharacter, addCharacter, updateCharacter, deleteCharacter } =
     useCharacters({ selectedProject, showError, requestConfirm, onConfirmed })
 
-  const { places, addPlace, deletePlace, updatePlaceParent } = usePlaces({ selectedProject, showError, requestConfirm, onConfirmed })
+  const { places, addPlace, deletePlace, updatePlaceParent, addPlaceImage, deletePlaceImage } = usePlaces({ selectedProject, showError, requestConfirm, onConfirmed })
 
   const { items, editingItem, setEditingItem, addItem, updateItem, deleteItem } =
     useItems({ selectedProject, showError, requestConfirm, onConfirmed })
@@ -282,6 +282,8 @@ export default function Page() {
               onAddClick={() => setShowPlaceModal(true)}
               onDelete={deletePlace}
               onUpdateParent={updatePlaceParent}
+              onAddImage={addPlaceImage}
+              onDeleteImage={deletePlaceImage}
             />
           )}
 
