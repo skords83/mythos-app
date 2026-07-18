@@ -4,15 +4,17 @@ import React, { useState } from 'react'
 import { Character } from './types'
 import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY } from '@/lib/theme'
 import CharacterFieldTabs, { CharacterFieldKey } from './CharacterFieldTabs'
+import { CharacterRelationships } from './CharacterRelationships'
 
 interface EditCharacterModalProps {
   isOpen: boolean
   onClose: () => void
   character: Character | null
+  characters: Character[]
   onUpdate: (id: string, name: string, appearance: string, personality: string, backstory: string, motivation: string, visibility: 'PRIVATE' | 'FAMILY') => void
 }
 
-export function EditCharacterModal({ isOpen, onClose, character, onUpdate }: EditCharacterModalProps) {
+export function EditCharacterModal({ isOpen, onClose, character, characters, onUpdate }: EditCharacterModalProps) {
   const [name, setName] = useState('')
   const [activeFieldTab, setActiveFieldTab] = useState<CharacterFieldKey>('appearance')
   const [appearance, setAppearance] = useState('')
@@ -49,7 +51,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onUpdate }: Edi
 
   return (
     <div className={OVERLAY}>
-      <div className={`${MODAL_PANEL} p-6 w-full max-w-md`}>
+      <div className={`${MODAL_PANEL} p-6 w-full max-w-md max-h-[90vh] overflow-y-auto`}>
         <h2 className={`text-2xl font-serif font-bold mb-4 ${TEXT_PRIMARY}`}>
           Charakter bearbeiten
         </h2>
@@ -98,6 +100,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onUpdate }: Edi
               <option value="FAMILY">Familie (alle Familienmitglieder)</option>
             </select>
           </div>
+          <CharacterRelationships character={character} characters={characters} />
           <div className="flex gap-3 pt-2">
             <button
               type="button"
