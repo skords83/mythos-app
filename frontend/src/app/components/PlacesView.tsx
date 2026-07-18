@@ -2,17 +2,18 @@
 
 import { MapPin, Plus } from 'lucide-react'
 import { PlaceCard } from './PlaceCard'
-import { Place } from './types'
+import { Character, Place } from './types'
 import { TEXT_PRIMARY, TEXT_MUTED, ACCENT, RADIUS } from '@/lib/theme'
 
 interface PlacesViewProps {
   places: Place[]
+  characters: Character[]
   onAddClick: () => void
   onDelete: (id: string) => void
   onUpdateParent: (id: string, parentId: string | null) => void
 }
 
-export function PlacesView({ places, onAddClick, onDelete, onUpdateParent }: PlacesViewProps) {
+export function PlacesView({ places, characters, onAddClick, onDelete, onUpdateParent }: PlacesViewProps) {
   const placeIds = new Set(places.map((p) => p.id))
   const childrenByParent = new Map<string, Place[]>()
   const roots: Place[] = []
@@ -31,6 +32,7 @@ export function PlacesView({ places, onAddClick, onDelete, onUpdateParent }: Pla
       <PlaceCard
         place={place}
         places={places}
+        characters={characters}
         onDelete={() => onDelete(place.id)}
         onUpdateParent={(parentId) => onUpdateParent(place.id, parentId)}
       />

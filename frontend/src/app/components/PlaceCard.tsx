@@ -2,12 +2,14 @@
 
 import React, { useState } from 'react'
 import { Trash2 } from 'lucide-react'
-import { Place } from './types'
+import { Character, Place } from './types'
 import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ACCENT_TEXT, RADIUS, BADGE_RADIUS, BORDER, CARD_SHADOW, ACCENT } from '@/lib/theme'
+import { PlaceCharacterLinks } from './PlaceCharacterLinks'
 
 interface PlaceCardProps {
   place: Place
   places: Place[]
+  characters: Character[]
   onDelete: () => void
   onUpdateParent: (parentId: string | null) => void
 }
@@ -21,7 +23,7 @@ function isDescendant(candidateId: string, ancestorId: string, places: Place[]):
   return false
 }
 
-export function PlaceCard({ place, places, onDelete, onUpdateParent }: PlaceCardProps) {
+export function PlaceCard({ place, places, characters, onDelete, onUpdateParent }: PlaceCardProps) {
   const [editingParent, setEditingParent] = useState(false)
   const parent = place.parentId ? places.find((p) => p.id === place.parentId) : null
   const parentOptions = places.filter((p) => p.id !== place.id && !isDescendant(p.id, place.id, places))
@@ -82,6 +84,9 @@ export function PlaceCard({ place, places, onDelete, onUpdateParent }: PlaceCard
                 {parent ? `Teil von: ${parent.name}` : '+ Übergeordneten Ort zuweisen'}
               </button>
             )}
+          </div>
+          <div className="mt-2">
+            <PlaceCharacterLinks place={place} characters={characters} />
           </div>
         </div>
       </div>

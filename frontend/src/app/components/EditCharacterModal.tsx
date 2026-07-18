@@ -1,20 +1,22 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Character } from './types'
+import { Character, Place } from './types'
 import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY } from '@/lib/theme'
 import CharacterFieldTabs, { CharacterFieldKey } from './CharacterFieldTabs'
 import { CharacterRelationships } from './CharacterRelationships'
+import { CharacterPlaceLinks } from './CharacterPlaceLinks'
 
 interface EditCharacterModalProps {
   isOpen: boolean
   onClose: () => void
   character: Character | null
   characters: Character[]
+  places: Place[]
   onUpdate: (id: string, name: string, appearance: string, personality: string, backstory: string, motivation: string, visibility: 'PRIVATE' | 'FAMILY') => void
 }
 
-export function EditCharacterModal({ isOpen, onClose, character, characters, onUpdate }: EditCharacterModalProps) {
+export function EditCharacterModal({ isOpen, onClose, character, characters, places, onUpdate }: EditCharacterModalProps) {
   const [name, setName] = useState('')
   const [activeFieldTab, setActiveFieldTab] = useState<CharacterFieldKey>('appearance')
   const [appearance, setAppearance] = useState('')
@@ -101,6 +103,7 @@ export function EditCharacterModal({ isOpen, onClose, character, characters, onU
             </select>
           </div>
           <CharacterRelationships character={character} characters={characters} />
+          <CharacterPlaceLinks character={character} places={places} />
           <div className="flex gap-3 pt-2">
             <button
               type="button"
