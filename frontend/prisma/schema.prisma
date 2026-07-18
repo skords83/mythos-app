@@ -26,6 +26,7 @@ enum RelatableEntityType {
   FACTION
   SCENE
   EVENT
+  LORE_ENTRY
 }
 
 enum TimelineEventType {
@@ -47,6 +48,7 @@ model Family {
   placeImages PlaceImage[]
   scenes     Scene[]
   timelineEvents TimelineEvent[]
+  loreEntries LoreEntry[]
 }
 
 model User {
@@ -68,6 +70,7 @@ model User {
   placeImages PlaceImage[]
   scenes     Scene[]
   timelineEvents TimelineEvent[]
+  loreEntries LoreEntry[]
 }
 
 model Project {
@@ -86,6 +89,7 @@ model Project {
   items Item[]
   factions Faction[]
   timelineEvents TimelineEvent[]
+  loreEntries LoreEntry[]
 }
 
 model Chapter {
@@ -240,6 +244,26 @@ model TimelineEvent {
   author      User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
+}
+
+// B3: Weltenregeln / Lore-Bibel — atemporal canon facts (magic systems, laws,
+// customs) distinct from TimelineEvent's chronological LORE entries. `category`
+// is a free-text facet (e.g. "Magie", "Politik", "Religion") rather than an
+// enum, matching Item.origin/Faction.goal's free-text convention.
+model LoreEntry {
+  id          String     @id @default(cuid())
+  title       String
+  content     String?
+  category    String?
+  visibility  Visibility @default(PRIVATE)
+  projectId   String?
+  project     Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  familyId    String
+  family      Family     @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
 // Generic relation/join infrastructure (Z5). A single polymorphic edge type

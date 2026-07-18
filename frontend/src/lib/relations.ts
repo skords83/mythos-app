@@ -20,7 +20,8 @@ const ENTITY_MODEL = {
   FACTION: 'faction',
   SCENE: 'scene',
   EVENT: 'timelineEvent',
-} as const satisfies Record<RelatableEntityType, 'character' | 'place' | 'item' | 'faction' | 'scene' | 'timelineEvent'>
+  LORE_ENTRY: 'loreEntry',
+} as const satisfies Record<RelatableEntityType, 'character' | 'place' | 'item' | 'faction' | 'scene' | 'timelineEvent' | 'loreEntry'>
 
 export function isValidEntityType(value: unknown): value is RelatableEntityType {
   return (
@@ -29,7 +30,8 @@ export function isValidEntityType(value: unknown): value is RelatableEntityType 
     value === 'ITEM' ||
     value === 'FACTION' ||
     value === 'SCENE' ||
-    value === 'EVENT'
+    value === 'EVENT' ||
+    value === 'LORE_ENTRY'
   )
 }
 
@@ -56,6 +58,7 @@ type RelationEntityClient = {
   faction: { findFirst: (args: any) => Promise<ResolvedEntity | null> }
   scene: { findFirst: (args: any) => Promise<ResolvedEntity | null> }
   timelineEvent: { findFirst: (args: any) => Promise<ResolvedEntity | null> }
+  loreEntry: { findFirst: (args: any) => Promise<ResolvedEntity | null> }
 }
 
 /** Look up either endpoint of a Relation by its polymorphic (type, id) pair, scoped to a family. */

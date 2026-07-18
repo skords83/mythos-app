@@ -18,6 +18,8 @@ import {
   EditFactionModal,
   AddTimelineEventModal,
   EditTimelineEventModal,
+  AddLoreEntryModal,
+  EditLoreEntryModal,
   EditProjectModal,
   ExportModal,
   CharacterQuickCard,
@@ -31,6 +33,7 @@ import {
   ItemsView,
   FactionsView,
   TimelineView,
+  LoreView,
   NotesView,
   SearchModal,
 } from './components'
@@ -43,6 +46,7 @@ import { usePlaces } from './hooks/usePlaces'
 import { useItems } from './hooks/useItems'
 import { useFactions } from './hooks/useFactions'
 import { useTimelineEvents } from './hooks/useTimelineEvents'
+import { useLoreEntries } from './hooks/useLoreEntries'
 import { useNotes } from './hooks/useNotes'
 import { useSearch } from './hooks/useSearch'
 import { ActiveTab } from './components/LeftSidebar'
@@ -90,6 +94,9 @@ export default function Page() {
   const { timelineEvents, editingTimelineEvent, setEditingTimelineEvent, addTimelineEvent, updateTimelineEvent, deleteTimelineEvent } =
     useTimelineEvents({ selectedProject, showError, requestConfirm, onConfirmed })
 
+  const { loreEntries, editingLoreEntry, setEditingLoreEntry, addLoreEntry, updateLoreEntry, deleteLoreEntry } =
+    useLoreEntries({ selectedProject, showError, requestConfirm, onConfirmed })
+
   const { notes, addNote, updateNote, deleteNote } =
     useNotes({ selectedChapterId: selectedChapter?.id, showError, requestConfirm, onConfirmed })
 
@@ -106,6 +113,7 @@ export default function Page() {
   const [showItemModal, setShowItemModal] = useState(false)
   const [showFactionModal, setShowFactionModal] = useState(false)
   const [showTimelineEventModal, setShowTimelineEventModal] = useState(false)
+  const [showLoreEntryModal, setShowLoreEntryModal] = useState(false)
   const [showEditProjectModal, setShowEditProjectModal] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
   const [showSearchModal, setShowSearchModal] = useState(false)
@@ -231,6 +239,7 @@ export default function Page() {
             {activeTab === 'items' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Items & Artefakte</h2>}
             {activeTab === 'factions' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Fraktionen & Organisationen</h2>}
             {activeTab === 'timeline' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Der Zeitstrahl</h2>}
+            {activeTab === 'lore' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Lore-Bibel</h2>}
             {activeTab === 'notes' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Notizen</h2>}
           </div>
           <div className="flex items-center gap-3">
@@ -327,6 +336,15 @@ export default function Page() {
             />
           )}
 
+          {activeTab === 'lore' && (
+            <LoreView
+              loreEntries={loreEntries}
+              onAddClick={() => setShowLoreEntryModal(true)}
+              onEdit={setEditingLoreEntry}
+              onDelete={deleteLoreEntry}
+            />
+          )}
+
           {activeTab === 'notes' && (
             <NotesView
               notes={notes}
@@ -383,6 +401,17 @@ export default function Page() {
         items={items}
         factions={factions}
         onUpdate={updateTimelineEvent}
+      />
+      <AddLoreEntryModal isOpen={showLoreEntryModal} onClose={() => setShowLoreEntryModal(false)} onAdd={addLoreEntry} />
+      <EditLoreEntryModal
+        isOpen={!!editingLoreEntry}
+        onClose={() => setEditingLoreEntry(null)}
+        loreEntry={editingLoreEntry}
+        characters={characters}
+        places={places}
+        items={items}
+        factions={factions}
+        onUpdate={updateLoreEntry}
       />
       <CharacterQuickCard state={quickCard} onClose={() => setQuickCard(prev => ({ ...prev, visible: false }))} />
       <EditProjectModal

@@ -118,6 +118,19 @@ export interface TimelineEvent {
   updatedAt: string
 }
 
+export interface LoreEntry {
+  id: string
+  title: string
+  content: string | null
+  category: string | null
+  visibility: 'PRIVATE' | 'FAMILY'
+  projectId: string | null
+  familyId: string
+  authorId: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Note {
   id: string
   title: string
