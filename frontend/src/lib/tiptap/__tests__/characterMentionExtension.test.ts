@@ -9,6 +9,8 @@ function makeCharacter(overrides: Partial<Character>): Character {
     personality: null,
     backstory: null,
     motivation: null,
+    flaw: null,
+    secrets: null,
     avatarUrl: null,
     visibility: 'PRIVATE',
     projectId: 'proj-1',

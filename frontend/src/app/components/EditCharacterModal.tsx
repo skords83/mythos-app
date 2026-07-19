@@ -13,7 +13,7 @@ interface EditCharacterModalProps {
   character: Character | null
   characters: Character[]
   places: Place[]
-  onUpdate: (id: string, name: string, appearance: string, personality: string, backstory: string, motivation: string, visibility: 'PRIVATE' | 'FAMILY', avatarUrl?: string | null) => void
+  onUpdate: (id: string, name: string, appearance: string, personality: string, backstory: string, motivation: string, flaw: string, secrets: string, visibility: 'PRIVATE' | 'FAMILY', avatarUrl?: string | null) => void
 }
 
 export function EditCharacterModal({ isOpen, onClose, character, characters, places, onUpdate }: EditCharacterModalProps) {
@@ -26,12 +26,16 @@ export function EditCharacterModal({ isOpen, onClose, character, characters, pla
   const [personality, setPersonality] = useState('')
   const [backstory, setBackstory] = useState('')
   const [motivation, setMotivation] = useState('')
+  const [flaw, setFlaw] = useState('')
+  const [secrets, setSecrets] = useState('')
   const [visibility, setVisibility] = useState<'PRIVATE' | 'FAMILY'>('PRIVATE')
 
   const fieldSetters: Record<CharacterFieldKey, (value: string) => void> = {
     appearance: setAppearance,
     personality: setPersonality,
     backstory: setBackstory,
+    flaw: setFlaw,
+    secrets: setSecrets,
   }
 
   React.useEffect(() => {
@@ -41,6 +45,8 @@ export function EditCharacterModal({ isOpen, onClose, character, characters, pla
       setPersonality(character.personality || '')
       setBackstory(character.backstory || '')
       setMotivation(character.motivation || '')
+      setFlaw(character.flaw || '')
+      setSecrets(character.secrets || '')
       setVisibility(character.visibility)
       setAvatarUrl(character.avatarUrl || null)
       setActiveFieldTab('appearance')
@@ -51,7 +57,7 @@ export function EditCharacterModal({ isOpen, onClose, character, characters, pla
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onUpdate(character.id, name, appearance, personality, backstory, motivation, visibility, avatarUrl)
+    onUpdate(character.id, name, appearance, personality, backstory, motivation, flaw, secrets, visibility, avatarUrl)
     onClose()
   }
 
@@ -130,7 +136,7 @@ export function EditCharacterModal({ isOpen, onClose, character, characters, pla
           <CharacterFieldTabs
             activeTab={activeFieldTab}
             onTabChange={setActiveFieldTab}
-            values={{ appearance, personality, backstory }}
+            values={{ appearance, personality, backstory, flaw, secrets }}
             onChange={(tab, value) => fieldSetters[tab](value)}
           />
           <div>

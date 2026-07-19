@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     userId = context.userId
 
     const body = await request.json()
-    const { name, appearance, personality, backstory, motivation, projectId, visibility } = body
+    const { name, appearance, personality, backstory, motivation, flaw, secrets, projectId, visibility } = body
 
     if (visibility !== undefined && !isValidVisibility(visibility)) {
       return NextResponse.json({ error: 'Sichtbarkeit muss PRIVATE oder FAMILY sein' }, { status: 400 })
@@ -76,6 +76,8 @@ export async function POST(request: NextRequest) {
         personality: personality || '',
         backstory: backstory || '',
         motivation: motivation || '',
+        flaw: flaw || '',
+        secrets: secrets || '',
         visibility: visibility || 'PRIVATE',
         projectId: projectId || null,
         familyId: context.familyId,

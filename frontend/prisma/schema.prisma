@@ -116,6 +116,8 @@ model Character {
   personality String?
   backstory   String?
   motivation  String?
+  flaw        String?
+  secrets     String?
   avatarUrl   String?
   visibility  Visibility @default(PRIVATE)
   projectId   String?

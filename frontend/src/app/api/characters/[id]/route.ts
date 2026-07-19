@@ -29,7 +29,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { name, appearance, personality, backstory, motivation, avatarUrl, visibility } = body
+    const { name, appearance, personality, backstory, motivation, flaw, secrets, avatarUrl, visibility } = body
 
     if (visibility !== undefined && !isValidVisibility(visibility)) {
       return NextResponse.json({ error: 'Sichtbarkeit muss PRIVATE oder FAMILY sein' }, { status: 400 })
@@ -41,6 +41,8 @@ export async function PUT(
     if (personality !== undefined) updateData.personality = personality
     if (backstory !== undefined) updateData.backstory = backstory
     if (motivation !== undefined) updateData.motivation = motivation
+    if (flaw !== undefined) updateData.flaw = flaw
+    if (secrets !== undefined) updateData.secrets = secrets
     if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl
     if (visibility !== undefined) updateData.visibility = visibility
 

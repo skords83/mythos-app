@@ -7,7 +7,7 @@ import CharacterFieldTabs, { CharacterFieldKey } from './CharacterFieldTabs'
 interface AddCharacterModalProps {
   isOpen: boolean
   onClose: () => void
-  onAdd: (name: string, appearance: string, personality: string, backstory: string, motivation: string, visibility: 'PRIVATE' | 'FAMILY') => void
+  onAdd: (name: string, appearance: string, personality: string, backstory: string, motivation: string, flaw: string, secrets: string, visibility: 'PRIVATE' | 'FAMILY') => void
 }
 
 export function AddCharacterModal({ isOpen, onClose, onAdd }: AddCharacterModalProps) {
@@ -17,6 +17,8 @@ export function AddCharacterModal({ isOpen, onClose, onAdd }: AddCharacterModalP
   const [personality, setPersonality] = useState('')
   const [backstory, setBackstory] = useState('')
   const [motivation, setMotivation] = useState('')
+  const [flaw, setFlaw] = useState('')
+  const [secrets, setSecrets] = useState('')
   const [visibility, setVisibility] = useState<'PRIVATE' | 'FAMILY'>('PRIVATE')
 
   if (!isOpen) return null
@@ -25,16 +27,20 @@ export function AddCharacterModal({ isOpen, onClose, onAdd }: AddCharacterModalP
     appearance: setAppearance,
     personality: setPersonality,
     backstory: setBackstory,
+    flaw: setFlaw,
+    secrets: setSecrets,
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onAdd(name, appearance, personality, backstory, motivation, visibility)
+    onAdd(name, appearance, personality, backstory, motivation, flaw, secrets, visibility)
     setName('')
     setAppearance('')
     setPersonality('')
     setBackstory('')
     setMotivation('')
+    setFlaw('')
+    setSecrets('')
     setVisibility('PRIVATE')
     onClose()
   }
@@ -62,7 +68,7 @@ export function AddCharacterModal({ isOpen, onClose, onAdd }: AddCharacterModalP
           <CharacterFieldTabs
             activeTab={activeFieldTab}
             onTabChange={setActiveFieldTab}
-            values={{ appearance, personality, backstory }}
+            values={{ appearance, personality, backstory, flaw, secrets }}
             onChange={(tab, value) => fieldSetters[tab](value)}
           />
           <div>

@@ -30,6 +30,8 @@ export interface Character {
   personality: string | null
   backstory: string | null
   motivation: string | null
+  flaw: string | null
+  secrets: string | null
   avatarUrl: string | null
   visibility: 'PRIVATE' | 'FAMILY'
   projectId: string | null

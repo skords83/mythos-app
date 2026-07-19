@@ -11,6 +11,8 @@ function makeCharacter(id: string, name: string): Character {
     personality: null,
     backstory: null,
     motivation: null,
+    flaw: null,
+    secrets: null,
     avatarUrl: null,
     visibility: 'PRIVATE',
     projectId: 'proj-1',

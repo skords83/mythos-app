@@ -11,7 +11,7 @@ export interface CommentClickResult {
 // Marks (unlike mention nodes) can overlap on the same span — this returns the
 // first matching comment mark found, an accepted v1 limitation for overlapping
 // comments.
-export function resolveCommentClick(marks: MarkLike[], event: MouseEvent): CommentClickResult | null {
+export function resolveCommentClick(marks: readonly MarkLike[], event: MouseEvent): CommentClickResult | null {
   const position = { x: event.clientX, y: event.clientY }
   const mark = marks.find(m => m.type.name === 'comment' && m.attrs.commentId)
   if (!mark) return null

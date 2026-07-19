@@ -2,12 +2,14 @@
 
 import { TEXT_SECONDARY, TEXT_PRIMARY, INPUT } from '@/lib/theme'
 
-export type CharacterFieldKey = 'appearance' | 'personality' | 'backstory'
+export type CharacterFieldKey = 'appearance' | 'personality' | 'backstory' | 'flaw' | 'secrets'
 
 const TABS: { key: CharacterFieldKey; label: string; placeholder: string }[] = [
   { key: 'appearance', label: 'Äußeres', placeholder: 'Größe, Haarfarbe, markante Merkmale...' },
   { key: 'personality', label: 'Persönlichkeit', placeholder: 'Charakterzüge, Stärken, Schwächen...' },
   { key: 'backstory', label: 'Vergangenheit', placeholder: 'Herkunft, prägende Ereignisse...' },
+  { key: 'flaw', label: 'Innerer Konflikt', placeholder: 'Größte Schwäche, ungelöster Konflikt...' },
+  { key: 'secrets', label: 'Geheimnisse', placeholder: 'Was verbirgt der Charakter vor anderen?...' },
 ]
 
 interface CharacterFieldTabsProps {
