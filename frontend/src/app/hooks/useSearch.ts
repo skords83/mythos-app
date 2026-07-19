@@ -12,9 +12,17 @@ export interface SearchResults {
   characters: SearchResultItem[]
   places: SearchResultItem[]
   notes: SearchResultItem[]
+  items: SearchResultItem[]
+  factions: SearchResultItem[]
+  scenes: SearchResultItem[]
+  timelineEvents: SearchResultItem[]
+  loreEntries: SearchResultItem[]
 }
 
-const EMPTY_RESULTS: SearchResults = { chapters: [], characters: [], places: [], notes: [] }
+const EMPTY_RESULTS: SearchResults = {
+  chapters: [], characters: [], places: [], notes: [],
+  items: [], factions: [], scenes: [], timelineEvents: [], loreEntries: [],
+}
 
 export function useSearch(projectId: string | undefined) {
   const [query, setQuery] = useState('')

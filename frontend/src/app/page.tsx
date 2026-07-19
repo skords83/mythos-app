@@ -184,6 +184,46 @@ export default function Page() {
     }
   }
 
+  const handleSelectSearchItem = (itemId: string) => {
+    const item = items.find(i => i.id === itemId)
+    if (item) {
+      setEditingItem(item)
+      setActiveTab('items')
+    }
+  }
+
+  const handleSelectSearchFaction = (factionId: string) => {
+    const faction = factions.find(f => f.id === factionId)
+    if (faction) {
+      setEditingFaction(faction)
+      setActiveTab('factions')
+    }
+  }
+
+  const handleSelectSearchScene = (chapterId: string) => {
+    const chapter = chapters.find(ch => ch.id === chapterId)
+    if (chapter) {
+      switchChapter(chapter)
+      setActiveTab('manuscript')
+    }
+  }
+
+  const handleSelectSearchTimelineEvent = (eventId: string) => {
+    const event = timelineEvents.find(e => e.id === eventId)
+    if (event) {
+      setEditingTimelineEvent(event)
+      setActiveTab('timeline')
+    }
+  }
+
+  const handleSelectSearchLoreEntry = (entryId: string) => {
+    const entry = loreEntries.find(e => e.id === entryId)
+    if (entry) {
+      setEditingLoreEntry(entry)
+      setActiveTab('lore')
+    }
+  }
+
   if (isLoading) {
     return (
       <div className={`min-h-screen ${SURFACE} flex items-center justify-center`}>
@@ -514,6 +554,11 @@ export default function Page() {
         onSelectCharacter={handleSelectSearchCharacter}
         onSelectPlace={() => setActiveTab('places')}
         onSelectNote={handleSelectSearchNote}
+        onSelectItem={handleSelectSearchItem}
+        onSelectFaction={handleSelectSearchFaction}
+        onSelectScene={handleSelectSearchScene}
+        onSelectTimelineEvent={handleSelectSearchTimelineEvent}
+        onSelectLoreEntry={handleSelectSearchLoreEntry}
       />
     </div>
   )

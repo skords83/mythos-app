@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef } from 'react'
-import { Book, MapPin, Search, StickyNote, Users, X } from 'lucide-react'
+import { Book, Clapperboard, Clock, Gem, MapPin, Scroll, Search, Shield, StickyNote, Users, X } from 'lucide-react'
 import { SearchResultItem, SearchResults } from '../hooks/useSearch'
 import { MODAL_PANEL, RADIUS, TEXT_PRIMARY, TEXT_MUTED } from '@/lib/theme'
 
@@ -16,6 +16,11 @@ interface SearchModalProps {
   onSelectCharacter: (id: string) => void
   onSelectPlace: (id: string) => void
   onSelectNote: (chapterId: string) => void
+  onSelectItem: (id: string) => void
+  onSelectFaction: (id: string) => void
+  onSelectScene: (chapterId: string) => void
+  onSelectTimelineEvent: (id: string) => void
+  onSelectLoreEntry: (id: string) => void
 }
 
 interface Section {
@@ -36,6 +41,11 @@ export function SearchModal({
   onSelectCharacter,
   onSelectPlace,
   onSelectNote,
+  onSelectItem,
+  onSelectFaction,
+  onSelectScene,
+  onSelectTimelineEvent,
+  onSelectLoreEntry,
 }: SearchModalProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -52,6 +62,11 @@ export function SearchModal({
     { key: 'characters', label: 'Charaktere', icon: Users, onSelect: (item) => onSelectCharacter(item.id) },
     { key: 'places', label: 'Orte', icon: MapPin, onSelect: (item) => onSelectPlace(item.id) },
     { key: 'notes', label: 'Notizen', icon: StickyNote, onSelect: (item) => item.chapterId && onSelectNote(item.chapterId) },
+    { key: 'items', label: 'Items', icon: Gem, onSelect: (item) => onSelectItem(item.id) },
+    { key: 'factions', label: 'Fraktionen', icon: Shield, onSelect: (item) => onSelectFaction(item.id) },
+    { key: 'scenes', label: 'Szenen', icon: Clapperboard, onSelect: (item) => item.chapterId && onSelectScene(item.chapterId) },
+    { key: 'timelineEvents', label: 'Zeitstrahl', icon: Clock, onSelect: (item) => onSelectTimelineEvent(item.id) },
+    { key: 'loreEntries', label: 'Lore-Bibel', icon: Scroll, onSelect: (item) => onSelectLoreEntry(item.id) },
   ]
 
   const hasQuery = query.trim().length >= 2
@@ -70,7 +85,7 @@ export function SearchModal({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Suche in Kapiteln, Charakteren, Orten, Notizen..."
+            placeholder="Suche über alle Entitäten..."
             className={`flex-1 bg-transparent outline-none ${TEXT_PRIMARY} placeholder-zinc-400`}
           />
           <button onClick={onClose} className={`${TEXT_MUTED} hover:text-zinc-600 dark:hover:text-zinc-300 flex-shrink-0`}>

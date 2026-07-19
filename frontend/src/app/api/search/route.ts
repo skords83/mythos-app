@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getUserFromRequest } from '@/lib/auth'
+import { getAuthContext } from '@/lib/auth'
+import { visibilityWhere } from '@/lib/visibility'
 import { htmlToText, buildSnippet } from '@/lib/text'
 import { logger } from '@/lib/logger'
 
@@ -13,14 +14,20 @@ interface SearchResult {
 
 const MAX_RESULTS_PER_TYPE = 8
 
-// GET /api/search?projectId=xxx&q=yyy - Volltextsuche über Kapitel/Charaktere/Orte/Notizen eines Projekts
+const EMPTY_SEARCH_RESULTS = {
+  chapters: [], characters: [], places: [], notes: [],
+  items: [], factions: [], scenes: [], timelineEvents: [], loreEntries: [],
+}
+
+// GET /api/search?projectId=xxx&q=yyy - Volltextsuche über alle Entitäten eines Projekts
 export async function GET(request: NextRequest) {
   let userId: string | null = null
   try {
-    userId = await getUserFromRequest(request)
-    if (!userId) {
+    const context = await getAuthContext(request)
+    if (!context) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
+    userId = context.userId
 
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
@@ -31,27 +38,44 @@ export async function GET(request: NextRequest) {
     }
 
     if (q.length < 2) {
-      return NextResponse.json({ chapters: [], characters: [], places: [], notes: [] })
+      return NextResponse.json(EMPTY_SEARCH_RESULTS)
     }
 
     const project = await prisma.project.findFirst({
-      where: { id: projectId, userId }
+      where: { id: projectId, user: { familyId: context.familyId } }
     })
 
     if (!project) {
       return NextResponse.json({ error: 'Projekt nicht gefunden' }, { status: 404 })
     }
 
-    const [characterMatches, placeMatches, noteMatches, allChapters] = await Promise.all([
+    const visible = { OR: visibilityWhere(context) }
+
+    const [
+      characterMatches,
+      placeMatches,
+      noteMatches,
+      allChapters,
+      itemMatches,
+      factionMatches,
+      sceneMatches,
+      timelineEventMatches,
+      loreEntryMatches,
+    ] = await Promise.all([
       prisma.character.findMany({
         where: {
           projectId,
-          OR: [
-            { name: { contains: q, mode: 'insensitive' } },
-            { appearance: { contains: q, mode: 'insensitive' } },
-            { personality: { contains: q, mode: 'insensitive' } },
-            { backstory: { contains: q, mode: 'insensitive' } },
-            { motivation: { contains: q, mode: 'insensitive' } },
+          AND: [
+            {
+              OR: [
+                { name: { contains: q, mode: 'insensitive' } },
+                { appearance: { contains: q, mode: 'insensitive' } },
+                { personality: { contains: q, mode: 'insensitive' } },
+                { backstory: { contains: q, mode: 'insensitive' } },
+                { motivation: { contains: q, mode: 'insensitive' } },
+              ]
+            },
+            visible,
           ]
         },
         take: MAX_RESULTS_PER_TYPE,
@@ -60,12 +84,17 @@ export async function GET(request: NextRequest) {
       prisma.place.findMany({
         where: {
           projectId,
-          OR: [
-            { name: { contains: q, mode: 'insensitive' } },
-            { description: { contains: q, mode: 'insensitive' } },
-            { location: { contains: q, mode: 'insensitive' } },
-            { climate: { contains: q, mode: 'insensitive' } },
-            { importance: { contains: q, mode: 'insensitive' } },
+          AND: [
+            {
+              OR: [
+                { name: { contains: q, mode: 'insensitive' } },
+                { description: { contains: q, mode: 'insensitive' } },
+                { location: { contains: q, mode: 'insensitive' } },
+                { climate: { contains: q, mode: 'insensitive' } },
+                { importance: { contains: q, mode: 'insensitive' } },
+              ]
+            },
+            visible,
           ]
         },
         take: MAX_RESULTS_PER_TYPE,
@@ -85,7 +114,92 @@ export async function GET(request: NextRequest) {
       prisma.chapter.findMany({
         where: { projectId },
         select: { id: true, title: true, content: true }
-      })
+      }),
+      prisma.item.findMany({
+        where: {
+          projectId,
+          AND: [
+            {
+              OR: [
+                { name: { contains: q, mode: 'insensitive' } },
+                { description: { contains: q, mode: 'insensitive' } },
+                { origin: { contains: q, mode: 'insensitive' } },
+                { significance: { contains: q, mode: 'insensitive' } },
+              ]
+            },
+            visible,
+          ]
+        },
+        take: MAX_RESULTS_PER_TYPE,
+        select: { id: true, name: true, description: true }
+      }),
+      prisma.faction.findMany({
+        where: {
+          projectId,
+          AND: [
+            {
+              OR: [
+                { name: { contains: q, mode: 'insensitive' } },
+                { description: { contains: q, mode: 'insensitive' } },
+                { goal: { contains: q, mode: 'insensitive' } },
+              ]
+            },
+            visible,
+          ]
+        },
+        take: MAX_RESULTS_PER_TYPE,
+        select: { id: true, name: true, description: true }
+      }),
+      prisma.scene.findMany({
+        where: {
+          chapter: { projectId },
+          AND: [
+            {
+              OR: [
+                { name: { contains: q, mode: 'insensitive' } },
+                { description: { contains: q, mode: 'insensitive' } },
+              ]
+            },
+            visible,
+          ]
+        },
+        take: MAX_RESULTS_PER_TYPE,
+        select: { id: true, name: true, description: true, chapterId: true }
+      }),
+      prisma.timelineEvent.findMany({
+        where: {
+          projectId,
+          AND: [
+            {
+              OR: [
+                { title: { contains: q, mode: 'insensitive' } },
+                { description: { contains: q, mode: 'insensitive' } },
+                { date: { contains: q, mode: 'insensitive' } },
+              ]
+            },
+            visible,
+          ]
+        },
+        take: MAX_RESULTS_PER_TYPE,
+        select: { id: true, title: true, description: true, date: true }
+      }),
+      prisma.loreEntry.findMany({
+        where: {
+          projectId,
+          AND: [
+            {
+              OR: [
+                { title: { contains: q, mode: 'insensitive' } },
+                { content: { contains: q, mode: 'insensitive' } },
+                { category: { contains: q, mode: 'insensitive' } },
+              ]
+            },
+            visible,
+          ]
+        },
+        take: MAX_RESULTS_PER_TYPE,
+        select: { id: true, title: true, content: true }
+      }),
     ])
 
     const characters: SearchResult[] = characterMatches.map(c => ({
@@ -123,7 +237,38 @@ export async function GET(request: NextRequest) {
       .filter((r): r is SearchResult => r !== null)
       .slice(0, MAX_RESULTS_PER_TYPE)
 
-    return NextResponse.json({ chapters, characters, places, notes })
+    const items: SearchResult[] = itemMatches.map(i => ({
+      id: i.id,
+      title: i.name,
+      snippet: buildSnippet(i.description || i.name, q)
+    }))
+
+    const factions: SearchResult[] = factionMatches.map(f => ({
+      id: f.id,
+      title: f.name,
+      snippet: buildSnippet(f.description || f.name, q)
+    }))
+
+    const scenes: SearchResult[] = sceneMatches.map(s => ({
+      id: s.id,
+      title: s.name,
+      snippet: buildSnippet(s.description || s.name, q),
+      chapterId: s.chapterId
+    }))
+
+    const timelineEvents: SearchResult[] = timelineEventMatches.map(t => ({
+      id: t.id,
+      title: t.title,
+      snippet: buildSnippet(t.description || t.date || t.title, q)
+    }))
+
+    const loreEntries: SearchResult[] = loreEntryMatches.map(l => ({
+      id: l.id,
+      title: l.title,
+      snippet: buildSnippet(l.content || l.title, q)
+    }))
+
+    return NextResponse.json({ chapters, characters, places, notes, items, factions, scenes, timelineEvents, loreEntries })
   } catch (error) {
     logger.error(error, { route: 'GET /api/search', userId })
     return NextResponse.json({ error: 'Fehler bei der Suche' }, { status: 500 })
