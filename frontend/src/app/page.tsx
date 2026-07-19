@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Book, Plus, Save } from 'lucide-react'
 import { ACCENT, RADIUS, SURFACE, SURFACE_ALT, TEXT_PRIMARY, TEXT_MUTED } from '@/lib/theme'
@@ -8,6 +8,8 @@ import {
   QuickCardState,
   PlaceQuickCardState,
   ItemQuickCardState,
+  CommentPopoverState,
+  CommentActions,
   ThemeToggle,
   FocusToggle,
   CreateProjectModal,
@@ -27,6 +29,7 @@ import {
   CharacterQuickCard,
   PlaceQuickCard,
   ItemQuickCard,
+  CommentPopover,
   ConfirmDialog,
   Toast,
   LeftSidebar,
@@ -58,7 +61,7 @@ import { ActiveTab } from './components/LeftSidebar'
 // Main Page Component
 export default function Page() {
   const router = useRouter()
-  const { isCheckingAuth } = useAuth()
+  const { isCheckingAuth, user } = useAuth()
   const { errorToast, setErrorToast, confirmDialog, setConfirmDialog, showError, requestConfirm } = useNotifications()
   const onConfirmed = () => setConfirmDialog(null)
 
@@ -136,6 +139,12 @@ export default function Page() {
     position: { x: 0, y: 0 },
     visible: false
   })
+  const [commentPopover, setCommentPopover] = useState<CommentPopoverState>({
+    comment: null,
+    position: { x: 0, y: 0 },
+    visible: false
+  })
+  const commentActionsRef = useRef<CommentActions | null>(null)
 
   const totalWordCount = Array.isArray(chapters) ? chapters.reduce((sum, ch) => sum + (ch.wordCount || 0), 0) : 0
 
@@ -311,6 +320,14 @@ export default function Page() {
                   })
                 }
               }}
+              onCommentClick={(result) => {
+                setCommentPopover({
+                  comment: result.comment,
+                  position: result.position,
+                  visible: true,
+                })
+              }}
+              commentActionsRef={commentActionsRef}
               focusMode={focusMode}
               showError={showError}
               requestConfirm={requestConfirm}
@@ -446,6 +463,24 @@ export default function Page() {
       <CharacterQuickCard state={quickCard} onClose={() => setQuickCard(prev => ({ ...prev, visible: false }))} />
       <PlaceQuickCard state={placeQuickCard} onClose={() => setPlaceQuickCard(prev => ({ ...prev, visible: false }))} />
       <ItemQuickCard state={itemQuickCard} onClose={() => setItemQuickCard(prev => ({ ...prev, visible: false }))} />
+      <CommentPopover
+        state={commentPopover}
+        currentUserId={user?.id ?? null}
+        onClose={() => setCommentPopover(prev => ({ ...prev, visible: false }))}
+        onUpdate={(commentId, content, visibility) => {
+          commentActionsRef.current?.updateComment(commentId, content, visibility)
+          setCommentPopover(prev => (prev.comment && prev.comment.id === commentId ? { ...prev, comment: { ...prev.comment, content, visibility } } : prev))
+        }}
+        onToggleResolved={(commentId, resolved) => {
+          commentActionsRef.current?.toggleResolved(commentId, resolved)
+          setCommentPopover(prev => (prev.comment && prev.comment.id === commentId ? { ...prev, comment: { ...prev.comment, resolved } } : prev))
+        }}
+        onDelete={(commentId) => {
+          commentActionsRef.current?.deleteComment(commentId, () => {
+            setCommentPopover(prev => (prev.comment?.id === commentId ? { ...prev, visible: false } : prev))
+          })
+        }}
+      />
       <EditProjectModal
         isOpen={showEditProjectModal}
         onClose={() => setShowEditProjectModal(false)}

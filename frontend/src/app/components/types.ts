@@ -140,6 +140,31 @@ export interface Note {
   updatedAt: string
 }
 
+export interface Comment {
+  id: string
+  content: string
+  visibility: 'PRIVATE' | 'FAMILY'
+  resolved: boolean
+  chapterId: string
+  familyId: string
+  authorId: string
+  createdAt: string
+  updatedAt: string
+  author?: { name: string | null }
+}
+
+export interface CommentPopoverState {
+  comment: Comment | null
+  position: { x: number, y: number }
+  visible: boolean
+}
+
+export interface CommentActions {
+  updateComment: (id: string, content: string, visibility: 'PRIVATE' | 'FAMILY') => void
+  toggleResolved: (id: string, resolved: boolean) => void
+  deleteComment: (id: string, onDeleted?: () => void) => void
+}
+
 export interface QuickCardState {
   character: Character | null
   position: { x: number, y: number }

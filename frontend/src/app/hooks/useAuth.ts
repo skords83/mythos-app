@@ -1,9 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+interface AuthUser {
+  id: string
+  name?: string | null
+  email?: string
+  familyId?: string
+  role?: string
+}
+
 export function useAuth() {
   const router = useRouter()
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+  const [user, setUser] = useState<AuthUser | null>(null)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -12,6 +21,7 @@ export function useAuth() {
         const data = await res.json()
 
         if (data.user) {
+          setUser(data.user)
           const storedProjectId = localStorage.getItem('selectedProjectId')
           if (storedProjectId) {
             setIsCheckingAuth(false)
@@ -29,5 +39,5 @@ export function useAuth() {
     checkAuth()
   }, [])
 
-  return { isCheckingAuth }
+  return { isCheckingAuth, user }
 }

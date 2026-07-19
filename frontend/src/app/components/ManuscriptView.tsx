@@ -1,14 +1,18 @@
 'use client'
 
-import { MutableRefObject, useState } from 'react'
-import { RichTextEditor } from './RichTextEditor'
+import { MutableRefObject, useEffect, useRef, useState } from 'react'
+import { RichTextEditor, CommentEditorApi } from './RichTextEditor'
 import { ReferencePanel } from './ReferencePanel'
 import { ScenesPanel } from './ScenesPanel'
-import { Chapter, Character, Item, Place } from './types'
+import { CommentsPanel } from './CommentsPanel'
+import { Chapter, Character, Comment, CommentActions, Item, Place } from './types'
 import { ChapterDraft } from '@/lib/chapterDraftStore'
 import { DraftRecoveryBanner } from './DraftRecoveryBanner'
 import { TEXT_PRIMARY, TEXT_MUTED, ACCENT, RADIUS } from '@/lib/theme'
 import type { MentionClickResult } from '@/lib/tiptap/mentionClick'
+import { useComments } from '../hooks/useComments'
+
+type SidePanel = 'none' | 'reference' | 'comments'
 
 interface ManuscriptViewProps {
   selectedChapter: Chapter | null
@@ -25,6 +29,8 @@ interface ManuscriptViewProps {
   onDiscardDraft: () => void
   characters: Character[]
   onMentionClick: (result: MentionClickResult) => void
+  onCommentClick: (payload: { comment: Comment; position: { x: number; y: number } }) => void
+  commentActionsRef: MutableRefObject<CommentActions | null>
   focusMode: boolean
   showError: (message: string) => void
   requestConfirm: (title: string, message: string, onConfirm: () => void) => void
@@ -46,12 +52,40 @@ export function ManuscriptView({
   onDiscardDraft,
   characters,
   onMentionClick,
+  onCommentClick,
+  commentActionsRef,
   focusMode,
   showError,
   requestConfirm,
   onConfirmed,
 }: ManuscriptViewProps) {
-  const [splitScreenOpen, setSplitScreenOpen] = useState(false)
+  const [sidePanel, setSidePanel] = useState<SidePanel>('none')
+  const splitScreenOpen = sidePanel !== 'none'
+
+  const { comments, updateComment, toggleResolved, deleteComment, addComment } = useComments({
+    chapterId: selectedChapter?.id ?? null,
+    showError,
+    requestConfirm,
+    onConfirmed,
+  })
+
+  const commentEditorApiRef = useRef<CommentEditorApi | null>(null)
+
+  useEffect(() => {
+    commentActionsRef.current = {
+      updateComment,
+      toggleResolved: (id, resolved) => {
+        toggleResolved(id, resolved)
+        commentEditorApiRef.current?.setResolved(id, resolved)
+      },
+      deleteComment: (id, onDeleted) => {
+        deleteComment(id, () => {
+          commentEditorApiRef.current?.removeMark(id)
+          onDeleted?.()
+        })
+      },
+    }
+  }, [updateComment, toggleResolved, deleteComment, commentActionsRef])
 
   return (
     <div className={`${splitScreenOpen ? 'max-w-6xl' : 'max-w-3xl'} mx-auto px-8 py-12 relative`}>
@@ -77,9 +111,17 @@ export function ManuscriptView({
               places={places}
               items={items}
               onMentionClick={onMentionClick}
-              splitScreenActive={splitScreenOpen}
-              onToggleSplitScreen={() => setSplitScreenOpen((open) => !open)}
+              splitScreenActive={sidePanel === 'reference'}
+              onToggleSplitScreen={() => setSidePanel((p) => (p === 'reference' ? 'none' : 'reference'))}
               typewriterMode={focusMode}
+              onCommentClick={(result) => {
+                const comment = comments.find((c) => c.id === result.commentId)
+                if (comment) onCommentClick({ comment, position: result.position })
+              }}
+              commentsPanelActive={sidePanel === 'comments'}
+              onToggleCommentsPanel={() => setSidePanel((p) => (p === 'comments' ? 'none' : 'comments'))}
+              onAddComment={addComment}
+              onCommentEditorReady={(api) => { commentEditorApiRef.current = api }}
             />
             <ScenesPanel
               chapterId={selectedChapter.id}
@@ -91,13 +133,23 @@ export function ManuscriptView({
               onConfirmed={onConfirmed}
             />
           </div>
-          {splitScreenOpen && (
+          {sidePanel === 'reference' && (
             <ReferencePanel
               chapters={chapters}
               characters={characters}
               places={places}
               currentChapterId={selectedChapter.id}
-              onClose={() => setSplitScreenOpen(false)}
+              onClose={() => setSidePanel('none')}
+            />
+          )}
+          {sidePanel === 'comments' && (
+            <CommentsPanel
+              comments={comments}
+              anchoredCommentIds={commentEditorApiRef.current?.getAnchoredIds() ?? new Set()}
+              onClose={() => setSidePanel('none')}
+              onJump={(commentId) => commentEditorApiRef.current?.jumpTo(commentId)}
+              onToggleResolved={(commentId, resolved) => commentActionsRef.current?.toggleResolved(commentId, resolved)}
+              onDelete={(commentId) => commentActionsRef.current?.deleteComment(commentId)}
             />
           )}
         </div>

@@ -4,15 +4,25 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Image from '@tiptap/extension-image'
-import { Bold, Italic, List, Quote, Heading1, Heading2, Undo, Redo, Image as ImageIcon, ArrowUp, ArrowDown, SeparatorHorizontal, Columns2 } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { Bold, Italic, List, Quote, Heading1, Heading2, Undo, Redo, Image as ImageIcon, ArrowUp, ArrowDown, SeparatorHorizontal, Columns2, MessageSquarePlus, MessageSquare } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { SURFACE, SURFACE_ALT, RADIUS, BORDER, ACCENT_TEXT, HOVER_SURFACE, ACTIVE_SURFACE, DIVIDER } from '@/lib/theme'
 import { CharacterMention } from '@/lib/tiptap/characterMentionExtension'
 import { EntityMention } from '@/lib/tiptap/entityMentionExtension'
 import { createMentionSuggestion, MentionableData } from '@/lib/tiptap/mentionSuggestion'
 import { resolveMentionClick, MentionClickResult } from '@/lib/tiptap/mentionClick'
+import { resolveCommentClick, CommentClickResult } from '@/lib/tiptap/commentClick'
+import { CommentMark, applyCommentResolvedState, removeCommentMark, commentIdsInDoc } from '@/lib/tiptap/commentMark'
 import { BlockDragHandle, findTopLevelBlockAt, moveTopLevelBlock } from '@/lib/tiptap/blockDragHandleExtension'
-import type { Character, Item, Place } from './types'
+import { NewCommentInput } from './NewCommentInput'
+import type { Character, Item, Place, Comment } from './types'
+
+export interface CommentEditorApi {
+  jumpTo: (commentId: string) => void
+  setResolved: (commentId: string, resolved: boolean) => void
+  removeMark: (commentId: string) => void
+  getAnchoredIds: () => Set<string>
+}
 
 interface RichTextEditorProps {
   content: string
@@ -26,9 +36,14 @@ interface RichTextEditorProps {
   splitScreenActive: boolean
   onToggleSplitScreen: () => void
   typewriterMode?: boolean
+  onCommentClick: (result: CommentClickResult) => void
+  commentsPanelActive: boolean
+  onToggleCommentsPanel: () => void
+  onAddComment: (content: string, visibility: 'PRIVATE' | 'FAMILY') => Promise<Comment | null>
+  onCommentEditorReady?: (api: CommentEditorApi) => void
 }
 
-export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu schreiben...', onEditorReady, characters, places, items, onMentionClick, splitScreenActive, onToggleSplitScreen, typewriterMode = false }: RichTextEditorProps) {
+export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu schreiben...', onEditorReady, characters, places, items, onMentionClick, splitScreenActive, onToggleSplitScreen, typewriterMode = false, onCommentClick, commentsPanelActive, onToggleCommentsPanel, onAddComment, onCommentEditorReady }: RichTextEditorProps) {
   // useEditor has no deps array below (editor is created once) — mirror useChapters.ts's
   // stale-closure fix so suggestion filtering and click handling always see current data.
   const mentionDataRef = useRef<MentionableData>({ characters, places, items })
@@ -36,6 +51,11 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
 
   const onMentionClickRef = useRef(onMentionClick)
   useEffect(() => { onMentionClickRef.current = onMentionClick }, [onMentionClick])
+
+  const onCommentClickRef = useRef(onCommentClick)
+  useEffect(() => { onCommentClickRef.current = onCommentClick }, [onCommentClick])
+
+  const [newCommentDraft, setNewCommentDraft] = useState<{ from: number; to: number; position: { x: number; y: number } } | null>(null)
 
   const editor = useEditor({
     extensions: [
@@ -46,6 +66,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
         suggestion: createMentionSuggestion(mentionDataRef),
       }),
       EntityMention,
+      CommentMark,
       BlockDragHandle,
     ],
     content: content || '',
@@ -62,6 +83,13 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
         onMentionClickRef.current(result)
         return true
       },
+      handleClick: (view, pos, event) => {
+        const marks = view.state.doc.resolve(pos).marks()
+        const result = resolveCommentClick(marks, event)
+        if (!result) return false
+        onCommentClickRef.current(result)
+        return true
+      },
     },
   })
 
@@ -70,6 +98,27 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
     if (editor && onEditorReady) {
       onEditorReady((newContent: string) => {
         editor.commands.setContent(newContent || '')
+      })
+    }
+  }, [editor])
+
+  useEffect(() => {
+    if (editor && onCommentEditorReady) {
+      onCommentEditorReady({
+        jumpTo: (commentId: string) => {
+          let target: { from: number; to: number } | null = null
+          editor.state.doc.descendants((node, pos) => {
+            if (target) return false
+            const mark = node.marks.find(m => m.type.name === 'comment' && m.attrs.commentId === commentId)
+            if (mark) target = { from: pos, to: pos + node.nodeSize }
+            return true
+          })
+          if (!target) return
+          editor.chain().focus().setTextSelection(target).scrollIntoView().run()
+        },
+        setResolved: (commentId: string, resolved: boolean) => applyCommentResolvedState(editor, commentId, resolved),
+        removeMark: (commentId: string) => removeCommentMark(editor, commentId),
+        getAnchoredIds: () => commentIdsInDoc(editor),
       })
     }
   }, [editor])
@@ -134,6 +183,28 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
     e.target.value = ''
   }
 
+  const openNewCommentInput = () => {
+    if (!editor || editor.state.selection.empty) return
+    const { from, to } = editor.state.selection
+    const coords = editor.view.coordsAtPos(from)
+    setNewCommentDraft({ from, to, position: { x: coords.left, y: coords.bottom } })
+  }
+
+  const submitNewComment = async (draftContent: string, visibility: 'PRIVATE' | 'FAMILY') => {
+    if (!editor || !newCommentDraft) return
+    const created = await onAddComment(draftContent, visibility)
+    if (created) {
+      editor
+        .chain()
+        .focus()
+        .setTextSelection({ from: newCommentDraft.from, to: newCommentDraft.to })
+        .setMark('comment', { commentId: created.id, resolved: false })
+        .setTextSelection(newCommentDraft.to)
+        .run()
+    }
+    setNewCommentDraft(null)
+  }
+
   if (!editor) return null
 
   return (
@@ -186,11 +257,26 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
           className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors disabled:opacity-50`}
           title="Block nach unten verschieben"><ArrowDown size={16} /></button>
         <div className={`w-px h-6 ${DIVIDER} mx-1`} />
+        <button onClick={openNewCommentInput}
+          disabled={editor.state.selection.empty}
+          className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors disabled:opacity-50`}
+          title="Kommentar hinzufügen"><MessageSquarePlus size={16} /></button>
+        <button onClick={onToggleCommentsPanel}
+          className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors ${commentsPanelActive ? `${ACTIVE_SURFACE} ${ACCENT_TEXT}` : ''}`}
+          title="Kommentare"><MessageSquare size={16} /></button>
+        <div className={`w-px h-6 ${DIVIDER} mx-1`} />
         <button onClick={onToggleSplitScreen}
           className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors ${splitScreenActive ? `${ACTIVE_SURFACE} ${ACCENT_TEXT}` : ''}`}
           title="Referenz-Modus (Split-Screen)"><Columns2 size={16} /></button>
       </div>
-      <EditorContent editor={editor} className="min-h-[400px] relative" />
+      <EditorContent editor={editor} />
+      {newCommentDraft && (
+        <NewCommentInput
+          position={newCommentDraft.position}
+          onCancel={() => setNewCommentDraft(null)}
+          onSubmit={submitNewComment}
+        />
+      )}
     </div>
   )
 }
