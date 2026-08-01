@@ -4,7 +4,10 @@ import { useState } from 'react'
 import { Plus, Clock } from 'lucide-react'
 import { TimelineEventCard } from './TimelineEventCard'
 import { TimelineEvent } from './types'
-import { TEXT_PRIMARY, TEXT_MUTED, ACCENT, ACTIVE_SURFACE, HOVER_SURFACE, RADIUS, BORDER } from '@/lib/theme'
+import { TEXT_PRIMARY, ACTIVE_SURFACE, HOVER_SURFACE, RADIUS, BORDER } from '@/lib/theme'
+import { ViewHeader } from './ViewHeader'
+import { EmptyState } from './EmptyState'
+import { HairlineButton } from './HairlineButton'
 
 type FilterType = 'ALL' | 'LORE' | 'PLOT'
 
@@ -22,16 +25,7 @@ export function TimelineView({ timelineEvents, onAddClick, onEdit, onDelete }: T
 
   return (
     <div className="max-w-4xl mx-auto px-8 py-12">
-      <div className="flex items-center justify-between mb-8">
-        <h2 className={`text-3xl font-serif font-bold ${TEXT_PRIMARY}`}>Der Zeitstrahl</h2>
-        <button
-          onClick={onAddClick}
-          className={`px-4 py-2 ${ACCENT} text-white ${RADIUS} transition-colors flex items-center gap-2`}
-        >
-          <Plus size={18} />
-          Neues Ereignis
-        </button>
-      </div>
+      <ViewHeader title="Der Zeitstrahl" actionLabel="Neues Ereignis" actionIcon={Plus} onAction={onAddClick} />
       <div className={`flex gap-1 mb-6 p-1 ${RADIUS} ${BORDER} w-fit`}>
         {(['ALL', 'PLOT', 'LORE'] as FilterType[]).map((f) => (
           <button
@@ -55,13 +49,11 @@ export function TimelineView({ timelineEvents, onAddClick, onEdit, onDelete }: T
           />
         ))}
         {filteredEvents.length === 0 && (
-          <div className={`text-center py-12 ${TEXT_MUTED}`}>
-            <Clock className="mx-auto mb-3" size={32} />
-            <p>Noch keine Ereignisse vorhanden.</p>
-            <button onClick={onAddClick} className={`mt-4 px-4 py-2 ${ACCENT} text-white ${RADIUS} transition-colors`}>
-              Erstes Ereignis erstellen
-            </button>
-          </div>
+          <EmptyState
+            icon={Clock}
+            label="Noch keine Ereignisse vorhanden"
+            action={<HairlineButton emphasised onClick={onAddClick}>Erstes Ereignis erstellen</HairlineButton>}
+          />
         )}
       </div>
     </div>

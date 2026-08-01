@@ -2,7 +2,9 @@
 
 import React from 'react'
 import { PlaceQuickCardState } from './types'
-import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ACCENT_TEXT, ACCENT, RADIUS, BORDER } from '@/lib/theme'
+import { TEXT_PRIMARY, TEXT_MUTED, ENTITY_SWATCH_TEXT, RADIUS, BORDER } from '@/lib/theme'
+import { EntityAvatar } from './EntityAvatar'
+import { MonoLabel } from './MonoLabel'
 
 interface PlaceQuickCardProps {
   state: PlaceQuickCardState
@@ -26,14 +28,12 @@ export function PlaceQuickCard({ state, onClose }: PlaceQuickCardProps) {
         }}
       >
         <div className="flex items-start gap-3 mb-3">
-          <div className={`w-14 h-14 ${RADIUS} ${ACCENT} flex items-center justify-center text-white text-xl font-bold flex-shrink-0`}>
-            {state.place.name.charAt(0)}
-          </div>
+          <EntityAvatar kind="place" label={state.place.name} size="lg" />
           <div className="flex-1 min-w-0">
-            <h3 className={`font-serif font-bold text-lg ${TEXT_PRIMARY} truncate`}>
+            <h3 className={`font-display font-light text-lg ${TEXT_PRIMARY} truncate`}>
               {state.place.name}
             </h3>
-            <span className={`text-xs ${ACCENT_TEXT} font-medium`}>Ort</span>
+            <span className={`text-xs ${ENTITY_SWATCH_TEXT.place} font-medium`}>Ort</span>
           </div>
           <button
             onClick={onClose}
@@ -45,9 +45,7 @@ export function PlaceQuickCard({ state, onClose }: PlaceQuickCardProps) {
         <div className="space-y-3">
           {state.place.location && (
             <div>
-              <h4 className={`text-xs font-semibold ${TEXT_SECONDARY} uppercase tracking-wider mb-1`}>
-                Lage
-              </h4>
+              <MonoLabel className="block mb-1">Lage</MonoLabel>
               <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
                 {state.place.location}
               </p>
@@ -55,9 +53,7 @@ export function PlaceQuickCard({ state, onClose }: PlaceQuickCardProps) {
           )}
           {state.place.climate && (
             <div>
-              <h4 className={`text-xs font-semibold ${TEXT_SECONDARY} uppercase tracking-wider mb-1`}>
-                Klima
-              </h4>
+              <MonoLabel className="block mb-1">Klima</MonoLabel>
               <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
                 {state.place.climate}
               </p>
@@ -65,9 +61,7 @@ export function PlaceQuickCard({ state, onClose }: PlaceQuickCardProps) {
           )}
           {state.place.description && (
             <div>
-              <h4 className={`text-xs font-semibold ${TEXT_SECONDARY} uppercase tracking-wider mb-1`}>
-                Beschreibung
-              </h4>
+              <MonoLabel className="block mb-1">Beschreibung</MonoLabel>
               <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
                 {state.place.description}
               </p>
@@ -75,10 +69,8 @@ export function PlaceQuickCard({ state, onClose }: PlaceQuickCardProps) {
           )}
           {state.place.importance && (
             <div>
-              <h4 className={`text-xs font-semibold ${TEXT_SECONDARY} uppercase tracking-wider mb-1`}>
-                Bedeutung
-              </h4>
-              <p className={`text-sm ${ACCENT_TEXT} italic leading-relaxed`}>
+              <MonoLabel className="block mb-1">Bedeutung</MonoLabel>
+              <p className={`text-sm ${ENTITY_SWATCH_TEXT.place} italic leading-relaxed`}>
                 "{state.place.importance}"
               </p>
             </div>

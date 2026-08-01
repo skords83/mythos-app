@@ -1,9 +1,10 @@
 'use client'
 
-import React from 'react'
 import { Trash2 } from 'lucide-react'
 import { LoreEntry } from './types'
-import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, RADIUS, BORDER } from '@/lib/theme'
+import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ICON_PROPS } from '@/lib/theme'
+import { Card } from './Card'
+import { Chip } from './Chip'
 
 interface LoreEntryCardProps {
   loreEntry: LoreEntry
@@ -13,28 +14,21 @@ interface LoreEntryCardProps {
 
 export function LoreEntryCard({ loreEntry, onEdit, onDelete }: LoreEntryCardProps) {
   return (
-    <div
-      onClick={onEdit}
-      className={`bg-white dark:bg-zinc-900 ${RADIUS} p-4 ${BORDER} group cursor-pointer`}
-    >
+    <Card onClick={onEdit}>
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <h4 className={`font-semibold ${TEXT_PRIMARY} truncate`}>{loreEntry.title}</h4>
               {loreEntry.category && (
-                <span
-                  className={`text-xs px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 ${RADIUS} flex-shrink-0 ${TEXT_SECONDARY}`}
-                >
-                  {loreEntry.category}
-                </span>
+                <Chip swatchClassName="bg-[var(--entity-idea)]">{loreEntry.category}</Chip>
               )}
             </div>
             <button
               onClick={(e) => { e.stopPropagation(); onDelete() }}
               className="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
             >
-              <Trash2 size={16} />
+              <Trash2 size={16} strokeWidth={ICON_PROPS.strokeWidth} />
             </button>
           </div>
           {loreEntry.content && (
@@ -45,6 +39,6 @@ export function LoreEntryCard({ loreEntry, onEdit, onDelete }: LoreEntryCardProp
           )}
         </div>
       </div>
-    </div>
+    </Card>
   )
 }

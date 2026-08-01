@@ -1,9 +1,10 @@
 'use client'
 
-import React from 'react'
 import { Trash2 } from 'lucide-react'
 import { TimelineEvent } from './types'
-import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ACCENT_TEXT, RADIUS, BORDER } from '@/lib/theme'
+import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ENTITY_SWATCH_TEXT, ICON_PROPS } from '@/lib/theme'
+import { Card } from './Card'
+import { Chip } from './Chip'
 
 interface TimelineEventCardProps {
   timelineEvent: TimelineEvent
@@ -13,28 +14,24 @@ interface TimelineEventCardProps {
 
 export function TimelineEventCard({ timelineEvent, onEdit, onDelete }: TimelineEventCardProps) {
   return (
-    <div
-      onClick={onEdit}
-      className={`bg-white dark:bg-zinc-900 ${RADIUS} p-4 ${BORDER} group cursor-pointer`}
-    >
+    <Card onClick={onEdit}>
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <h4 className={`font-semibold ${TEXT_PRIMARY} truncate`}>{timelineEvent.title}</h4>
-              <span
-                className={`text-xs px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 ${RADIUS} flex-shrink-0 ${
-                  timelineEvent.type === 'PLOT' ? ACCENT_TEXT : TEXT_SECONDARY
-                }`}
+              <Chip
+                swatchClassName={timelineEvent.type === 'PLOT' ? 'bg-[var(--entity-event)]' : undefined}
+                className={timelineEvent.type === 'PLOT' ? ENTITY_SWATCH_TEXT.event : TEXT_SECONDARY}
               >
                 {timelineEvent.type === 'PLOT' ? 'Plot' : 'Lore'}
-              </span>
+              </Chip>
             </div>
             <button
               onClick={(e) => { e.stopPropagation(); onDelete() }}
               className="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
             >
-              <Trash2 size={16} />
+              <Trash2 size={16} strokeWidth={ICON_PROPS.strokeWidth} />
             </button>
           </div>
           {timelineEvent.date && (
@@ -45,6 +42,6 @@ export function TimelineEventCard({ timelineEvent, onEdit, onDelete }: TimelineE
           )}
         </div>
       </div>
-    </div>
+    </Card>
   )
 }

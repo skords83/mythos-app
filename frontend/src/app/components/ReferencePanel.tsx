@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { Chapter, Character, Place } from './types'
-import { SURFACE, SURFACE_ALT, RADIUS, BORDER, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ACCENT_TEXT, HOVER_SURFACE, ACTIVE_SURFACE, DIVIDER } from '@/lib/theme'
+import { SURFACE, SURFACE_ALT, RADIUS, BORDER, HAIRLINE, TEXT_PRIMARY, TEXT_MUTED, ACCENT_TEXT, HOVER_SURFACE, ACTIVE_SURFACE, DIVIDER } from '@/lib/theme'
+import { MonoLabel } from './MonoLabel'
 
 type ReferenceMode = 'chapter' | 'character' | 'place'
 
@@ -25,7 +26,7 @@ function Field({ label, value }: { label: string; value: string | null | undefin
   if (!value) return null
   return (
     <div>
-      <h4 className={`text-xs font-semibold ${TEXT_SECONDARY} uppercase tracking-wider mb-1`}>{label}</h4>
+      <MonoLabel className="block mb-1">{label}</MonoLabel>
       <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">{value}</p>
     </div>
   )
@@ -55,7 +56,7 @@ export function ReferencePanel({ chapters, characters, places, currentChapterId,
 
   return (
     <div className={`w-[380px] shrink-0 ${BORDER} ${RADIUS} ${SURFACE} overflow-hidden sticky top-6 max-h-[calc(100vh-6rem)] flex flex-col`}>
-      <div className={`flex items-center gap-1 p-2 border-b border-zinc-300 dark:border-zinc-700 ${SURFACE_ALT}`}>
+      <div className={`flex items-center gap-1 p-2 border-b ${HAIRLINE} ${SURFACE_ALT}`}>
         {(['chapter', 'character', 'place'] as ReferenceMode[]).map((m) => (
           <button
             key={m}
@@ -71,7 +72,7 @@ export function ReferencePanel({ chapters, characters, places, currentChapterId,
         </button>
       </div>
 
-      <div className={`px-3 py-2 border-b border-zinc-300 dark:border-zinc-700`}>
+      <div className={`px-3 py-2 border-b ${HAIRLINE}`}>
         <select
           value={selectedId}
           onChange={(e) => setSelectedId(e.target.value)}
@@ -99,7 +100,7 @@ export function ReferencePanel({ chapters, characters, places, currentChapterId,
 
         {mode === 'character' && selectedCharacter && (
           <>
-            <h3 className={`font-serif font-bold text-lg ${TEXT_PRIMARY}`}>{selectedCharacter.name}</h3>
+            <h3 className={`font-display font-light text-lg ${TEXT_PRIMARY}`}>{selectedCharacter.name}</h3>
             <Field label="Äußeres" value={selectedCharacter.appearance} />
             <Field label="Persönlichkeit" value={selectedCharacter.personality} />
             <Field label="Hintergrund" value={selectedCharacter.backstory} />
@@ -112,7 +113,7 @@ export function ReferencePanel({ chapters, characters, places, currentChapterId,
 
         {mode === 'place' && selectedPlace && (
           <>
-            <h3 className={`font-serif font-bold text-lg ${TEXT_PRIMARY}`}>{selectedPlace.name}</h3>
+            <h3 className={`font-display font-light text-lg ${TEXT_PRIMARY}`}>{selectedPlace.name}</h3>
             <Field label="Beschreibung" value={selectedPlace.description} />
             <Field label="Lage" value={selectedPlace.location} />
             <Field label="Klima" value={selectedPlace.climate} />

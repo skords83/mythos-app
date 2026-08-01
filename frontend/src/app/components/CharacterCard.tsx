@@ -1,9 +1,10 @@
 'use client'
 
-import React from 'react'
 import { Trash2 } from 'lucide-react'
 import { Character } from './types'
-import { TEXT_PRIMARY, TEXT_SECONDARY, ACCENT_TEXT, RADIUS, BORDER, ACCENT } from '@/lib/theme'
+import { TEXT_PRIMARY, TEXT_SECONDARY, ENTITY_SWATCH_TEXT, ICON_PROPS } from '@/lib/theme'
+import { Card } from './Card'
+import { EntityAvatar } from './EntityAvatar'
 
 interface CharacterCardProps {
   character: Character
@@ -15,19 +16,9 @@ export function CharacterCard({ character, onEdit, onDelete }: CharacterCardProp
   const preview = character.appearance || character.personality || character.backstory
 
   return (
-    <div
-      onClick={onEdit}
-      className={`bg-white dark:bg-zinc-900 ${RADIUS} p-4 ${BORDER} group cursor-pointer`}
-    >
+    <Card onClick={onEdit}>
       <div className="flex items-start gap-3">
-        <div className={`w-10 h-10 ${RADIUS} ${ACCENT} flex items-center justify-center text-white font-semibold flex-shrink-0 overflow-hidden`}>
-          {character.avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={character.avatarUrl} alt={character.name} className="w-full h-full object-cover" />
-          ) : (
-            character.name.charAt(0)
-          )}
-        </div>
+        <EntityAvatar kind="person" label={character.name} imageUrl={character.avatarUrl} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <h4 className={`font-semibold ${TEXT_PRIMARY} truncate`}>{character.name}</h4>
@@ -35,17 +26,17 @@ export function CharacterCard({ character, onEdit, onDelete }: CharacterCardProp
               onClick={(e) => { e.stopPropagation(); onDelete() }}
               className="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
             >
-              <Trash2 size={14} />
+              <Trash2 size={14} strokeWidth={ICON_PROPS.strokeWidth} />
             </button>
           </div>
           {preview && (
             <p className={`text-sm ${TEXT_SECONDARY} mt-1 line-clamp-2`}>{preview}</p>
           )}
           {character.motivation && (
-            <p className={`text-xs ${ACCENT_TEXT} mt-2 italic`}>„{character.motivation}"</p>
+            <p className={`text-xs ${ENTITY_SWATCH_TEXT.person} mt-2 italic`}>„{character.motivation}"</p>
           )}
         </div>
       </div>
-    </div>
+    </Card>
   )
 }

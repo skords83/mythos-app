@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { TimelineEvent } from './types'
-import { TEXT_SECONDARY, TEXT_PRIMARY, TEXT_MUTED, INPUT, RADIUS, BUTTON_SECONDARY } from '@/lib/theme'
+import { TEXT_SECONDARY, TEXT_PRIMARY, TEXT_MUTED, INPUT, RADIUS, BUTTON_SECONDARY, ICON_PROPS } from '@/lib/theme'
+import { Chip } from './Chip'
 
 const INVOLVES = 'INVOLVES'
 
@@ -96,19 +97,16 @@ export function TimelineEventEntityTags({ timelineEvent, entityType, label, enti
         {entityRelations.map((r) => {
           const entity = entities.find((e) => e.id === r.counterpart.id)
           return (
-            <span
-              key={r.id}
-              className={`flex items-center gap-1 text-xs px-2 py-1 bg-zinc-100 dark:bg-zinc-800 ${RADIUS}`}
-            >
-              <span className={TEXT_PRIMARY}>{entity?.name ?? '?'}</span>
+            <Chip key={r.id} className={TEXT_PRIMARY}>
+              {entity?.name ?? '?'}
               <button
                 type="button"
                 onClick={() => handleDelete(r.id)}
                 className="text-gray-400 hover:text-red-500 transition-colors"
               >
-                <Trash2 size={12} />
+                <Trash2 size={12} strokeWidth={ICON_PROPS.strokeWidth} />
               </button>
-            </span>
+            </Chip>
           )
         })}
         {entityRelations.length === 0 && (

@@ -1,9 +1,10 @@
 'use client'
 
-import React from 'react'
 import { Trash2 } from 'lucide-react'
 import { Faction } from './types'
-import { TEXT_PRIMARY, TEXT_SECONDARY, ACCENT_TEXT, RADIUS, BORDER, ACCENT } from '@/lib/theme'
+import { TEXT_PRIMARY, TEXT_SECONDARY, ENTITY_SWATCH_TEXT, ICON_PROPS } from '@/lib/theme'
+import { Card } from './Card'
+import { EntityAvatar } from './EntityAvatar'
 
 interface FactionCardProps {
   faction: Faction
@@ -13,14 +14,9 @@ interface FactionCardProps {
 
 export function FactionCard({ faction, onEdit, onDelete }: FactionCardProps) {
   return (
-    <div
-      onClick={onEdit}
-      className={`bg-white dark:bg-zinc-900 ${RADIUS} p-4 ${BORDER} group cursor-pointer`}
-    >
+    <Card onClick={onEdit}>
       <div className="flex items-start gap-3">
-        <div className={`w-10 h-10 ${RADIUS} ${ACCENT} flex items-center justify-center text-white font-semibold flex-shrink-0`}>
-          {faction.name.charAt(0)}
-        </div>
+        <EntityAvatar kind="group" label={faction.name} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <h4 className={`font-semibold ${TEXT_PRIMARY} truncate`}>{faction.name}</h4>
@@ -28,17 +24,17 @@ export function FactionCard({ faction, onEdit, onDelete }: FactionCardProps) {
               onClick={(e) => { e.stopPropagation(); onDelete() }}
               className="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
             >
-              <Trash2 size={16} />
+              <Trash2 size={16} strokeWidth={ICON_PROPS.strokeWidth} />
             </button>
           </div>
           {faction.description && (
             <p className={`text-sm ${TEXT_SECONDARY} mt-1 line-clamp-2`}>{faction.description}</p>
           )}
           {faction.goal && (
-            <p className={`text-xs ${ACCENT_TEXT} mt-2 italic`}>„{faction.goal}"</p>
+            <p className={`text-xs ${ENTITY_SWATCH_TEXT.group} mt-2 italic`}>„{faction.goal}"</p>
           )}
         </div>
       </div>
-    </div>
+    </Card>
   )
 }
