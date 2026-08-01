@@ -33,6 +33,7 @@ export interface Character {
   flaw: string | null
   secrets: string | null
   avatarUrl: string | null
+  role: 'PROTAGONIST' | 'ANTAGONIST' | 'MENTOR' | null
   visibility: 'PRIVATE' | 'FAMILY'
   projectId: string | null
   familyId: string
@@ -55,6 +56,9 @@ export interface Place {
   location: string | null
   climate: string | null
   importance: string | null
+  history: string | null
+  politics: string | null
+  sensoryDetails: string | null
   visibility: 'PRIVATE' | 'FAMILY'
   projectId: string | null
   familyId: string

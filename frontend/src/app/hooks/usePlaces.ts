@@ -10,6 +10,7 @@ interface UsePlacesArgs {
 
 export function usePlaces({ selectedProject, showError, requestConfirm, onConfirmed }: UsePlacesArgs) {
   const [places, setPlaces] = useState<Place[]>([])
+  const [editingPlace, setEditingPlace] = useState<Place | null>(null)
 
   const loadPlaces = async (projectId: string) => {
     try {
@@ -34,13 +35,13 @@ export function usePlaces({ selectedProject, showError, requestConfirm, onConfir
     }
   }, [selectedProject])
 
-  const addPlace = async (name: string, description: string, location: string, climate: string, importance: string, visibility: 'PRIVATE' | 'FAMILY', parentId: string | null = null) => {
+  const addPlace = async (name: string, description: string, location: string, climate: string, importance: string, history: string, politics: string, sensoryDetails: string, visibility: 'PRIVATE' | 'FAMILY', parentId: string | null = null) => {
     if (!selectedProject) return
     try {
       const response = await fetch('/api/places', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, location, climate, importance, visibility, parentId, projectId: selectedProject.id })
+        body: JSON.stringify({ name, description, location, climate, importance, history, politics, sensoryDetails, visibility, parentId, projectId: selectedProject.id })
       })
       if (!response.ok) {
         showError('Ort konnte nicht erstellt werden.')
@@ -51,6 +52,25 @@ export function usePlaces({ selectedProject, showError, requestConfirm, onConfir
     } catch (error) {
       console.error('Error adding place:', error)
       showError('Ort konnte nicht erstellt werden.')
+    }
+  }
+
+  const updatePlace = async (id: string, name: string, description: string, location: string, climate: string, importance: string, history: string, politics: string, sensoryDetails: string, visibility: 'PRIVATE' | 'FAMILY') => {
+    try {
+      const response = await fetch(`/api/places/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, description, location, climate, importance, history, politics, sensoryDetails, visibility })
+      })
+      if (!response.ok) {
+        showError('Ort konnte nicht gespeichert werden.')
+        return
+      }
+      const updated = await response.json()
+      setPlaces(places.map(p => p.id === id ? { ...updated, images: updated.images || [] } : p))
+    } catch (error) {
+      console.error('Error updating place:', error)
+      showError('Ort konnte nicht gespeichert werden.')
     }
   }
 
@@ -134,7 +154,10 @@ export function usePlaces({ selectedProject, showError, requestConfirm, onConfir
 
   return {
     places,
+    editingPlace,
+    setEditingPlace,
     addPlace,
+    updatePlace,
     deletePlace,
     updatePlaceParent,
     addPlaceImage,

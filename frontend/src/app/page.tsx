@@ -17,6 +17,7 @@ import {
   AddCharacterModal,
   EditCharacterModal,
   AddPlaceModal,
+  EditPlaceModal,
   AddItemModal,
   EditItemModal,
   AddFactionModal,
@@ -91,7 +92,7 @@ export default function Page() {
   const { characters, editingCharacter, setEditingCharacter, addCharacter, updateCharacter, deleteCharacter } =
     useCharacters({ selectedProject, showError, requestConfirm, onConfirmed })
 
-  const { places, addPlace, deletePlace, updatePlaceParent, addPlaceImage, deletePlaceImage } = usePlaces({ selectedProject, showError, requestConfirm, onConfirmed })
+  const { places, editingPlace, setEditingPlace, addPlace, updatePlace, deletePlace, updatePlaceParent, addPlaceImage, deletePlaceImage } = usePlaces({ selectedProject, showError, requestConfirm, onConfirmed })
 
   const { items, editingItem, setEditingItem, addItem, updateItem, deleteItem } =
     useItems({ selectedProject, showError, requestConfirm, onConfirmed })
@@ -394,6 +395,7 @@ export default function Page() {
               places={places}
               characters={characters}
               onAddClick={() => setShowPlaceModal(true)}
+              onEdit={setEditingPlace}
               onDelete={deletePlace}
               onUpdateParent={updatePlaceParent}
               onAddImage={addPlaceImage}
@@ -473,6 +475,7 @@ export default function Page() {
       <AddCharacterModal isOpen={showCharacterModal} onClose={() => setShowCharacterModal(false)} onAdd={addCharacter} />
       <EditCharacterModal isOpen={!!editingCharacter} onClose={() => setEditingCharacter(null)} character={editingCharacter} characters={characters} places={places} onUpdate={updateCharacter} />
       <AddPlaceModal isOpen={showPlaceModal} places={places} onClose={() => setShowPlaceModal(false)} onAdd={addPlace} />
+      <EditPlaceModal isOpen={!!editingPlace} onClose={() => setEditingPlace(null)} place={editingPlace} onUpdate={updatePlace} />
       <AddItemModal isOpen={showItemModal} onClose={() => setShowItemModal(false)} onAdd={addItem} />
       <EditItemModal isOpen={!!editingItem} onClose={() => setEditingItem(null)} item={editingItem} onUpdate={updateItem} />
       <AddFactionModal isOpen={showFactionModal} onClose={() => setShowFactionModal(false)} onAdd={addFaction} />

@@ -11,13 +11,14 @@ interface PlacesViewProps {
   places: Place[]
   characters: Character[]
   onAddClick: () => void
+  onEdit: (place: Place) => void
   onDelete: (id: string) => void
   onUpdateParent: (id: string, parentId: string | null) => void
   onAddImage: (id: string, file: File) => Promise<void>
   onDeleteImage: (id: string, imageId: string) => void
 }
 
-export function PlacesView({ places, characters, onAddClick, onDelete, onUpdateParent, onAddImage, onDeleteImage }: PlacesViewProps) {
+export function PlacesView({ places, characters, onAddClick, onEdit, onDelete, onUpdateParent, onAddImage, onDeleteImage }: PlacesViewProps) {
   const placeIds = new Set(places.map((p) => p.id))
   const childrenByParent = new Map<string, Place[]>()
   const roots: Place[] = []
@@ -37,6 +38,7 @@ export function PlacesView({ places, characters, onAddClick, onDelete, onUpdateP
         place={place}
         places={places}
         characters={characters}
+        onEdit={() => onEdit(place)}
         onDelete={() => onDelete(place.id)}
         onUpdateParent={(parentId) => onUpdateParent(place.id, parentId)}
         onAddImage={(file) => onAddImage(place.id, file)}

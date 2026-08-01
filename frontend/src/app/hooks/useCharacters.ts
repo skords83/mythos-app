@@ -43,13 +43,13 @@ export function useCharacters({ selectedProject, showError, requestConfirm, onCo
     }
   }, [selectedProject])
 
-  const addCharacter = async (name: string, appearance: string, personality: string, backstory: string, motivation: string, flaw: string, secrets: string, visibility: 'PRIVATE' | 'FAMILY') => {
+  const addCharacter = async (name: string, appearance: string, personality: string, backstory: string, motivation: string, flaw: string, secrets: string, role: '' | 'PROTAGONIST' | 'ANTAGONIST' | 'MENTOR', visibility: 'PRIVATE' | 'FAMILY') => {
     if (!selectedProject) return
     try {
       const response = await fetch('/api/characters', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, appearance, personality, backstory, motivation, flaw, secrets, visibility, projectId: selectedProject.id })
+        body: JSON.stringify({ name, appearance, personality, backstory, motivation, flaw, secrets, role: role || null, visibility, projectId: selectedProject.id })
       })
       if (!response.ok) {
         showError('Charakter konnte nicht erstellt werden.')
@@ -63,12 +63,12 @@ export function useCharacters({ selectedProject, showError, requestConfirm, onCo
     }
   }
 
-  const updateCharacter = async (id: string, name: string, appearance: string, personality: string, backstory: string, motivation: string, flaw: string, secrets: string, visibility: 'PRIVATE' | 'FAMILY', avatarUrl?: string | null) => {
+  const updateCharacter = async (id: string, name: string, appearance: string, personality: string, backstory: string, motivation: string, flaw: string, secrets: string, role: '' | 'PROTAGONIST' | 'ANTAGONIST' | 'MENTOR', visibility: 'PRIVATE' | 'FAMILY', avatarUrl?: string | null) => {
     try {
       const response = await fetch(`/api/characters/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, appearance, personality, backstory, motivation, flaw, secrets, visibility, avatarUrl })
+        body: JSON.stringify({ name, appearance, personality, backstory, motivation, flaw, secrets, role: role || null, visibility, avatarUrl })
       })
       if (!response.ok) {
         showError('Charakter konnte nicht gespeichert werden.')

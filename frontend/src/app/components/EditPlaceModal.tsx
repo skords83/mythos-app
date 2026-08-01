@@ -1,19 +1,19 @@
 'use client'
 
 import React, { useState } from 'react'
-import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY } from '@/lib/theme'
 import { Place } from './types'
-import { MastheadDivider } from './MastheadDivider'
+import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY } from '@/lib/theme'
 import PlaceFieldTabs, { PlaceFieldKey } from './PlaceFieldTabs'
+import { MastheadDivider } from './MastheadDivider'
 
-interface AddPlaceModalProps {
+interface EditPlaceModalProps {
   isOpen: boolean
-  places: Place[]
   onClose: () => void
-  onAdd: (name: string, description: string, location: string, climate: string, importance: string, history: string, politics: string, sensoryDetails: string, visibility: 'PRIVATE' | 'FAMILY', parentId: string | null) => void
+  place: Place | null
+  onUpdate: (id: string, name: string, description: string, location: string, climate: string, importance: string, history: string, politics: string, sensoryDetails: string, visibility: 'PRIVATE' | 'FAMILY') => void
 }
 
-export function AddPlaceModal({ isOpen, places, onClose, onAdd }: AddPlaceModalProps) {
+export function EditPlaceModal({ isOpen, onClose, place, onUpdate }: EditPlaceModalProps) {
   const [name, setName] = useState('')
   const [activeFieldTab, setActiveFieldTab] = useState<PlaceFieldKey>('description')
   const [description, setDescription] = useState('')
@@ -24,9 +24,6 @@ export function AddPlaceModal({ isOpen, places, onClose, onAdd }: AddPlaceModalP
   const [climate, setClimate] = useState('')
   const [importance, setImportance] = useState('')
   const [visibility, setVisibility] = useState<'PRIVATE' | 'FAMILY'>('PRIVATE')
-  const [parentId, setParentId] = useState('')
-
-  if (!isOpen) return null
 
   const fieldSetters: Record<PlaceFieldKey, (value: string) => void> = {
     description: setDescription,
@@ -35,27 +32,34 @@ export function AddPlaceModal({ isOpen, places, onClose, onAdd }: AddPlaceModalP
     sensoryDetails: setSensoryDetails,
   }
 
+  React.useEffect(() => {
+    if (place) {
+      setName(place.name)
+      setDescription(place.description || '')
+      setHistory(place.history || '')
+      setPolitics(place.politics || '')
+      setSensoryDetails(place.sensoryDetails || '')
+      setLocation(place.location || '')
+      setClimate(place.climate || '')
+      setImportance(place.importance || '')
+      setVisibility(place.visibility)
+      setActiveFieldTab('description')
+    }
+  }, [place])
+
+  if (!isOpen || !place) return null
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onAdd(name, description, location, climate, importance, history, politics, sensoryDetails, visibility, parentId || null)
-    setName('')
-    setDescription('')
-    setHistory('')
-    setPolitics('')
-    setSensoryDetails('')
-    setLocation('')
-    setClimate('')
-    setImportance('')
-    setVisibility('PRIVATE')
-    setParentId('')
+    onUpdate(place.id, name, description, location, climate, importance, history, politics, sensoryDetails, visibility)
     onClose()
   }
 
   return (
     <div className={OVERLAY}>
-      <div className={`${MODAL_PANEL} p-6 w-full max-w-md`}>
+      <div className={`${MODAL_PANEL} p-6 w-full max-w-md max-h-[90vh] overflow-y-auto`}>
         <h2 className={`text-2xl font-display font-light ${TEXT_PRIMARY}`}>
-          Neuer Ort
+          Ort bearbeiten
         </h2>
         <MastheadDivider surface="bg-stone-50 dark:bg-zinc-900" className="mb-4" />
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -68,7 +72,7 @@ export function AddPlaceModal({ isOpen, places, onClose, onAdd }: AddPlaceModalP
               value={name}
               onChange={(e) => setName(e.target.value)}
               className={INPUT}
-              placeholder="z.B. Eldoria, die Hauptstadt"
+              placeholder="Name des Ortes"
               required
             />
           </div>
@@ -124,21 +128,6 @@ export function AddPlaceModal({ isOpen, places, onClose, onAdd }: AddPlaceModalP
           </div>
           <div>
             <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>
-              Übergeordneter Ort
-            </label>
-            <select
-              value={parentId}
-              onChange={(e) => setParentId(e.target.value)}
-              className={INPUT}
-            >
-              <option value="">Kein übergeordneter Ort</option>
-              {places.map((place) => (
-                <option key={place.id} value={place.id}>{place.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>
               Sichtbarkeit
             </label>
             <select
@@ -162,7 +151,7 @@ export function AddPlaceModal({ isOpen, places, onClose, onAdd }: AddPlaceModalP
               type="submit"
               className={`flex-1 px-4 py-2 ${ACCENT} text-white ${RADIUS} transition-colors`}
             >
-              Hinzufügen
+              Speichern
             </button>
           </div>
         </form>

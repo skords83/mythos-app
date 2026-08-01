@@ -5,6 +5,8 @@ import { logger } from '@/lib/logger'
 import { isValidVisibility } from '@/lib/visibility'
 import { deleteRelationsForEntity } from '@/lib/relations'
 
+const CHARACTER_ROLES = ['PROTAGONIST', 'ANTAGONIST', 'MENTOR'] as const
+
 // PUT /api/characters/[id] - Charakter aktualisieren (nur Autor)
 export async function PUT(
   request: NextRequest,
@@ -29,10 +31,14 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { name, appearance, personality, backstory, motivation, flaw, secrets, avatarUrl, visibility } = body
+    const { name, appearance, personality, backstory, motivation, flaw, secrets, role, avatarUrl, visibility } = body
 
     if (visibility !== undefined && !isValidVisibility(visibility)) {
       return NextResponse.json({ error: 'Sichtbarkeit muss PRIVATE oder FAMILY sein' }, { status: 400 })
+    }
+
+    if (role !== undefined && role !== null && !CHARACTER_ROLES.includes(role)) {
+      return NextResponse.json({ error: 'Rolle muss PROTAGONIST, ANTAGONIST oder MENTOR sein' }, { status: 400 })
     }
 
     const updateData: any = {}
@@ -43,6 +49,7 @@ export async function PUT(
     if (motivation !== undefined) updateData.motivation = motivation
     if (flaw !== undefined) updateData.flaw = flaw
     if (secrets !== undefined) updateData.secrets = secrets
+    if (role !== undefined) updateData.role = role || null
     if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl
     if (visibility !== undefined) updateData.visibility = visibility
 

@@ -12,6 +12,7 @@ function makeCharacter(overrides: Partial<Character>): Character {
     flaw: null,
     secrets: null,
     avatarUrl: null,
+    role: null,
     visibility: 'PRIVATE',
     projectId: 'proj-1',
     familyId: 'fam-1',

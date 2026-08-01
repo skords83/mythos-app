@@ -55,6 +55,33 @@ describe('PUT /api/characters/[id]', () => {
     const response = await PUT(request, { params: { id: 'char-1' } })
     expect(response.status).toBe(403)
   })
+
+  it('rejects an invalid role value', async () => {
+    mockedPrisma.character.findFirst.mockResolvedValueOnce({ id: 'char-1', authorId: 'user-1' })
+
+    const request = authedRequest('http://localhost/api/characters/char-1', {
+      method: 'PUT',
+      body: JSON.stringify({ role: 'SIDEKICK' }),
+    })
+    const response = await PUT(request, { params: { id: 'char-1' } })
+    expect(response.status).toBe(400)
+    expect(mockedPrisma.character.update).not.toHaveBeenCalled()
+  })
+
+  it('updates the role when valid', async () => {
+    mockedPrisma.character.findFirst.mockResolvedValueOnce({ id: 'char-1', authorId: 'user-1' })
+    mockedPrisma.character.update.mockResolvedValue({ id: 'char-1', role: 'MENTOR' })
+
+    const request = authedRequest('http://localhost/api/characters/char-1', {
+      method: 'PUT',
+      body: JSON.stringify({ role: 'MENTOR' }),
+    })
+    const response = await PUT(request, { params: { id: 'char-1' } })
+    expect(response.status).toBe(200)
+    expect(mockedPrisma.character.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ role: 'MENTOR' }) })
+    )
+  })
 })
 
 describe('DELETE /api/characters/[id]', () => {

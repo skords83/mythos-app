@@ -14,7 +14,7 @@ interface EditCharacterModalProps {
   character: Character | null
   characters: Character[]
   places: Place[]
-  onUpdate: (id: string, name: string, appearance: string, personality: string, backstory: string, motivation: string, flaw: string, secrets: string, visibility: 'PRIVATE' | 'FAMILY', avatarUrl?: string | null) => void
+  onUpdate: (id: string, name: string, appearance: string, personality: string, backstory: string, motivation: string, flaw: string, secrets: string, role: '' | 'PROTAGONIST' | 'ANTAGONIST' | 'MENTOR', visibility: 'PRIVATE' | 'FAMILY', avatarUrl?: string | null) => void
 }
 
 export function EditCharacterModal({ isOpen, onClose, character, characters, places, onUpdate }: EditCharacterModalProps) {
@@ -29,6 +29,7 @@ export function EditCharacterModal({ isOpen, onClose, character, characters, pla
   const [motivation, setMotivation] = useState('')
   const [flaw, setFlaw] = useState('')
   const [secrets, setSecrets] = useState('')
+  const [role, setRole] = useState<'' | 'PROTAGONIST' | 'ANTAGONIST' | 'MENTOR'>('')
   const [visibility, setVisibility] = useState<'PRIVATE' | 'FAMILY'>('PRIVATE')
 
   const fieldSetters: Record<CharacterFieldKey, (value: string) => void> = {
@@ -48,6 +49,7 @@ export function EditCharacterModal({ isOpen, onClose, character, characters, pla
       setMotivation(character.motivation || '')
       setFlaw(character.flaw || '')
       setSecrets(character.secrets || '')
+      setRole(character.role || '')
       setVisibility(character.visibility)
       setAvatarUrl(character.avatarUrl || null)
       setActiveFieldTab('appearance')
@@ -58,7 +60,7 @@ export function EditCharacterModal({ isOpen, onClose, character, characters, pla
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onUpdate(character.id, name, appearance, personality, backstory, motivation, flaw, secrets, visibility, avatarUrl)
+    onUpdate(character.id, name, appearance, personality, backstory, motivation, flaw, secrets, role, visibility, avatarUrl)
     onClose()
   }
 
@@ -152,6 +154,21 @@ export function EditCharacterModal({ isOpen, onClose, character, characters, pla
               className={INPUT}
               placeholder="Was treibt den Charakter an?"
             />
+          </div>
+          <div>
+            <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>
+              Rolle
+            </label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as '' | 'PROTAGONIST' | 'ANTAGONIST' | 'MENTOR')}
+              className={INPUT}
+            >
+              <option value="">Keine Rolle</option>
+              <option value="PROTAGONIST">Protagonist:in</option>
+              <option value="ANTAGONIST">Antagonist:in</option>
+              <option value="MENTOR">Mentor:in</option>
+            </select>
           </div>
           <div>
             <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>

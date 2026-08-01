@@ -66,7 +66,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { name, description, location, climate, importance, visibility, parentId } = body
+    const { name, description, location, climate, importance, history, politics, sensoryDetails, visibility, parentId } = body
 
     if (visibility !== undefined && !isValidVisibility(visibility)) {
       return NextResponse.json({ error: 'Sichtbarkeit muss PRIVATE oder FAMILY sein' }, { status: 400 })
@@ -116,6 +116,9 @@ export async function PUT(
     if (location !== undefined) updateData.location = location
     if (climate !== undefined) updateData.climate = climate
     if (importance !== undefined) updateData.importance = importance
+    if (history !== undefined) updateData.history = history
+    if (politics !== undefined) updateData.politics = politics
+    if (sensoryDetails !== undefined) updateData.sensoryDetails = sensoryDetails
     if (visibility !== undefined) updateData.visibility = visibility
     if (parentId !== undefined) updateData.parentId = parentId
 

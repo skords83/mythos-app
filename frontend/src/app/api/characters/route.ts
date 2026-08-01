@@ -4,6 +4,8 @@ import { getAuthContext } from '@/lib/auth'
 import { logger } from '@/lib/logger'
 import { isValidVisibility, visibilityWhere } from '@/lib/visibility'
 
+const CHARACTER_ROLES = ['PROTAGONIST', 'ANTAGONIST', 'MENTOR'] as const
+
 // GET /api/characters?projectId=xxx - Charaktere eines Projekts, sonst die Familien-Bibliothek
 export async function GET(request: NextRequest) {
   let userId: string | null = null
@@ -54,10 +56,14 @@ export async function POST(request: NextRequest) {
     userId = context.userId
 
     const body = await request.json()
-    const { name, appearance, personality, backstory, motivation, flaw, secrets, projectId, visibility } = body
+    const { name, appearance, personality, backstory, motivation, flaw, secrets, role, projectId, visibility } = body
 
     if (visibility !== undefined && !isValidVisibility(visibility)) {
       return NextResponse.json({ error: 'Sichtbarkeit muss PRIVATE oder FAMILY sein' }, { status: 400 })
+    }
+
+    if (role !== undefined && role !== null && !CHARACTER_ROLES.includes(role)) {
+      return NextResponse.json({ error: 'Rolle muss PROTAGONIST, ANTAGONIST oder MENTOR sein' }, { status: 400 })
     }
 
     if (projectId) {
@@ -78,6 +84,7 @@ export async function POST(request: NextRequest) {
         motivation: motivation || '',
         flaw: flaw || '',
         secrets: secrets || '',
+        role: role || null,
         visibility: visibility || 'PRIVATE',
         projectId: projectId || null,
         familyId: context.familyId,

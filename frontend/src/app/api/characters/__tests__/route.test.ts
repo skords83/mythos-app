@@ -84,4 +84,28 @@ describe('POST /api/characters', () => {
     const response = await POST(request)
     expect(response.status).toBe(400)
   })
+
+  it('creates a character with a valid role', async () => {
+    mockedPrisma.character.create.mockResolvedValue({ id: 'char-1' })
+    const request = authedRequest('http://localhost/api/characters', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Elana', visibility: 'FAMILY', role: 'PROTAGONIST' }),
+    })
+    const response = await POST(request)
+    expect(response.status).toBe(201)
+    expect(mockedPrisma.character.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ role: 'PROTAGONIST' }),
+      })
+    )
+  })
+
+  it('rejects an invalid role value', async () => {
+    const request = authedRequest('http://localhost/api/characters', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Elana', visibility: 'FAMILY', role: 'SIDEKICK' }),
+    })
+    const response = await POST(request)
+    expect(response.status).toBe(400)
+  })
 })

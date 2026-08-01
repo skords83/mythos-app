@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Trash2 } from 'lucide-react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { Character, Place } from './types'
 import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ENTITY_SWATCH_TEXT, RADIUS, ICON_PROPS } from '@/lib/theme'
 import { PlaceCharacterLinks } from './PlaceCharacterLinks'
@@ -14,6 +14,7 @@ interface PlaceCardProps {
   place: Place
   places: Place[]
   characters: Character[]
+  onEdit: () => void
   onDelete: () => void
   onUpdateParent: (parentId: string | null) => void
   onAddImage: (file: File) => Promise<void>
@@ -29,7 +30,7 @@ function isDescendant(candidateId: string, ancestorId: string, places: Place[]):
   return false
 }
 
-export function PlaceCard({ place, places, characters, onDelete, onUpdateParent, onAddImage, onDeleteImage }: PlaceCardProps) {
+export function PlaceCard({ place, places, characters, onEdit, onDelete, onUpdateParent, onAddImage, onDeleteImage }: PlaceCardProps) {
   const [editingParent, setEditingParent] = useState(false)
   const parent = place.parentId ? places.find((p) => p.id === place.parentId) : null
   const parentOptions = places.filter((p) => p.id !== place.id && !isDescendant(p.id, place.id, places))
@@ -42,12 +43,20 @@ export function PlaceCard({ place, places, characters, onDelete, onUpdateParent,
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <h4 className={`font-semibold ${TEXT_PRIMARY} truncate`}>{place.name}</h4>
-            <button
-              onClick={onDelete}
-              className="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <Trash2 size={14} strokeWidth={ICON_PROPS.strokeWidth} />
-            </button>
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={onEdit}
+                className="p-1 text-gray-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+              >
+                <Pencil size={14} strokeWidth={ICON_PROPS.strokeWidth} />
+              </button>
+              <button
+                onClick={onDelete}
+                className="p-1 text-gray-400 hover:text-red-500"
+              >
+                <Trash2 size={14} strokeWidth={ICON_PROPS.strokeWidth} />
+              </button>
+            </div>
           </div>
           {place.description && (
             <p className={`text-sm ${TEXT_SECONDARY} mt-1 line-clamp-2`}>{place.description}</p>
