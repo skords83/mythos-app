@@ -3,7 +3,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Book, Plus, Save } from 'lucide-react'
-import { ACCENT, RADIUS, SURFACE, SURFACE_ALT, TEXT_PRIMARY, TEXT_MUTED } from '@/lib/theme'
+import { ACCENT, RADIUS, SURFACE, SURFACE_ALT, TEXT_PRIMARY, TEXT_MUTED, MONO_LABEL_MUTED } from '@/lib/theme'
+import { MastheadDivider } from './components/MastheadDivider'
 import {
   QuickCardState,
   PlaceQuickCardState,
@@ -237,14 +238,14 @@ export default function Page() {
       <div className={`min-h-screen ${SURFACE} p-8`}>
         <div className="max-w-6xl mx-auto">
           <header className="flex items-center justify-between mb-8">
-            <h1 className={`text-3xl font-serif font-bold ${TEXT_PRIMARY}`}>
+            <h1 className={`text-3xl font-display font-light ${TEXT_PRIMARY}`}>
               Mythos
             </h1>
             <ThemeToggle />
           </header>
           <div className="text-center py-12">
             <Book size={64} className={`mx-auto ${TEXT_MUTED} mb-4`} />
-            <h2 className={`text-2xl font-serif ${TEXT_PRIMARY} mb-2`}>
+            <h2 className={`text-2xl font-display font-light ${TEXT_PRIMARY} mb-2`}>
               Willkommen bei Mythos
             </h2>
             <p className={`${TEXT_MUTED} mb-6`}>
@@ -286,24 +287,27 @@ export default function Page() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
-        <header className={`h-16 ${SURFACE_ALT} border-b border-zinc-300 dark:border-zinc-700 flex items-center justify-between px-6`}>
+        <header className={`h-16 ${SURFACE_ALT} flex items-center justify-between px-6`}>
           <div className="flex items-center gap-4">
             {activeTab === 'manuscript' && selectedChapter && (
               <>
-                <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>{selectedChapter.title}</h2>
+                <h2 className={`text-lg font-display font-light ${TEXT_PRIMARY}`}>{selectedChapter.title}</h2>
                 <span className={`text-sm ${TEXT_MUTED}`}>{selectedChapter.wordCount || 0} Wörter</span>
               </>
             )}
+            <span className={MONO_LABEL_MUTED}>
+              {Array.isArray(chapters) ? chapters.length : 0} Kapitel · {totalWordCount} Wörter
+            </span>
             {activeTab === 'manuscript' && !selectedChapter && (
               <span className={TEXT_MUTED}>Kein Kapitel ausgewählt</span>
             )}
-            {activeTab === 'characters' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Charakter-Verwaltung</h2>}
-            {activeTab === 'places' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Orte</h2>}
-            {activeTab === 'items' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Items & Artefakte</h2>}
-            {activeTab === 'factions' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Fraktionen & Organisationen</h2>}
-            {activeTab === 'timeline' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Der Zeitstrahl</h2>}
-            {activeTab === 'lore' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Lore-Bibel</h2>}
-            {activeTab === 'notes' && <h2 className={`text-lg font-serif ${TEXT_PRIMARY}`}>Notizen</h2>}
+            {activeTab === 'characters' && <h2 className={`text-lg font-display font-light ${TEXT_PRIMARY}`}>Charakter-Verwaltung</h2>}
+            {activeTab === 'places' && <h2 className={`text-lg font-display font-light ${TEXT_PRIMARY}`}>Orte</h2>}
+            {activeTab === 'items' && <h2 className={`text-lg font-display font-light ${TEXT_PRIMARY}`}>Items & Artefakte</h2>}
+            {activeTab === 'factions' && <h2 className={`text-lg font-display font-light ${TEXT_PRIMARY}`}>Fraktionen & Organisationen</h2>}
+            {activeTab === 'timeline' && <h2 className={`text-lg font-display font-light ${TEXT_PRIMARY}`}>Der Zeitstrahl</h2>}
+            {activeTab === 'lore' && <h2 className={`text-lg font-display font-light ${TEXT_PRIMARY}`}>Lore-Bibel</h2>}
+            {activeTab === 'notes' && <h2 className={`text-lg font-display font-light ${TEXT_PRIMARY}`}>Notizen</h2>}
           </div>
           <div className="flex items-center gap-3">
             {activeTab === 'manuscript' && (
@@ -322,6 +326,7 @@ export default function Page() {
             )}
           </div>
         </header>
+        <MastheadDivider />
 
         <div className="flex-1 overflow-auto">
           {activeTab === 'manuscript' && (

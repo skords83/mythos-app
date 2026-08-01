@@ -3,7 +3,7 @@
 import React from 'react'
 import { Trash2 } from 'lucide-react'
 import { TimelineEvent } from './types'
-import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ACCENT_TEXT, RADIUS, BORDER, CARD_SHADOW, BADGE_RADIUS } from '@/lib/theme'
+import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ACCENT_TEXT, RADIUS, BORDER } from '@/lib/theme'
 
 interface TimelineEventCardProps {
   timelineEvent: TimelineEvent
@@ -15,7 +15,7 @@ export function TimelineEventCard({ timelineEvent, onEdit, onDelete }: TimelineE
   return (
     <div
       onClick={onEdit}
-      className={`bg-white dark:bg-zinc-900 ${RADIUS} p-4 ${BORDER} ${CARD_SHADOW} group cursor-pointer`}
+      className={`bg-white dark:bg-zinc-900 ${RADIUS} p-4 ${BORDER} group cursor-pointer`}
     >
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
@@ -23,7 +23,7 @@ export function TimelineEventCard({ timelineEvent, onEdit, onDelete }: TimelineE
             <div className="flex items-center gap-2 min-w-0">
               <h4 className={`font-semibold ${TEXT_PRIMARY} truncate`}>{timelineEvent.title}</h4>
               <span
-                className={`text-xs px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 ${BADGE_RADIUS} flex-shrink-0 ${
+                className={`text-xs px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 ${RADIUS} flex-shrink-0 ${
                   timelineEvent.type === 'PLOT' ? ACCENT_TEXT : TEXT_SECONDARY
                 }`}
               >

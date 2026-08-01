@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { Character, Place } from './types'
-import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ACCENT_TEXT, RADIUS, BADGE_RADIUS, BORDER, CARD_SHADOW, ACCENT } from '@/lib/theme'
+import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ACCENT_TEXT, RADIUS, BORDER, ACCENT } from '@/lib/theme'
 import { PlaceCharacterLinks } from './PlaceCharacterLinks'
 import { PlaceImageGallery } from './PlaceImageGallery'
 
@@ -33,7 +33,7 @@ export function PlaceCard({ place, places, characters, onDelete, onUpdateParent,
   const coverImage = place.images[0]
 
   return (
-    <div className={`bg-white dark:bg-zinc-900 ${RADIUS} p-4 ${BORDER} ${CARD_SHADOW} group`}>
+    <div className={`bg-white dark:bg-zinc-900 ${RADIUS} p-4 ${BORDER} group`}>
       <div className="flex items-start gap-3">
         <div className={`w-10 h-10 ${RADIUS} ${ACCENT} flex items-center justify-center text-white font-semibold flex-shrink-0 overflow-hidden`}>
           {coverImage ? (
@@ -58,12 +58,12 @@ export function PlaceCard({ place, places, characters, onDelete, onUpdateParent,
           )}
           <div className="flex flex-wrap gap-2 mt-2">
             {place.location && (
-              <span className={`text-xs px-2 py-1 bg-zinc-100 dark:bg-zinc-800 ${BADGE_RADIUS} text-zinc-600 dark:text-zinc-400`}>
+              <span className={`text-xs px-2 py-1 bg-zinc-100 dark:bg-zinc-800 ${RADIUS} text-zinc-600 dark:text-zinc-400`}>
                 {place.location}
               </span>
             )}
             {place.importance && (
-              <span className={`text-xs px-2 py-1 bg-indigo-600/10 ${ACCENT_TEXT} ${BADGE_RADIUS}`}>
+              <span className={`text-xs px-2 py-1 bg-indigo-600/10 ${ACCENT_TEXT} ${RADIUS}`}>
                 {place.importance}
               </span>
             )}

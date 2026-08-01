@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { Character } from './types'
-import { TEXT_SECONDARY, TEXT_PRIMARY, TEXT_MUTED, INPUT, BADGE_RADIUS, RADIUS, BUTTON_SECONDARY } from '@/lib/theme'
+import { TEXT_SECONDARY, TEXT_PRIMARY, TEXT_MUTED, INPUT, RADIUS, BUTTON_SECONDARY } from '@/lib/theme'
 
 const RELATION_TYPES: { value: string; label: string }[] = [
   { value: 'PARENT_OF', label: 'Elternteil von' },
@@ -112,7 +112,7 @@ export function CharacterRelationships({ character, characters }: CharacterRelat
           return (
             <div
               key={r.id}
-              className={`flex items-center justify-between text-sm px-2 py-1 bg-zinc-100 dark:bg-zinc-800 ${BADGE_RADIUS}`}
+              className={`flex items-center justify-between text-sm px-2 py-1 bg-zinc-100 dark:bg-zinc-800 ${RADIUS}`}
             >
               <span className={TEXT_PRIMARY}>
                 {isSource ? '' : '← '}{relationLabel(r.relationType)} {counterpart?.name ?? '?'}

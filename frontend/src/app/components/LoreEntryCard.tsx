@@ -3,7 +3,7 @@
 import React from 'react'
 import { Trash2 } from 'lucide-react'
 import { LoreEntry } from './types'
-import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, BADGE_RADIUS, RADIUS, BORDER, CARD_SHADOW } from '@/lib/theme'
+import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, RADIUS, BORDER } from '@/lib/theme'
 
 interface LoreEntryCardProps {
   loreEntry: LoreEntry
@@ -15,7 +15,7 @@ export function LoreEntryCard({ loreEntry, onEdit, onDelete }: LoreEntryCardProp
   return (
     <div
       onClick={onEdit}
-      className={`bg-white dark:bg-zinc-900 ${RADIUS} p-4 ${BORDER} ${CARD_SHADOW} group cursor-pointer`}
+      className={`bg-white dark:bg-zinc-900 ${RADIUS} p-4 ${BORDER} group cursor-pointer`}
     >
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
@@ -24,7 +24,7 @@ export function LoreEntryCard({ loreEntry, onEdit, onDelete }: LoreEntryCardProp
               <h4 className={`font-semibold ${TEXT_PRIMARY} truncate`}>{loreEntry.title}</h4>
               {loreEntry.category && (
                 <span
-                  className={`text-xs px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 ${BADGE_RADIUS} flex-shrink-0 ${TEXT_SECONDARY}`}
+                  className={`text-xs px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 ${RADIUS} flex-shrink-0 ${TEXT_SECONDARY}`}
                 >
                   {loreEntry.category}
                 </span>

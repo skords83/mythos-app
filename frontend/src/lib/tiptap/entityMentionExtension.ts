@@ -1,5 +1,5 @@
 import { Node, mergeAttributes } from '@tiptap/core'
-import { BADGE_RADIUS } from '@/lib/theme'
+import { RADIUS } from '@/lib/theme'
 
 export type MentionableEntityKind = 'PLACE' | 'ITEM'
 
@@ -52,7 +52,7 @@ export const EntityMention = Node.create({
       mergeAttributes(
         {
           'data-entity-mention': '',
-          class: `${KIND_CLASSES[kind]} ${BADGE_RADIUS} font-medium cursor-pointer px-1`,
+          class: `${KIND_CLASSES[kind]} ${RADIUS} font-medium cursor-pointer px-1`,
         },
         HTMLAttributes
       ),

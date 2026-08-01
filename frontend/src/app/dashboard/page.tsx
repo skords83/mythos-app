@@ -16,7 +16,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Toast } from '../components/Toast'
-import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, ACCENT_TEXT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, BORDER, CARD_SHADOW, HOVER_SURFACE, SURFACE } from '@/lib/theme'
+import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, ACCENT_TEXT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, BORDER, HOVER_SURFACE, SURFACE } from '@/lib/theme'
 
 interface Project {
   id: string
@@ -157,7 +157,7 @@ function ProjectCard({ project, onDelete, onOpen }: {
   onOpen: () => void
 }) {
   return (
-    <div className={`bg-white dark:bg-zinc-900 ${RADIUS} p-6 ${BORDER} ${CARD_SHADOW} group`}>
+    <div className={`bg-white dark:bg-zinc-900 ${RADIUS} p-6 ${BORDER} group`}>
       <div className="flex items-start justify-between mb-4">
         <div className={`w-12 h-12 ${RADIUS} bg-indigo-600 flex items-center justify-center text-white`}>
           <Book size={24} />

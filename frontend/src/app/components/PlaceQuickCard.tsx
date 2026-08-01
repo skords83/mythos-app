@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { PlaceQuickCardState } from './types'
-import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ACCENT_TEXT, ACCENT, RADIUS, BORDER, CARD_SHADOW } from '@/lib/theme'
+import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ACCENT_TEXT, ACCENT, RADIUS, BORDER } from '@/lib/theme'
 
 interface PlaceQuickCardProps {
   state: PlaceQuickCardState
@@ -19,7 +19,7 @@ export function PlaceQuickCard({ state, onClose }: PlaceQuickCardProps) {
         onClick={onClose}
       />
       <div
-        className={`fixed z-50 bg-white dark:bg-zinc-900 ${RADIUS} ${CARD_SHADOW} ${BORDER} p-4 w-72 animate-fade-in`}
+        className={`fixed z-50 bg-white dark:bg-zinc-900 ${RADIUS} ${BORDER} p-4 w-72 animate-fade-in`}
         style={{
           left: Math.min(state.position.x, typeof window !== 'undefined' ? window.innerWidth - 300 : 300),
           top: Math.min(state.position.y, typeof window !== 'undefined' ? window.innerHeight - 250 : 250)

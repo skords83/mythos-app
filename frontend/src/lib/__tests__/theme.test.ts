@@ -2,11 +2,10 @@
 import * as theme from '../theme'
 
 describe('theme', () => {
-  it('exports non-empty string constants for every design token', () => {
-    const values = Object.values(theme)
+  it('exports non-empty string constants for every string-valued design token', () => {
+    const values = Object.values(theme).filter((value) => typeof value === 'string')
     expect(values.length).toBeGreaterThan(0)
     values.forEach((value) => {
-      expect(typeof value).toBe('string')
       expect((value as string).length).toBeGreaterThan(0)
     })
   })
@@ -20,8 +19,12 @@ describe('theme', () => {
     expect(theme.ACCENT).not.toContain('4A7C59')
   })
 
-  it('card shadow is a hard offset shadow, not a soft blur', () => {
-    expect(theme.CARD_SHADOW).toBe('shadow-[4px_4px_0_0_#18181b]')
+  it('has no shadow tokens — structure comes from hairlines only, never elevation', () => {
+    Object.values(theme).forEach((value) => {
+      if (typeof value === 'string') {
+        expect(value).not.toMatch(/\bshadow-/)
+      }
+    })
   })
 
   it('modal/overlay tokens are flat — no blur, no gradient, no old green', () => {
@@ -29,5 +32,9 @@ describe('theme', () => {
     expect(theme.MODAL_PANEL).not.toContain('4A7C59')
     expect(theme.INPUT).not.toContain('4A7C59')
     expect(theme.BUTTON_SECONDARY).not.toContain('4A7C59')
+  })
+
+  it('icon preset is a single consistent size/stroke-width, not a class string', () => {
+    expect(theme.ICON_PROPS).toEqual({ size: 18, strokeWidth: 1.75 })
   })
 })

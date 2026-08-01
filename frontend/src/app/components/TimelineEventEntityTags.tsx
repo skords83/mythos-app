@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { TimelineEvent } from './types'
-import { TEXT_SECONDARY, TEXT_PRIMARY, TEXT_MUTED, INPUT, BADGE_RADIUS, RADIUS, BUTTON_SECONDARY } from '@/lib/theme'
+import { TEXT_SECONDARY, TEXT_PRIMARY, TEXT_MUTED, INPUT, RADIUS, BUTTON_SECONDARY } from '@/lib/theme'
 
 const INVOLVES = 'INVOLVES'
 
@@ -98,7 +98,7 @@ export function TimelineEventEntityTags({ timelineEvent, entityType, label, enti
           return (
             <span
               key={r.id}
-              className={`flex items-center gap-1 text-xs px-2 py-1 bg-zinc-100 dark:bg-zinc-800 ${BADGE_RADIUS}`}
+              className={`flex items-center gap-1 text-xs px-2 py-1 bg-zinc-100 dark:bg-zinc-800 ${RADIUS}`}
             >
               <span className={TEXT_PRIMARY}>{entity?.name ?? '?'}</span>
               <button

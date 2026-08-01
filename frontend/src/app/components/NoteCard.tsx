@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { Note } from './types'
-import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ACCENT_TEXT, RADIUS, BORDER, CARD_SHADOW, ACCENT } from '@/lib/theme'
+import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ACCENT_TEXT, RADIUS, BORDER, ACCENT } from '@/lib/theme'
 
 interface NoteCardProps {
   note: Note
@@ -29,7 +29,7 @@ export function NoteCard({ note, onUpdate, onDelete }: NoteCardProps) {
 
   if (isEditing) {
     return (
-      <div className={`bg-white dark:bg-zinc-900 ${RADIUS} p-4 ${BORDER} ${CARD_SHADOW}`}>
+      <div className={`bg-white dark:bg-zinc-900 ${RADIUS} p-4 ${BORDER}`}>
         <input
           type="text"
           value={editTitle}
@@ -62,7 +62,7 @@ export function NoteCard({ note, onUpdate, onDelete }: NoteCardProps) {
   }
 
   return (
-    <div className={`bg-white dark:bg-zinc-900 ${RADIUS} p-4 ${BORDER} ${CARD_SHADOW} group`}>
+    <div className={`bg-white dark:bg-zinc-900 ${RADIUS} p-4 ${BORDER} group`}>
       <div className="flex items-start justify-between mb-2">
         <h4 className={`font-semibold ${TEXT_PRIMARY}`}>{note.title}</h4>
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

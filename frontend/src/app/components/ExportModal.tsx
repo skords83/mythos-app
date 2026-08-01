@@ -5,6 +5,7 @@ import { Download, FileText, Book, X } from 'lucide-react'
 import { Chapter, Project } from './types'
 import { stripHtml } from '@/lib/text'
 import { OVERLAY, MODAL_PANEL, ACCENT, RADIUS, BUTTON_SECONDARY, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED } from '@/lib/theme'
+import { MastheadDivider } from './MastheadDivider'
 
 interface ExportModalProps {
   isOpen: boolean
@@ -197,13 +198,14 @@ ${processedContent}
     <div className={OVERLAY}>
       <div className={`${MODAL_PANEL} p-6 w-full max-w-md`}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className={`text-2xl font-serif font-bold ${TEXT_PRIMARY}`}>
+          <h2 className={`text-2xl font-display font-light ${TEXT_PRIMARY}`}>
             Exportieren
           </h2>
           <button onClick={onClose} className={`${TEXT_MUTED} hover:text-zinc-600 dark:hover:text-zinc-300`}>
             <X size={20} />
           </button>
         </div>
+        <MastheadDivider surface="bg-stone-50 dark:bg-zinc-900" className="mb-4" />
 
         <div className="space-y-4">
           <div>

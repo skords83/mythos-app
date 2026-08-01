@@ -6,6 +6,7 @@ import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, RADIUS, TEXT_PRI
 import CharacterFieldTabs, { CharacterFieldKey } from './CharacterFieldTabs'
 import { CharacterRelationships } from './CharacterRelationships'
 import { CharacterPlaceLinks } from './CharacterPlaceLinks'
+import { MastheadDivider } from './MastheadDivider'
 
 interface EditCharacterModalProps {
   isOpen: boolean
@@ -86,9 +87,10 @@ export function EditCharacterModal({ isOpen, onClose, character, characters, pla
   return (
     <div className={OVERLAY}>
       <div className={`${MODAL_PANEL} p-6 w-full max-w-md max-h-[90vh] overflow-y-auto`}>
-        <h2 className={`text-2xl font-serif font-bold mb-4 ${TEXT_PRIMARY}`}>
+        <h2 className={`text-2xl font-display font-light ${TEXT_PRIMARY}`}>
           Charakter bearbeiten
         </h2>
+        <MastheadDivider surface="bg-stone-50 dark:bg-zinc-900" className="mb-4" />
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex items-center gap-4">
             <div className={`w-16 h-16 ${RADIUS} ${ACCENT} flex items-center justify-center text-white font-semibold text-xl flex-shrink-0 overflow-hidden`}>

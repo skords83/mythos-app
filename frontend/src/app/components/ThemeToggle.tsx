@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import { Moon, Sun } from 'lucide-react'
-import { RADIUS, HOVER_SURFACE } from '@/lib/theme'
+import { RADIUS, HOVER_SURFACE, EASE_STANDARD, ICON_PROPS } from '@/lib/theme'
+import { MonoLabel } from './MonoLabel'
 
 export function ThemeToggle() {
   const [darkMode, setDarkMode] = useState(false)
@@ -56,23 +57,27 @@ export function FocusToggle({ isFocusMode, onToggle }: { isFocusMode: boolean, o
 interface NavItemProps {
   icon: React.ComponentType<any>
   label: string
+  shortLabel: string
   active?: boolean
   onClick?: () => void
   collapsed?: boolean
 }
 
-export function NavItem({ icon: Icon, label, active, onClick, collapsed }: NavItemProps) {
+export function NavItem({ icon: Icon, label, shortLabel, active, onClick, collapsed }: NavItemProps) {
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-3 px-4 py-3 ${RADIUS} transition-colors ${
-        active
-          ? 'bg-indigo-600 text-white'
-          : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800'
+      className={`relative w-full flex items-center ${collapsed ? 'flex-col gap-1 px-2 py-3' : 'gap-3 px-4 py-2.5'} ${RADIUS} transition-colors ${
+        active ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800'
       }`}
     >
-      <Icon size={20} />
-      {!collapsed && <span>{label}</span>}
+      <span
+        className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-indigo-600 origin-center transition-transform duration-200 ${EASE_STANDARD} ${
+          active ? 'scale-y-100' : 'scale-y-0'
+        }`}
+      />
+      <Icon {...ICON_PROPS} />
+      {collapsed ? <MonoLabel muted={!active}>{shortLabel}</MonoLabel> : <span>{label}</span>}
     </button>
   )
 }

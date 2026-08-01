@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { RADIUS, BADGE_RADIUS, BORDER, CARD_SHADOW, TEXT_PRIMARY, ACCENT, BUTTON_SECONDARY, INPUT } from '@/lib/theme'
+import { RADIUS, BORDER, TEXT_PRIMARY, ACCENT, BUTTON_SECONDARY, INPUT } from '@/lib/theme'
 
 interface NewCommentInputProps {
   position: { x: number; y: number }
@@ -22,7 +22,7 @@ export function NewCommentInput({ position, onCancel, onSubmit }: NewCommentInpu
     <>
       <div className="fixed inset-0 z-40" onClick={onCancel} />
       <div
-        className={`fixed z-50 bg-white dark:bg-zinc-900 ${RADIUS} ${CARD_SHADOW} ${BORDER} p-4 w-80 animate-fade-in`}
+        className={`fixed z-50 bg-white dark:bg-zinc-900 ${RADIUS} ${BORDER} p-4 w-80 animate-fade-in`}
         style={{
           left: Math.min(position.x, typeof window !== 'undefined' ? window.innerWidth - 340 : 340),
           top: Math.min(position.y, typeof window !== 'undefined' ? window.innerHeight - 240 : 240),
@@ -49,7 +49,7 @@ export function NewCommentInput({ position, onCancel, onSubmit }: NewCommentInpu
           <button
             type="button"
             onClick={onCancel}
-            className={`px-3 py-1.5 text-xs ${BUTTON_SECONDARY} ${BADGE_RADIUS}`}
+            className={`px-3 py-1.5 text-xs ${BUTTON_SECONDARY} ${RADIUS}`}
           >
             Abbrechen
           </button>
@@ -57,7 +57,7 @@ export function NewCommentInput({ position, onCancel, onSubmit }: NewCommentInpu
             type="button"
             onClick={submit}
             disabled={!content.trim()}
-            className={`px-3 py-1.5 text-xs ${BADGE_RADIUS} ${ACCENT} text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+            className={`px-3 py-1.5 text-xs ${RADIUS} ${ACCENT} text-white disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             Kommentieren
           </button>

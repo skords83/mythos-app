@@ -16,8 +16,8 @@ export function ChapterItem({ chapter, active, onClick, onDelete }: ChapterItemP
   return (
     <div className={`group relative w-full text-left px-4 py-3 ${RADIUS} transition-colors flex items-center justify-between ${
       active
-        ? 'bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 border-l-4 border-indigo-600'
-        : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800'
+        ? 'text-zinc-900 dark:text-zinc-100 border-l-2 border-indigo-600'
+        : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 border-l-2 border-transparent'
     }`}>
       <button onClick={onClick} className="flex-1 text-left min-w-0">
         <div className="font-medium truncate">{chapter.title}</div>

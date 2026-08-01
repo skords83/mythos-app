@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { CommentPopoverState } from './types'
-import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ACCENT_TEXT, ACCENT, RADIUS, BADGE_RADIUS, BORDER, CARD_SHADOW, BUTTON_SECONDARY, INPUT } from '@/lib/theme'
+import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ACCENT_TEXT, ACCENT, RADIUS, BORDER, BUTTON_SECONDARY, INPUT } from '@/lib/theme'
 
 interface CommentPopoverProps {
   state: CommentPopoverState
@@ -39,7 +39,7 @@ export function CommentPopover({ state, currentUserId, onClose, onUpdate, onTogg
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
       <div
-        className={`fixed z-50 bg-white dark:bg-zinc-900 ${RADIUS} ${CARD_SHADOW} ${BORDER} p-4 w-80 animate-fade-in`}
+        className={`fixed z-50 bg-white dark:bg-zinc-900 ${RADIUS} ${BORDER} p-4 w-80 animate-fade-in`}
         style={{
           left: Math.min(state.position.x, typeof window !== 'undefined' ? window.innerWidth - 340 : 340),
           top: Math.min(state.position.y, typeof window !== 'undefined' ? window.innerHeight - 260 : 260),
@@ -83,7 +83,7 @@ export function CommentPopover({ state, currentUserId, onClose, onUpdate, onTogg
               <button
                 type="button"
                 onClick={() => setEditing(false)}
-                className={`px-3 py-1.5 text-xs ${BUTTON_SECONDARY} ${BADGE_RADIUS}`}
+                className={`px-3 py-1.5 text-xs ${BUTTON_SECONDARY} ${RADIUS}`}
               >
                 Abbrechen
               </button>
@@ -91,7 +91,7 @@ export function CommentPopover({ state, currentUserId, onClose, onUpdate, onTogg
                 type="button"
                 onClick={saveEdit}
                 disabled={!draftContent.trim()}
-                className={`px-3 py-1.5 text-xs ${BADGE_RADIUS} ${ACCENT} text-white disabled:opacity-50`}
+                className={`px-3 py-1.5 text-xs ${RADIUS} ${ACCENT} text-white disabled:opacity-50`}
               >
                 Speichern
               </button>

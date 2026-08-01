@@ -2,7 +2,7 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import { User, MapPin, Gem } from 'lucide-react'
-import { SURFACE, BORDER, RADIUS, CARD_SHADOW, HOVER_SURFACE, ACTIVE_SURFACE, ACCENT_TEXT, TEXT_MUTED, TEXT_PRIMARY } from '@/lib/theme'
+import { SURFACE, BORDER, RADIUS, HOVER_SURFACE, ACTIVE_SURFACE, ACCENT_TEXT, TEXT_MUTED, TEXT_PRIMARY } from '@/lib/theme'
 
 export interface MentionSuggestionItem {
   kind: 'CHARACTER' | 'PLACE' | 'ITEM'
@@ -54,7 +54,7 @@ export const MentionSuggestionList = forwardRef<MentionSuggestionListHandle, Men
     }))
 
     return (
-      <div className={`${SURFACE} ${BORDER} ${RADIUS} ${CARD_SHADOW} w-64 max-h-64 overflow-y-auto p-1`}>
+      <div className={`${SURFACE} ${BORDER} ${RADIUS} w-64 max-h-64 overflow-y-auto p-1`}>
         {items.length === 0 ? (
           <div className={`px-3 py-2 text-sm ${TEXT_MUTED}`}>Keine Treffer gefunden</div>
         ) : (

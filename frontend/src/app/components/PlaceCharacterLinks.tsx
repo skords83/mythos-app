@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { Character, Place } from './types'
-import { TEXT_MUTED, ACCENT_TEXT, INPUT, BADGE_RADIUS, RADIUS, BUTTON_SECONDARY } from '@/lib/theme'
+import { TEXT_MUTED, ACCENT_TEXT, INPUT, RADIUS, BUTTON_SECONDARY } from '@/lib/theme'
 import { CHARACTER_PLACE_RELATION_TYPES, CUSTOM_TYPE } from './characterPlaceRelations'
 
 function placeLabel(relationType: string): string {
@@ -111,7 +111,7 @@ export function PlaceCharacterLinks({ place, characters }: PlaceCharacterLinksPr
           return (
             <div
               key={r.id}
-              className={`flex items-center justify-between text-xs px-2 py-1 bg-zinc-100 dark:bg-zinc-800 ${BADGE_RADIUS}`}
+              className={`flex items-center justify-between text-xs px-2 py-1 bg-zinc-100 dark:bg-zinc-800 ${RADIUS}`}
             >
               <span className={TEXT_MUTED}>
                 {character?.name ?? '?'} {placeLabel(r.relationType)}

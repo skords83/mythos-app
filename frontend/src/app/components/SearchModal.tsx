@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react'
 import { Book, Clapperboard, Clock, Gem, MapPin, Scroll, Search, Shield, StickyNote, Users, X } from 'lucide-react'
 import { SearchResultItem, SearchResults } from '../hooks/useSearch'
 import { MODAL_PANEL, RADIUS, TEXT_PRIMARY, TEXT_MUTED } from '@/lib/theme'
+import { MastheadDivider } from './MastheadDivider'
 
 interface SearchModalProps {
   isOpen: boolean
@@ -78,7 +79,7 @@ export function SearchModal({
         className={`${MODAL_PANEL} w-full max-w-lg max-h-[70vh] flex flex-col`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-3 p-4 border-b border-zinc-300 dark:border-zinc-700">
+        <div className="flex items-center gap-3 p-4">
           <Search size={20} className={`${TEXT_MUTED} flex-shrink-0`} />
           <input
             ref={inputRef}
@@ -92,6 +93,7 @@ export function SearchModal({
             <X size={20} />
           </button>
         </div>
+        <MastheadDivider surface="bg-stone-50 dark:bg-zinc-900" />
 
         <div className="flex-1 overflow-y-auto p-2">
           {!hasQuery && (

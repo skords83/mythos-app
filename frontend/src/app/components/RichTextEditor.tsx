@@ -6,7 +6,8 @@ import Placeholder from '@tiptap/extension-placeholder'
 import Image from '@tiptap/extension-image'
 import { Bold, Italic, List, Quote, Heading1, Heading2, Undo, Redo, Image as ImageIcon, ArrowUp, ArrowDown, SeparatorHorizontal, Columns2, MessageSquarePlus, MessageSquare } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { SURFACE, SURFACE_ALT, RADIUS, BORDER, ACCENT_TEXT, HOVER_SURFACE, ACTIVE_SURFACE, DIVIDER } from '@/lib/theme'
+import { SURFACE, SURFACE_ALT, HAIRLINE, DIVIDER, ICON_PROPS } from '@/lib/theme'
+import { ToolButton } from './ToolButton'
 import { CharacterMention } from '@/lib/tiptap/characterMentionExtension'
 import { EntityMention } from '@/lib/tiptap/entityMentionExtension'
 import { createMentionSuggestion, MentionableData } from '@/lib/tiptap/mentionSuggestion'
@@ -208,66 +209,51 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
   if (!editor) return null
 
   return (
-    <div className={`${BORDER} ${RADIUS} overflow-hidden ${SURFACE}`}>
-      <div className={`flex items-center gap-1 p-2 border-b border-zinc-300 dark:border-zinc-700 ${SURFACE_ALT}`}>
-        <button onClick={() => editor.chain().focus().toggleBold().run()}
-          className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors ${editor.isActive('bold') ? `${ACTIVE_SURFACE} ${ACCENT_TEXT}` : ''}`}
-          title="Fett"><Bold size={16} /></button>
-        <button onClick={() => editor.chain().focus().toggleItalic().run()}
-          className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors ${editor.isActive('italic') ? `${ACTIVE_SURFACE} ${ACCENT_TEXT}` : ''}`}
-          title="Kursiv"><Italic size={16} /></button>
+    <div className={`border ${HAIRLINE} overflow-hidden ${SURFACE}`}>
+      <div className={`flex items-center gap-1 p-2 border-b ${HAIRLINE} ${SURFACE_ALT}`}>
+        <ToolButton onClick={() => editor.chain().focus().toggleBold().run()}
+          active={editor.isActive('bold')} title="Fett"><Bold {...ICON_PROPS} /></ToolButton>
+        <ToolButton onClick={() => editor.chain().focus().toggleItalic().run()}
+          active={editor.isActive('italic')} title="Kursiv"><Italic {...ICON_PROPS} /></ToolButton>
         <div className={`w-px h-6 ${DIVIDER} mx-1`} />
-        <button onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-          className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors ${editor.isActive('heading', { level: 1 }) ? `${ACTIVE_SURFACE} ${ACCENT_TEXT}` : ''}`}
-          title="Überschrift 1"><Heading1 size={16} /></button>
-        <button onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors ${editor.isActive('heading', { level: 2 }) ? `${ACTIVE_SURFACE} ${ACCENT_TEXT}` : ''}`}
-          title="Überschrift 2"><Heading2 size={16} /></button>
+        <ToolButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+          active={editor.isActive('heading', { level: 1 })} title="Überschrift 1"><Heading1 {...ICON_PROPS} /></ToolButton>
+        <ToolButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          active={editor.isActive('heading', { level: 2 })} title="Überschrift 2"><Heading2 {...ICON_PROPS} /></ToolButton>
         <div className={`w-px h-6 ${DIVIDER} mx-1`} />
-        <button onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors ${editor.isActive('bulletList') ? `${ACTIVE_SURFACE} ${ACCENT_TEXT}` : ''}`}
-          title="Aufzählung"><List size={16} /></button>
-        <button onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors ${editor.isActive('blockquote') ? `${ACTIVE_SURFACE} ${ACCENT_TEXT}` : ''}`}
-          title="Zitat"><Quote size={16} /></button>
+        <ToolButton onClick={() => editor.chain().focus().toggleBulletList().run()}
+          active={editor.isActive('bulletList')} title="Aufzählung"><List {...ICON_PROPS} /></ToolButton>
+        <ToolButton onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          active={editor.isActive('blockquote')} title="Zitat"><Quote {...ICON_PROPS} /></ToolButton>
         <div className={`w-px h-6 ${DIVIDER} mx-1`} />
-        <button onClick={() => editor.chain().focus().setHorizontalRule().run()}
-          className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors`}
-          title="Szenentrenner"><SeparatorHorizontal size={16} /></button>
+        <ToolButton onClick={() => editor.chain().focus().setHorizontalRule().run()}
+          title="Szenentrenner"><SeparatorHorizontal {...ICON_PROPS} /></ToolButton>
         <div className={`w-px h-6 ${DIVIDER} mx-1`} />
-        <button onClick={() => editor.chain().focus().undo().run()}
-          disabled={!editor.can().undo()}
-          className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors disabled:opacity-50`}
-          title="Rückgängig"><Undo size={16} /></button>
-        <button onClick={() => editor.chain().focus().redo().run()}
-          disabled={!editor.can().redo()}
-          className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors disabled:opacity-50`}
-          title="Wiederholen"><Redo size={16} /></button>
+        <ToolButton onClick={() => editor.chain().focus().undo().run()}
+          disabled={!editor.can().undo()} className="disabled:opacity-50"
+          title="Rückgängig"><Undo {...ICON_PROPS} /></ToolButton>
+        <ToolButton onClick={() => editor.chain().focus().redo().run()}
+          disabled={!editor.can().redo()} className="disabled:opacity-50"
+          title="Wiederholen"><Redo {...ICON_PROPS} /></ToolButton>
         <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-        <button onClick={() => imageInputRef.current?.click()}
-          className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors`}
-          title="Bild einfügen"><ImageIcon size={16} /></button>
+        <ToolButton onClick={() => imageInputRef.current?.click()}
+          title="Bild einfügen"><ImageIcon {...ICON_PROPS} /></ToolButton>
         <div className={`w-px h-6 ${DIVIDER} mx-1`} />
-        <button onClick={() => moveSelectedBlock('up')}
-          disabled={!canMoveUp}
-          className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors disabled:opacity-50`}
-          title="Block nach oben verschieben"><ArrowUp size={16} /></button>
-        <button onClick={() => moveSelectedBlock('down')}
-          disabled={!canMoveDown}
-          className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors disabled:opacity-50`}
-          title="Block nach unten verschieben"><ArrowDown size={16} /></button>
+        <ToolButton onClick={() => moveSelectedBlock('up')}
+          disabled={!canMoveUp} className="disabled:opacity-50"
+          title="Block nach oben verschieben"><ArrowUp {...ICON_PROPS} /></ToolButton>
+        <ToolButton onClick={() => moveSelectedBlock('down')}
+          disabled={!canMoveDown} className="disabled:opacity-50"
+          title="Block nach unten verschieben"><ArrowDown {...ICON_PROPS} /></ToolButton>
         <div className={`w-px h-6 ${DIVIDER} mx-1`} />
-        <button onClick={openNewCommentInput}
-          disabled={editor.state.selection.empty}
-          className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors disabled:opacity-50`}
-          title="Kommentar hinzufügen"><MessageSquarePlus size={16} /></button>
-        <button onClick={onToggleCommentsPanel}
-          className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors ${commentsPanelActive ? `${ACTIVE_SURFACE} ${ACCENT_TEXT}` : ''}`}
-          title="Kommentare"><MessageSquare size={16} /></button>
+        <ToolButton onClick={openNewCommentInput}
+          disabled={editor.state.selection.empty} className="disabled:opacity-50"
+          title="Kommentar hinzufügen"><MessageSquarePlus {...ICON_PROPS} /></ToolButton>
+        <ToolButton onClick={onToggleCommentsPanel}
+          active={commentsPanelActive} title="Kommentare"><MessageSquare {...ICON_PROPS} /></ToolButton>
         <div className={`w-px h-6 ${DIVIDER} mx-1`} />
-        <button onClick={onToggleSplitScreen}
-          className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors ${splitScreenActive ? `${ACTIVE_SURFACE} ${ACCENT_TEXT}` : ''}`}
-          title="Referenz-Modus (Split-Screen)"><Columns2 size={16} /></button>
+        <ToolButton onClick={onToggleSplitScreen}
+          active={splitScreenActive} title="Referenz-Modus (Split-Screen)"><Columns2 {...ICON_PROPS} /></ToolButton>
       </div>
       <EditorContent editor={editor} />
       {newCommentDraft && (

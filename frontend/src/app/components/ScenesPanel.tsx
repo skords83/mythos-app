@@ -1,11 +1,13 @@
 'use client'
 
 import React, { useState } from 'react'
-import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, FileText, Plus, Trash2 } from 'lucide-react'
 import { Character, Item, Place } from './types'
 import { useScenes } from '../hooks/useScenes'
 import { SceneEntityTags } from './SceneEntityTags'
-import { TEXT_SECONDARY, TEXT_PRIMARY, TEXT_MUTED, INPUT, BADGE_RADIUS, RADIUS, BUTTON_SECONDARY, BORDER } from '@/lib/theme'
+import { TEXT_SECONDARY, TEXT_PRIMARY, TEXT_MUTED, MONO_LABEL_MUTED, INPUT, RADIUS, BUTTON_SECONDARY, BORDER, HAIRLINE } from '@/lib/theme'
+import { SectionHeader } from './SectionHeader'
+import { HairlineButton } from './HairlineButton'
 
 interface ScenesPanelProps {
   chapterId: string
@@ -33,21 +35,26 @@ export function ScenesPanel({ chapterId, characters, places, items, showError, r
   }
 
   return (
-    <div className={`mt-10 pt-6 ${BORDER} border-t`}>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className={`text-sm font-semibold uppercase tracking-wide ${TEXT_SECONDARY}`}>Szenen</h3>
-        <button
-          type="button"
-          onClick={() => setShowAddForm((open) => !open)}
-          className={`flex items-center gap-1 px-2 py-1 text-xs ${BUTTON_SECONDARY} ${RADIUS}`}
-        >
-          <Plus size={14} />
-          Szene hinzufügen
-        </button>
-      </div>
+    <div className={`mt-10 pt-6 border-t ${HAIRLINE}`}>
+      <SectionHeader
+        label="Szenen"
+        action={
+          <button
+            type="button"
+            onClick={() => setShowAddForm((open) => !open)}
+            className={`flex items-center gap-1 px-2 py-1 text-xs ${BUTTON_SECONDARY} ${RADIUS}`}
+          >
+            <Plus size={14} />
+            Szene hinzufügen
+          </button>
+        }
+      />
 
       {scenes.length === 0 && !showAddForm && (
-        <p className={`text-xs ${TEXT_MUTED}`}>Noch keine Szenen in diesem Kapitel.</p>
+        <div className="flex flex-col items-center gap-3 py-10">
+          <FileText size={96} strokeWidth={1} className="text-zinc-300 dark:text-zinc-700" />
+          <span className={MONO_LABEL_MUTED}>Noch keine Szenen in diesem Kapitel</span>
+        </div>
       )}
 
       <div className="space-y-2">
@@ -106,14 +113,15 @@ export function ScenesPanel({ chapterId, characters, places, items, showError, r
             className={`${INPUT} text-sm`}
           />
           <div className="flex gap-2">
-            <button
+            <HairlineButton
               type="button"
+              emphasised
               onClick={handleAdd}
               disabled={!newName.trim()}
-              className={`px-3 py-1.5 text-xs ${BADGE_RADIUS} bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+              className="text-xs disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Hinzufügen
-            </button>
+            </HairlineButton>
             <button
               type="button"
               onClick={() => { setShowAddForm(false); setNewName(''); setNewDescription('') }}

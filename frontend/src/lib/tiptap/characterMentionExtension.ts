@@ -1,7 +1,7 @@
 import Mention from '@tiptap/extension-mention'
 import { mergeAttributes } from '@tiptap/core'
 import type { Character } from '@/app/components/types'
-import { ACCENT_TEXT, BADGE_RADIUS } from '@/lib/theme'
+import { ACCENT_TEXT, RADIUS } from '@/lib/theme'
 
 // Named 'characterMention' (not the default 'mention') so a future
 // @Place/@Note mention type can be a sibling node without attribute collisions.
@@ -34,7 +34,7 @@ export const CharacterMention = Mention.extend({
       mergeAttributes(
         {
           'data-character-mention': '',
-          class: `${ACCENT_TEXT} ${BADGE_RADIUS} font-medium cursor-pointer bg-indigo-50 dark:bg-indigo-950 px-1`,
+          class: `${ACCENT_TEXT} ${RADIUS} font-medium cursor-pointer bg-indigo-50 dark:bg-indigo-950 px-1`,
         },
         HTMLAttributes
       ),

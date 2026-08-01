@@ -3,8 +3,10 @@
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { ChapterItem } from './ChapterItem'
 import { CharacterListItem } from './CharacterListItem'
+import { SectionHeader } from './SectionHeader'
+import { ToolButton } from './ToolButton'
 import { Chapter, Character } from './types'
-import { SURFACE_ALT, TEXT_SECONDARY, TEXT_MUTED, ACCENT_TEXT, RADIUS, CARD_SHADOW, PANEL_BORDER_L, HOVER_SURFACE } from '@/lib/theme'
+import { SURFACE_ALT, TEXT_MUTED, RADIUS, HAIRLINE, PANEL_BORDER_L, ICON_PROPS } from '@/lib/theme'
 
 interface RightSidebarProps {
   focusMode: boolean
@@ -42,18 +44,20 @@ export function RightSidebar({
           <>
             <button
               onClick={() => setRightSidebarOpen(false)}
-              className={`absolute left-0 top-1/2 transform -translate-x-full -translate-y-1/2 ${SURFACE_ALT} p-2 ${RADIUS} ${CARD_SHADOW} border-2 border-r-0 border-zinc-900 dark:border-zinc-700`}
+              className={`absolute left-0 top-1/2 transform -translate-x-full -translate-y-1/2 ${SURFACE_ALT} p-2 ${RADIUS} border border-r-0 ${HAIRLINE}`}
             >
-              <ChevronRight size={20} />
+              <ChevronRight {...ICON_PROPS} />
             </button>
             <div className="flex-1 overflow-auto p-4 space-y-6">
               <section>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className={`text-sm font-semibold ${TEXT_SECONDARY} uppercase tracking-wider`}>Kapitel</h3>
-                  <button onClick={onCreateChapter} className={`p-1.5 ${ACCENT_TEXT} ${HOVER_SURFACE} ${RADIUS} transition-colors`} title="Neues Kapitel">
-                    <Plus size={18} />
-                  </button>
-                </div>
+                <SectionHeader
+                  label="Kapitel"
+                  action={
+                    <ToolButton onClick={onCreateChapter} title="Neues Kapitel">
+                      <Plus {...ICON_PROPS} />
+                    </ToolButton>
+                  }
+                />
                 <div className="space-y-1">
                   {chapters.map((chapter) => (
                     <ChapterItem
@@ -74,12 +78,14 @@ export function RightSidebar({
               </section>
 
               <section>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className={`text-sm font-semibold ${TEXT_SECONDARY} uppercase tracking-wider`}>Charaktere</h3>
-                  <button onClick={onAddCharacterClick} className={`p-1.5 ${ACCENT_TEXT} ${HOVER_SURFACE} ${RADIUS} transition-colors`} title="Neuer Charakter">
-                    <Plus size={18} />
-                  </button>
-                </div>
+                <SectionHeader
+                  label="Charaktere"
+                  action={
+                    <ToolButton onClick={onAddCharacterClick} title="Neuer Charakter">
+                      <Plus {...ICON_PROPS} />
+                    </ToolButton>
+                  }
+                />
                 <div className="space-y-1">
                   {characters.map((char) => (
                     <CharacterListItem key={char.id} character={char} onClick={() => onSelectCharacter(char)} />
@@ -97,9 +103,9 @@ export function RightSidebar({
       {!focusMode && !rightSidebarOpen && (
         <button
           onClick={() => setRightSidebarOpen(true)}
-          className={`fixed right-0 top-1/2 transform -translate-y-1/2 ${SURFACE_ALT} p-2 ${RADIUS} ${CARD_SHADOW} border-2 border-r-0 border-zinc-900 dark:border-zinc-700 z-50`}
+          className={`fixed right-0 top-1/2 transform -translate-y-1/2 ${SURFACE_ALT} p-2 ${RADIUS} border border-r-0 ${HAIRLINE} z-50`}
         >
-          <ChevronLeft size={20} />
+          <ChevronLeft {...ICON_PROPS} />
         </button>
       )}
     </>

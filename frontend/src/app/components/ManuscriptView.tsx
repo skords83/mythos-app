@@ -8,7 +8,8 @@ import { CommentsPanel } from './CommentsPanel'
 import { Chapter, Character, Comment, CommentActions, Item, Place } from './types'
 import { ChapterDraft } from '@/lib/chapterDraftStore'
 import { DraftRecoveryBanner } from './DraftRecoveryBanner'
-import { TEXT_PRIMARY, TEXT_MUTED, ACCENT, RADIUS } from '@/lib/theme'
+import { TEXT_PRIMARY, MONO_LABEL_MUTED, ACCENT, RADIUS } from '@/lib/theme'
+import { BookOpen } from 'lucide-react'
 import type { MentionClickResult } from '@/lib/tiptap/mentionClick'
 import { useComments } from '../hooks/useComments'
 
@@ -100,7 +101,7 @@ export function ManuscriptView({
               placeholder="Kapiteltitel..."
               value={selectedChapter.title}
               onChange={(e) => onTitleChange(e.target.value)}
-              className={`w-full text-3xl font-serif font-bold bg-transparent border-none outline-none placeholder-zinc-400 dark:placeholder-zinc-600 ${TEXT_PRIMARY} mb-8`}
+              className={`w-full text-3xl font-display font-light bg-transparent border-none outline-none placeholder-zinc-400 dark:placeholder-zinc-600 ${TEXT_PRIMARY} mb-8`}
             />
             <RichTextEditor
               content={editorContent}
@@ -154,11 +155,12 @@ export function ManuscriptView({
           )}
         </div>
       ) : (
-        <div className={`text-center py-12 ${TEXT_MUTED}`}>
-          <p>Erstelle ein neues Kapitel, um zu beginnen.</p>
+        <div className="flex flex-col items-center gap-4 py-12">
+          <BookOpen size={96} strokeWidth={1} className="text-zinc-300 dark:text-zinc-700" />
+          <span className={MONO_LABEL_MUTED}>Erstelle ein neues Kapitel, um zu beginnen</span>
           <button
             onClick={onCreateChapter}
-            className={`mt-4 px-4 py-2 ${ACCENT} text-white ${RADIUS} transition-colors`}
+            className={`mt-2 px-4 py-2 ${ACCENT} text-white ${RADIUS} transition-colors`}
           >
             Kapitel erstellen
           </button>

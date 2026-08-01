@@ -3,7 +3,7 @@
 import React from 'react'
 import { Trash2 } from 'lucide-react'
 import { Character } from './types'
-import { TEXT_PRIMARY, TEXT_SECONDARY, ACCENT_TEXT, RADIUS, BORDER, CARD_SHADOW, ACCENT } from '@/lib/theme'
+import { TEXT_PRIMARY, TEXT_SECONDARY, ACCENT_TEXT, RADIUS, BORDER, ACCENT } from '@/lib/theme'
 
 interface CharacterCardProps {
   character: Character
@@ -17,7 +17,7 @@ export function CharacterCard({ character, onEdit, onDelete }: CharacterCardProp
   return (
     <div
       onClick={onEdit}
-      className={`bg-white dark:bg-zinc-900 ${RADIUS} p-4 ${BORDER} ${CARD_SHADOW} group cursor-pointer`}
+      className={`bg-white dark:bg-zinc-900 ${RADIUS} p-4 ${BORDER} group cursor-pointer`}
     >
       <div className="flex items-start gap-3">
         <div className={`w-10 h-10 ${RADIUS} ${ACCENT} flex items-center justify-center text-white font-semibold flex-shrink-0 overflow-hidden`}>

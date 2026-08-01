@@ -3,16 +3,16 @@
 @tailwind utilities;
 
 :root {
-  --bg-paper: #F5F5F5;
-  --bg-dark: #1A1A1B;
-  --text-dark: #E5E7EB;
-  --text-muted: #9CA3AF;
-  --accent: #4A7C59;
-  --accent-light: #6B9E7C;
-  --surface: #FFFFFF;
-  --surface-dark: #262626;
-  --border: #E5E7EB;
-  --border-dark: #404040;
+  --accent: #4f46e5;
+
+  /* Entity-type swatch colors — see frontend/src/lib/theme.ts ENTITY_SWATCH_*.
+     Never applied to icon fill/stroke, only swatches/chips/accent strips. */
+  --entity-person: #B4552F;
+  --entity-place: #4B7A5A;
+  --entity-thing: #3F5FA0;
+  --entity-group: #8A6D2E;
+  --entity-event: #6B4C8A;
+  --entity-idea: #2E7A7A;
 }
 
 html {
@@ -20,30 +20,23 @@ html {
 }
 
 html.dark {
-  --bg-paper: #1A1A1B;
-  --text-primary: #E5E7EB;
-  --surface: #262626;
-  --border: #404040;
+  --entity-person: #E39471;
+  --entity-place: #8FC49E;
+  --entity-thing: #8CA9E0;
+  --entity-group: #D4B15E;
+  --entity-event: #B79BD9;
+  --entity-idea: #7ECFCF;
 }
 
 body {
-  background-color: var(--bg-paper);
-  color: var(--text-primary, #1A1A1B);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Typography */
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Merriweather', Georgia, serif;
-  font-weight: 600;
-}
-
-/* Editor Typography */
-.editor-content {
-  font-family: 'Merriweather', Georgia, serif;
-  line-height: 1.6;
-  font-size: 18px;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 500;
 }
 
 /* Focus rings */

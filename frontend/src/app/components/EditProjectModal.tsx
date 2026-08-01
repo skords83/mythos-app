@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Trash2, AlertTriangle } from 'lucide-react'
 import { Project } from './types'
 import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED } from '@/lib/theme'
+import { MastheadDivider } from './MastheadDivider'
 
 interface EditProjectModalProps {
   isOpen: boolean
@@ -59,8 +60,8 @@ export function EditProjectModal({ isOpen, onClose, project, onUpdate, onDelete 
   return (
     <div className={OVERLAY}>
       <div className={`${MODAL_PANEL} w-full max-w-md overflow-hidden`}>
-        <div className="px-6 py-4 border-b border-zinc-300 dark:border-zinc-700 flex items-center justify-between">
-          <h2 className={`text-xl font-serif font-bold ${TEXT_PRIMARY}`}>
+        <div className="px-6 py-4 flex items-center justify-between">
+          <h2 className={`text-xl font-display font-light ${TEXT_PRIMARY}`}>
             Projekteinstellungen
           </h2>
           <button
@@ -70,6 +71,7 @@ export function EditProjectModal({ isOpen, onClose, project, onUpdate, onDelete 
             ×
           </button>
         </div>
+        <MastheadDivider surface="bg-stone-50 dark:bg-zinc-900" />
         <div className="flex border-b border-zinc-300 dark:border-zinc-700">
           <button
             onClick={() => setActiveTab('general')}

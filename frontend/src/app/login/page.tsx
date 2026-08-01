@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { Book, Eye, EyeOff, LogIn, UserPlus, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { MODAL_PANEL, INPUT, ACCENT, ACCENT_TEXT, RADIUS, CARD_SHADOW, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, SURFACE } from '@/lib/theme'
+import { MODAL_PANEL, INPUT, ACCENT, ACCENT_TEXT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, SURFACE } from '@/lib/theme'
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true)
@@ -52,7 +52,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo & Header */}
         <div className="text-center mb-8">
-          <div className={`inline-flex items-center justify-center w-16 h-16 ${RADIUS} bg-indigo-600 mb-4 ${CARD_SHADOW}`}>
+          <div className={`inline-flex items-center justify-center w-16 h-16 ${RADIUS} bg-indigo-600 mb-4`}>
             <Book size={32} className="text-white" />
           </div>
           <h1 className={`text-3xl font-serif font-bold ${TEXT_PRIMARY} mb-2`}>
