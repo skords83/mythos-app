@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthContext } from '@/lib/auth'
 import { logger } from '@/lib/logger'
-import { isValidVisibility, visibilityWhere } from '@/lib/visibility'
 
-// GET /api/scenes?chapterId=xxx - Szenen eines Kapitels
+// GET /api/chapter-versions?chapterId=xxx - Alternative Entwürfe eines Kapitels
 export async function GET(request: NextRequest) {
   let userId: string | null = null
   try {
@@ -28,18 +27,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Kapitel nicht gefunden' }, { status: 404 })
     }
 
-    const scenes = await prisma.scene.findMany({
-      where: { chapterId, OR: visibilityWhere(context) },
-      orderBy: { order: 'asc' },
+    const versions = await prisma.chapterVersion.findMany({
+      where: { chapterId },
+      orderBy: { createdAt: 'asc' },
     })
-    return NextResponse.json(scenes)
+    return NextResponse.json(versions)
   } catch (error) {
-    logger.error(error, { route: 'GET /api/scenes', userId })
-    return NextResponse.json({ error: 'Fehler beim Laden der Szenen' }, { status: 500 })
+    logger.error(error, { route: 'GET /api/chapter-versions', userId })
+    return NextResponse.json({ error: 'Fehler beim Laden der Entwürfe' }, { status: 500 })
   }
 }
 
-// POST /api/scenes - Neue Szene erstellen
+// POST /api/chapter-versions - Neuen Entwurf erstellen
 export async function POST(request: NextRequest) {
   let userId: string | null = null
   try {
@@ -50,14 +49,10 @@ export async function POST(request: NextRequest) {
     userId = context.userId
 
     const body = await request.json()
-    const { chapterId, name, description, outline, visibility } = body
+    const { chapterId, name, content, wordCount } = body
 
     if (!chapterId) {
       return NextResponse.json({ error: 'Kapitel-ID erforderlich' }, { status: 400 })
-    }
-
-    if (visibility !== undefined && !isValidVisibility(visibility)) {
-      return NextResponse.json({ error: 'Sichtbarkeit muss PRIVATE oder FAMILY sein' }, { status: 400 })
     }
 
     const chapter = await prisma.chapter.findFirst({
@@ -67,24 +62,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Kapitel nicht gefunden' }, { status: 404 })
     }
 
-    const order = await prisma.scene.count({ where: { chapterId } })
-
-    const scene = await prisma.scene.create({
+    const version = await prisma.chapterVersion.create({
       data: {
-        name: name || 'Neue Szene',
-        description: description || '',
-        outline: outline || '',
-        order,
-        visibility: visibility || 'PRIVATE',
+        name: name || 'Neuer Entwurf',
+        content: content ?? null,
+        wordCount: wordCount || 0,
         chapterId,
         familyId: context.familyId,
         authorId: context.userId,
       },
     })
 
-    return NextResponse.json(scene, { status: 201 })
+    return NextResponse.json(version, { status: 201 })
   } catch (error) {
-    logger.error(error, { route: 'POST /api/scenes', userId })
-    return NextResponse.json({ error: 'Fehler beim Erstellen der Szene' }, { status: 500 })
+    logger.error(error, { route: 'POST /api/chapter-versions', userId })
+    return NextResponse.json({ error: 'Fehler beim Erstellen des Entwurfs' }, { status: 500 })
   }
 }

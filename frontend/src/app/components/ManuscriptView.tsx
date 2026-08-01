@@ -5,6 +5,7 @@ import { RichTextEditor, CommentEditorApi } from './RichTextEditor'
 import { ReferencePanel } from './ReferencePanel'
 import { ScenesPanel } from './ScenesPanel'
 import { CommentsPanel } from './CommentsPanel'
+import { ChapterVersionSwitcher } from './ChapterVersionSwitcher'
 import { Chapter, Character, Comment, CommentActions, Item, Place } from './types'
 import { ChapterDraft } from '@/lib/chapterDraftStore'
 import { DraftRecoveryBanner } from './DraftRecoveryBanner'
@@ -12,6 +13,9 @@ import { TEXT_PRIMARY, MONO_LABEL_MUTED, ACCENT, RADIUS } from '@/lib/theme'
 import { BookOpen } from 'lucide-react'
 import type { MentionClickResult } from '@/lib/tiptap/mentionClick'
 import { useComments } from '../hooks/useComments'
+import { useChapterVersions } from '../hooks/useChapterVersions'
+import { extractContent } from '../hooks/useChapters'
+import { stripHtml } from '@/lib/text'
 
 type SidePanel = 'none' | 'reference' | 'comments'
 
@@ -72,6 +76,71 @@ export function ManuscriptView({
 
   const commentEditorApiRef = useRef<CommentEditorApi | null>(null)
 
+  const { versions, createVersion, saveVersionContent, renameVersion, deleteVersion } = useChapterVersions({
+    chapterId: selectedChapter?.id ?? null,
+    showError,
+    requestConfirm,
+    onConfirmed,
+  })
+  const [activeVersionId, setActiveVersionId] = useState<string | null>(null)
+  const [activeVersionContent, setActiveVersionContent] = useState('')
+
+  useEffect(() => {
+    setActiveVersionId(null)
+    setActiveVersionContent('')
+  }, [selectedChapter?.id])
+
+  useEffect(() => {
+    if (!activeVersionId) return
+    const timer = setTimeout(() => {
+      const wordCount = stripHtml(activeVersionContent).trim().split(/\s+/).filter((w) => w.length > 0).length
+      saveVersionContent(activeVersionId, activeVersionContent, wordCount)
+    }, 2000)
+    return () => clearTimeout(timer)
+  }, [activeVersionContent, activeVersionId])
+
+  const saveVersionNow = (id: string, content: string) => {
+    const wordCount = stripHtml(content).trim().split(/\s+/).filter((w) => w.length > 0).length
+    saveVersionContent(id, content, wordCount)
+  }
+
+  const selectVersion = (id: string | null) => {
+    if (id === activeVersionId) return
+    if (activeVersionId) saveVersionNow(activeVersionId, activeVersionContent)
+    if (id === null) {
+      setActiveVersionId(null)
+      editorSetContentRef.current?.(editorContent)
+    } else {
+      const version = versions.find((v) => v.id === id)
+      const content = version ? extractContent(version.content) : ''
+      setActiveVersionId(id)
+      setActiveVersionContent(content)
+      editorSetContentRef.current?.(content)
+    }
+  }
+
+  const handleCreateVersion = async () => {
+    const created = await createVersion(`Entwurf ${versions.length + 1}`)
+    if (created) selectVersion(created.id)
+  }
+
+  const handleDeleteVersion = (id: string) => {
+    deleteVersion(id, () => {
+      if (activeVersionId === id) {
+        setActiveVersionId(null)
+        editorSetContentRef.current?.(editorContent)
+      }
+    })
+  }
+
+  const handleEditorChange = (html: string) => {
+    if (activeVersionId) {
+      setActiveVersionContent(html)
+    } else {
+      setEditorContent(html)
+    }
+  }
+
   useEffect(() => {
     commentActionsRef.current = {
       updateComment,
@@ -103,9 +172,17 @@ export function ManuscriptView({
               onChange={(e) => onTitleChange(e.target.value)}
               className={`w-full text-3xl font-display font-light bg-transparent border-none outline-none placeholder-zinc-400 dark:placeholder-zinc-600 ${TEXT_PRIMARY} mb-8`}
             />
+            <ChapterVersionSwitcher
+              versions={versions}
+              activeVersionId={activeVersionId}
+              onSelect={selectVersion}
+              onCreate={handleCreateVersion}
+              onRename={renameVersion}
+              onDelete={handleDeleteVersion}
+            />
             <RichTextEditor
-              content={editorContent}
-              onChange={setEditorContent}
+              content={activeVersionId ? activeVersionContent : editorContent}
+              onChange={handleEditorChange}
               placeholder="Beginne zu schreiben... (@ für Charaktere, Orte, Objekte)"
               onEditorReady={(setter) => { editorSetContentRef.current = setter }}
               characters={characters}

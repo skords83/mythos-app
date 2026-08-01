@@ -57,6 +57,7 @@ model Family {
   timelineEvents TimelineEvent[]
   loreEntries LoreEntry[]
   comments   Comment[]
+  chapterVersions ChapterVersion[]
 }
 
 model User {
@@ -80,6 +81,7 @@ model User {
   timelineEvents TimelineEvent[]
   loreEntries LoreEntry[]
   comments   Comment[]
+  chapterVersions ChapterVersion[]
 }
 
 model Project {
@@ -101,6 +103,26 @@ model Project {
   factions Faction[]
   timelineEvents TimelineEvent[]
   loreEntries LoreEntry[]
+  dailyWordCounts DailyWordCount[]
+}
+
+// C11: historical daily word-count log for a project's activity heatmap and
+// streak stats. Distinct from Project.wordCountBaseline/-Date above, which is
+// only a single-day rollover snapshot for the "today" progress bar — this
+// table is the append-only history that snapshot never kept. One row per
+// project per calendar day (date as free-text "YYYY-MM-DD", matching the
+// existing `todayDateString`/`wordCountBaselineDate` convention in page.tsx),
+// upserted from the same debounced autosave that already drives the baseline.
+model DailyWordCount {
+  id        String   @id @default(cuid())
+  date      String
+  wordCount Int      @default(0)
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, date])
 }
 
 model Chapter {
@@ -114,6 +136,26 @@ model Chapter {
   notes     Note[]
   scenes    Scene[]
   comments  Comment[]
+  versions  ChapterVersion[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// C9: named, switchable alternate drafts of a chapter's prose. The chapter's own
+// `content`/`wordCount` above remains the implicit "Original" version and is never
+// duplicated into this table — it only holds *additional* named versions, so this
+// is a purely additive feature with no backfill of existing chapters.
+model ChapterVersion {
+  id        String   @id @default(cuid())
+  name      String
+  content   Json?
+  wordCount Int      @default(0)
+  chapterId String
+  chapter   Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  familyId  String
+  family    Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -230,6 +272,9 @@ model Scene {
   id          String     @id @default(cuid())
   name        String
   description String?
+  // C7: outline/notes for the scene's planned content, distinct from the
+  // free-text `description` blurb (structural planning vs. summary).
+  outline     String?
   order       Int        @default(0)
   visibility  Visibility @default(PRIVATE)
   chapterId   String

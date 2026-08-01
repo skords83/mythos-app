@@ -2,10 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthContext } from '@/lib/auth'
 import { logger } from '@/lib/logger'
-import { isValidVisibility } from '@/lib/visibility'
-import { deleteRelationsForEntity } from '@/lib/relations'
 
-// PUT /api/scenes/[id] - Szene aktualisieren (nur Autor)
+// PUT /api/chapter-versions/[id] - Entwurf aktualisieren (nur Autor)
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -18,39 +16,33 @@ export async function PUT(
     }
     userId = context.userId
 
-    const scene = await prisma.scene.findFirst({
+    const version = await prisma.chapterVersion.findFirst({
       where: { id: params.id, familyId: context.familyId },
     })
-    if (!scene) {
-      return NextResponse.json({ error: 'Szene nicht gefunden' }, { status: 404 })
+    if (!version) {
+      return NextResponse.json({ error: 'Entwurf nicht gefunden' }, { status: 404 })
     }
-    if (scene.authorId !== context.userId) {
+    if (version.authorId !== context.userId) {
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
     }
 
     const body = await request.json()
-    const { name, description, outline, order, visibility } = body
-
-    if (visibility !== undefined && !isValidVisibility(visibility)) {
-      return NextResponse.json({ error: 'Sichtbarkeit muss PRIVATE oder FAMILY sein' }, { status: 400 })
-    }
+    const { name, content, wordCount } = body
 
     const updateData: any = {}
     if (name !== undefined) updateData.name = name
-    if (description !== undefined) updateData.description = description
-    if (outline !== undefined) updateData.outline = outline
-    if (order !== undefined) updateData.order = order
-    if (visibility !== undefined) updateData.visibility = visibility
+    if (content !== undefined) updateData.content = content
+    if (wordCount !== undefined) updateData.wordCount = wordCount
 
-    const updated = await prisma.scene.update({ where: { id: params.id }, data: updateData })
+    const updated = await prisma.chapterVersion.update({ where: { id: params.id }, data: updateData })
     return NextResponse.json(updated)
   } catch (error) {
-    logger.error(error, { route: 'PUT /api/scenes/[id]', userId })
+    logger.error(error, { route: 'PUT /api/chapter-versions/[id]', userId })
     return NextResponse.json({ error: 'Fehler beim Aktualisieren' }, { status: 500 })
   }
 }
 
-// DELETE /api/scenes/[id] - Szene löschen (Autor oder Familien-OWNER)
+// DELETE /api/chapter-versions/[id] - Entwurf löschen (Autor oder Familien-OWNER)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -63,21 +55,20 @@ export async function DELETE(
     }
     userId = context.userId
 
-    const scene = await prisma.scene.findFirst({
+    const version = await prisma.chapterVersion.findFirst({
       where: { id: params.id, familyId: context.familyId },
     })
-    if (!scene) {
-      return NextResponse.json({ error: 'Szene nicht gefunden' }, { status: 404 })
+    if (!version) {
+      return NextResponse.json({ error: 'Entwurf nicht gefunden' }, { status: 404 })
     }
-    if (scene.authorId !== context.userId && context.role !== 'OWNER') {
+    if (version.authorId !== context.userId && context.role !== 'OWNER') {
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
     }
 
-    await deleteRelationsForEntity(prisma, 'SCENE', params.id)
-    await prisma.scene.delete({ where: { id: params.id } })
+    await prisma.chapterVersion.delete({ where: { id: params.id } })
     return NextResponse.json({ success: true })
   } catch (error) {
-    logger.error(error, { route: 'DELETE /api/scenes/[id]', userId })
+    logger.error(error, { route: 'DELETE /api/chapter-versions/[id]', userId })
     return NextResponse.json({ error: 'Fehler beim Löschen' }, { status: 500 })
   }
 }

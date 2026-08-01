@@ -45,10 +45,12 @@ import {
   LoreView,
   NotesView,
   SearchModal,
+  StatsModal,
 } from './components'
 import { useAuth } from './hooks/useAuth'
 import { useNotifications } from './hooks/useNotifications'
 import { useProjects } from './hooks/useProjects'
+import { useDailyWordCounts } from './hooks/useDailyWordCounts'
 import { useChapters } from './hooks/useChapters'
 import { useCharacters } from './hooks/useCharacters'
 import { usePlaces } from './hooks/usePlaces'
@@ -112,6 +114,8 @@ export default function Page() {
   const { query: searchQuery, setQuery: setSearchQuery, results: searchResults, isSearching } =
     useSearch(selectedProject?.id)
 
+  const { entries: dailyWordCounts, recordWordCount } = useDailyWordCounts({ projectId: selectedProject?.id ?? null })
+
   const [activeTab, setActiveTab] = useState<ActiveTab>('manuscript')
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true)
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
@@ -126,6 +130,7 @@ export default function Page() {
   const [showEditProjectModal, setShowEditProjectModal] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
   const [showSearchModal, setShowSearchModal] = useState(false)
+  const [showStatsModal, setShowStatsModal] = useState(false)
   const [quickCard, setQuickCard] = useState<QuickCardState>({
     character: null,
     position: { x: 0, y: 0 },
@@ -161,6 +166,14 @@ export default function Page() {
       rolloverDailyWordCount(selectedProject.id, totalWordCount, todayDateString)
     }
   }, [selectedProject?.id, selectedProject?.wordCountBaselineDate])
+
+  // C11: log today's running total for the activity heatmap/streaks, riding
+  // the same wordCount changes (already debounced upstream by chapter
+  // autosave) that drive the "today" baseline rollover above.
+  useEffect(() => {
+    if (!selectedProject) return
+    recordWordCount(selectedProject.id, todayDateString, todayWordCount)
+  }, [selectedProject?.id, todayDateString, todayWordCount])
 
   useEffect(() => {
     if (!selectedProject) return
@@ -296,6 +309,7 @@ export default function Page() {
         onOpenEditProject={() => setShowEditProjectModal(true)}
         onOpenExport={() => setShowExportModal(true)}
         onOpenSearch={() => setShowSearchModal(true)}
+        onOpenStats={() => setShowStatsModal(true)}
       />
 
       {/* Main Content */}
@@ -554,6 +568,12 @@ export default function Page() {
         project={selectedProject}
         chapters={chapters}
         selectedChapter={selectedChapter}
+      />
+      <StatsModal
+        isOpen={showStatsModal}
+        onClose={() => setShowStatsModal(false)}
+        entries={dailyWordCounts}
+        todayDateString={todayDateString}
       />
       <ConfirmDialog
         isOpen={!!confirmDialog}

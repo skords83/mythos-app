@@ -1,6 +1,6 @@
 'use client'
 
-import { Book, ChevronLeft, ChevronRight, Clock, Download, Gem, MapPin, Scroll, Search, Settings, Shield, StickyNote, Users, Home as HomeIcon } from 'lucide-react'
+import { Book, ChevronLeft, ChevronRight, Clock, Download, Flame, Gem, MapPin, Scroll, Search, Settings, Shield, StickyNote, Users, Home as HomeIcon } from 'lucide-react'
 import { NavItem } from './ThemeToggle'
 import { WordProgress } from './WordProgress'
 import { Project } from './types'
@@ -20,6 +20,7 @@ interface LeftSidebarProps {
   onOpenEditProject: () => void
   onOpenExport: () => void
   onOpenSearch: () => void
+  onOpenStats: () => void
 }
 
 export function LeftSidebar({
@@ -34,6 +35,7 @@ export function LeftSidebar({
   onOpenEditProject,
   onOpenExport,
   onOpenSearch,
+  onOpenStats,
 }: LeftSidebarProps) {
   return (
     <aside
@@ -75,6 +77,13 @@ export function LeftSidebar({
                 <Download {...ICON_PROPS} />
               </button>
               <button
+                onClick={onOpenStats}
+                className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors text-zinc-500 dark:text-zinc-400`}
+                title="Schreib-Statistik"
+              >
+                <Flame {...ICON_PROPS} />
+              </button>
+              <button
                 onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
                 className={`p-1 ${RADIUS} ${HOVER_SURFACE} transition-colors`}
               >
@@ -106,10 +115,14 @@ export function LeftSidebar({
       </nav>
 
       {leftSidebarOpen && selectedProject && (
-        <div className={`p-4 border-t ${HAIRLINE}`}>
+        <button
+          onClick={onOpenStats}
+          className={`p-4 border-t ${HAIRLINE} w-full ${HOVER_SURFACE} transition-colors`}
+          title="Schreib-Statistik öffnen"
+        >
           <p className={`text-xs ${TEXT_MUTED} text-center uppercase tracking-wide`}>Heute</p>
           <WordProgress current={todayWordCount} goal={selectedProject.wordGoal} />
-        </div>
+        </button>
       )}
     </aside>
   )

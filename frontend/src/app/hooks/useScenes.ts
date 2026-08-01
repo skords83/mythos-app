@@ -42,13 +42,13 @@ export function useScenes({ chapterId, showError, requestConfirm, onConfirmed }:
     }
   }, [chapterId])
 
-  const addScene = async (name: string, description: string, visibility: 'PRIVATE' | 'FAMILY') => {
+  const addScene = async (name: string, description: string, visibility: 'PRIVATE' | 'FAMILY', outline: string = '') => {
     if (!chapterId) return
     try {
       const response = await fetch('/api/scenes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, visibility, chapterId })
+        body: JSON.stringify({ name, description, outline, visibility, chapterId })
       })
       if (!response.ok) {
         showError('Szene konnte nicht erstellt werden.')
@@ -62,12 +62,12 @@ export function useScenes({ chapterId, showError, requestConfirm, onConfirmed }:
     }
   }
 
-  const updateScene = async (id: string, name: string, description: string, visibility: 'PRIVATE' | 'FAMILY') => {
+  const updateScene = async (id: string, name: string, description: string, visibility: 'PRIVATE' | 'FAMILY', outline: string = '') => {
     try {
       const response = await fetch(`/api/scenes/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, visibility })
+        body: JSON.stringify({ name, description, outline, visibility })
       })
       if (!response.ok) {
         showError('Szene konnte nicht gespeichert werden.')

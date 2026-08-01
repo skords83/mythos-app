@@ -102,8 +102,23 @@ export interface Scene {
   id: string
   name: string
   description: string | null
+  outline: string | null
   order: number
   visibility: 'PRIVATE' | 'FAMILY'
+  chapterId: string
+  familyId: string
+  authorId: string
+  createdAt: string
+  updatedAt: string
+}
+
+// C9: a named, switchable alternate draft of a chapter. The chapter's own
+// content/wordCount is the implicit "Original" version and has no row here.
+export interface ChapterVersion {
+  id: string
+  name: string
+  content: any
+  wordCount: number
   chapterId: string
   familyId: string
   authorId: string

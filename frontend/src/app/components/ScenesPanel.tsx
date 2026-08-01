@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useState } from 'react'
-import { ChevronDown, ChevronRight, FileText, Plus, Trash2 } from 'lucide-react'
-import { Character, Item, Place } from './types'
+import { ChevronDown, ChevronRight, FileText, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Character, Item, Place, Scene } from './types'
 import { useScenes } from '../hooks/useScenes'
 import { SceneEntityTags } from './SceneEntityTags'
 import { TEXT_SECONDARY, TEXT_PRIMARY, TEXT_MUTED, MONO_LABEL_MUTED, INPUT, RADIUS, BUTTON_SECONDARY, BORDER, HAIRLINE } from '@/lib/theme'
@@ -20,18 +20,44 @@ interface ScenesPanelProps {
 }
 
 export function ScenesPanel({ chapterId, characters, places, items, showError, requestConfirm, onConfirmed }: ScenesPanelProps) {
-  const { scenes, addScene, deleteScene } = useScenes({ chapterId, showError, requestConfirm, onConfirmed })
+  const { scenes, addScene, updateScene, deleteScene } = useScenes({ chapterId, showError, requestConfirm, onConfirmed })
   const [expandedSceneId, setExpandedSceneId] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [newName, setNewName] = useState('')
   const [newDescription, setNewDescription] = useState('')
+  const [newOutline, setNewOutline] = useState('')
+  const [editingSceneId, setEditingSceneId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editOutline, setEditOutline] = useState('')
 
   const handleAdd = async () => {
     if (!newName.trim()) return
-    await addScene(newName.trim(), newDescription.trim(), 'PRIVATE')
+    await addScene(newName.trim(), newDescription.trim(), 'PRIVATE', newOutline.trim())
     setNewName('')
     setNewDescription('')
+    setNewOutline('')
     setShowAddForm(false)
+  }
+
+  const startEdit = (scene: Scene) => {
+    setEditingSceneId(scene.id)
+    setEditName(scene.name)
+    setEditDescription(scene.description || '')
+    setEditOutline(scene.outline || '')
+  }
+
+  const cancelEdit = () => {
+    setEditingSceneId(null)
+    setEditName('')
+    setEditDescription('')
+    setEditOutline('')
+  }
+
+  const handleSaveEdit = async (scene: Scene) => {
+    if (!editName.trim()) return
+    await updateScene(scene.id, editName.trim(), editDescription.trim(), scene.visibility, editOutline.trim())
+    cancelEdit()
   }
 
   return (
@@ -72,6 +98,15 @@ export function ScenesPanel({ chapterId, characters, places, items, showError, r
                   <span className={`text-xs ${TEXT_MUTED}`}>{scene.order + 1}.</span>
                   <span className={`text-sm font-medium ${TEXT_PRIMARY} truncate`}>{scene.name}</span>
                 </button>
+                {editingSceneId !== scene.id && (
+                  <button
+                    type="button"
+                    onClick={() => { setExpandedSceneId(scene.id); startEdit(scene) }}
+                    className="p-1 text-gray-400 hover:text-indigo-500 transition-colors"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => deleteScene(scene.id)}
@@ -82,12 +117,67 @@ export function ScenesPanel({ chapterId, characters, places, items, showError, r
               </div>
               {isExpanded && (
                 <div className="px-3 pb-3 space-y-3">
-                  {scene.description && (
-                    <p className={`text-xs ${TEXT_SECONDARY}`}>{scene.description}</p>
+                  {editingSceneId === scene.id ? (
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        placeholder="Name der Szene"
+                        className={`${INPUT} text-sm`}
+                      />
+                      <textarea
+                        value={editDescription}
+                        onChange={(e) => setEditDescription(e.target.value)}
+                        placeholder="Beschreibung (optional)"
+                        rows={2}
+                        className={`${INPUT} text-sm`}
+                      />
+                      <div>
+                        <span className={MONO_LABEL_MUTED}>Outline</span>
+                        <textarea
+                          value={editOutline}
+                          onChange={(e) => setEditOutline(e.target.value)}
+                          placeholder="Geplanter Ablauf der Szene (optional)"
+                          rows={3}
+                          className={`${INPUT} text-sm mt-1`}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <HairlineButton
+                          type="button"
+                          emphasised
+                          onClick={() => handleSaveEdit(scene)}
+                          disabled={!editName.trim()}
+                          className="text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Speichern
+                        </HairlineButton>
+                        <button
+                          type="button"
+                          onClick={cancelEdit}
+                          className={`px-3 py-1.5 text-xs ${BUTTON_SECONDARY} ${RADIUS}`}
+                        >
+                          Abbrechen
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {scene.description && (
+                        <p className={`text-xs ${TEXT_SECONDARY}`}>{scene.description}</p>
+                      )}
+                      {scene.outline && (
+                        <div>
+                          <span className={MONO_LABEL_MUTED}>Outline</span>
+                          <p className={`text-xs ${TEXT_SECONDARY} mt-1 whitespace-pre-wrap`}>{scene.outline}</p>
+                        </div>
+                      )}
+                      <SceneEntityTags scene={scene} entityType="CHARACTER" label="Charaktere" entities={characters} />
+                      <SceneEntityTags scene={scene} entityType="PLACE" label="Orte" entities={places} />
+                      <SceneEntityTags scene={scene} entityType="ITEM" label="Items" entities={items} />
+                    </>
                   )}
-                  <SceneEntityTags scene={scene} entityType="CHARACTER" label="Charaktere" entities={characters} />
-                  <SceneEntityTags scene={scene} entityType="PLACE" label="Orte" entities={places} />
-                  <SceneEntityTags scene={scene} entityType="ITEM" label="Items" entities={items} />
                 </div>
               )}
             </div>
@@ -112,6 +202,13 @@ export function ScenesPanel({ chapterId, characters, places, items, showError, r
             rows={2}
             className={`${INPUT} text-sm`}
           />
+          <textarea
+            value={newOutline}
+            onChange={(e) => setNewOutline(e.target.value)}
+            placeholder="Outline: geplanter Ablauf der Szene (optional)"
+            rows={2}
+            className={`${INPUT} text-sm`}
+          />
           <div className="flex gap-2">
             <HairlineButton
               type="button"
@@ -124,7 +221,7 @@ export function ScenesPanel({ chapterId, characters, places, items, showError, r
             </HairlineButton>
             <button
               type="button"
-              onClick={() => { setShowAddForm(false); setNewName(''); setNewDescription('') }}
+              onClick={() => { setShowAddForm(false); setNewName(''); setNewDescription(''); setNewOutline('') }}
               className={`px-3 py-1.5 text-xs ${BUTTON_SECONDARY} ${RADIUS}`}
             >
               Abbrechen

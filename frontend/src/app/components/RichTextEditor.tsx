@@ -15,6 +15,7 @@ import { resolveMentionClick, MentionClickResult } from '@/lib/tiptap/mentionCli
 import { resolveCommentClick, CommentClickResult } from '@/lib/tiptap/commentClick'
 import { CommentMark, applyCommentResolvedState, removeCommentMark, commentIdsInDoc } from '@/lib/tiptap/commentMark'
 import { BlockDragHandle, findTopLevelBlockAt, moveTopLevelBlock } from '@/lib/tiptap/blockDragHandleExtension'
+import { PassiveEntityDetection, PassiveDetectionDataRef } from '@/lib/tiptap/passiveEntityDetection'
 import { NewCommentInput } from './NewCommentInput'
 import type { Character, Item, Place, Comment } from './types'
 
@@ -50,6 +51,25 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
   const mentionDataRef = useRef<MentionableData>({ characters, places, items })
   useEffect(() => { mentionDataRef.current = { characters, places, items } }, [characters, places, items])
 
+  // C8: passive entity detection reuses the same characters/places/items props —
+  // no new component props needed, it just flags names already known elsewhere in the project.
+  const passiveDataRef: PassiveDetectionDataRef = useRef({
+    candidates: [
+      ...characters.map((c) => ({ id: c.id, name: c.name, kind: 'CHARACTER' as const })),
+      ...places.map((p) => ({ id: p.id, name: p.name, kind: 'PLACE' as const })),
+      ...items.map((i) => ({ id: i.id, name: i.name, kind: 'ITEM' as const })),
+    ],
+  })
+  useEffect(() => {
+    passiveDataRef.current = {
+      candidates: [
+        ...characters.map((c) => ({ id: c.id, name: c.name, kind: 'CHARACTER' as const })),
+        ...places.map((p) => ({ id: p.id, name: p.name, kind: 'PLACE' as const })),
+        ...items.map((i) => ({ id: i.id, name: i.name, kind: 'ITEM' as const })),
+      ],
+    }
+  }, [characters, places, items])
+
   const onMentionClickRef = useRef(onMentionClick)
   useEffect(() => { onMentionClickRef.current = onMentionClick }, [onMentionClick])
 
@@ -69,6 +89,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
       EntityMention,
       CommentMark,
       BlockDragHandle,
+      PassiveEntityDetection.configure({ dataRef: passiveDataRef }),
     ],
     content: content || '',
     onUpdate: ({ editor }) => {
