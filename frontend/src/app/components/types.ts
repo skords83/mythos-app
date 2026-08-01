@@ -103,6 +103,7 @@ export interface Scene {
   name: string
   description: string | null
   outline: string | null
+  tags: string[]
   order: number
   visibility: 'PRIVATE' | 'FAMILY'
   chapterId: string

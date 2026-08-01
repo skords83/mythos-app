@@ -97,7 +97,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-lg dark:prose-invert max-w-none focus:outline-none min-h-[400px] pt-4 pr-4 pb-4 pl-9',
+        class: 'prose prose-lg dark:prose-invert max-w-none focus:outline-none min-h-[400px] leading-loose pt-10 pr-12 pb-16 pl-12',
       },
       handleClickOn: (_view, _pos, node, _nodePos, event) => {
         const result = resolveMentionClick(node, event)
@@ -230,8 +230,8 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
   if (!editor) return null
 
   return (
-    <div className={`border ${HAIRLINE} overflow-hidden ${SURFACE}`}>
-      <div className={`flex items-center gap-1 p-2 border-b ${HAIRLINE} ${SURFACE_ALT}`}>
+    <div className={SURFACE}>
+      <div className={`flex items-center gap-1 p-2 border-b ${HAIRLINE} ${SURFACE_ALT} sticky top-0 z-10`}>
         <ToolButton onClick={() => editor.chain().focus().toggleBold().run()}
           active={editor.isActive('bold')} title="Fett"><Bold {...ICON_PROPS} /></ToolButton>
         <ToolButton onClick={() => editor.chain().focus().toggleItalic().run()}

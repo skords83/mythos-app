@@ -35,7 +35,8 @@ import {
   ConfirmDialog,
   Toast,
   LeftSidebar,
-  RightSidebar,
+  ChapterSceneTree,
+  SceneMetadataPanel,
   ManuscriptView,
   CharactersView,
   PlacesView,
@@ -52,6 +53,7 @@ import { useNotifications } from './hooks/useNotifications'
 import { useProjects } from './hooks/useProjects'
 import { useDailyWordCounts } from './hooks/useDailyWordCounts'
 import { useChapters } from './hooks/useChapters'
+import { useSceneTree } from './hooks/useSceneTree'
 import { useCharacters } from './hooks/useCharacters'
 import { usePlaces } from './hooks/usePlaces'
 import { useItems } from './hooks/useItems'
@@ -91,6 +93,19 @@ export default function Page() {
     discardDraft,
   } = useChapters({ selectedProject, showError, requestConfirm, onConfirmed })
 
+  const {
+    expandedChapterIds,
+    scenesByChapter,
+    loadingChapterIds,
+    toggleChapter,
+    expandAll,
+    selectedScene,
+    setSelectedScene,
+    createScene,
+    updateSceneFields,
+    deleteScene,
+  } = useSceneTree({ chapters, selectedChapter, showError, requestConfirm, onConfirmed })
+
   const { characters, editingCharacter, setEditingCharacter, addCharacter, updateCharacter, deleteCharacter } =
     useCharacters({ selectedProject, showError, requestConfirm, onConfirmed })
 
@@ -118,7 +133,6 @@ export default function Page() {
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('manuscript')
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true)
-  const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
   const [focusMode, setFocusMode] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showCharacterModal, setShowCharacterModal] = useState(false)
@@ -312,6 +326,30 @@ export default function Page() {
         onOpenStats={() => setShowStatsModal(true)}
       />
 
+      <ChapterSceneTree
+        visible={!focusMode && activeTab === 'manuscript'}
+        chapters={chapters}
+        selectedChapter={selectedChapter}
+        selectedScene={selectedScene}
+        expandedChapterIds={expandedChapterIds}
+        scenesByChapter={scenesByChapter}
+        loadingChapterIds={loadingChapterIds}
+        onToggleChapter={toggleChapter}
+        onSelectChapter={(chapter) => {
+          switchChapter(chapter)
+          setSelectedScene(null)
+        }}
+        onSelectScene={(chapter, scene) => {
+          if (selectedChapter?.id !== chapter.id) switchChapter(chapter)
+          setSelectedScene(scene)
+        }}
+        onDeleteChapter={deleteChapter}
+        onCreateChapter={createChapter}
+        onCreateScene={createScene}
+        onDeleteScene={deleteScene}
+        onExpandAll={expandAll}
+      />
+
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
         <header className={`h-16 ${SURFACE_ALT} flex items-center justify-between px-6`}>
@@ -483,18 +521,14 @@ export default function Page() {
         </div>
       </main>
 
-      <RightSidebar
-        focusMode={focusMode}
-        rightSidebarOpen={rightSidebarOpen}
-        setRightSidebarOpen={setRightSidebarOpen}
-        chapters={chapters}
+      <SceneMetadataPanel
+        visible={!focusMode && activeTab === 'manuscript'}
         selectedChapter={selectedChapter}
-        onSelectChapter={switchChapter}
-        onDeleteChapter={deleteChapter}
-        onCreateChapter={createChapter}
+        selectedScene={selectedScene}
         characters={characters}
-        onSelectCharacter={setEditingCharacter}
-        onAddCharacterClick={() => setShowCharacterModal(true)}
+        places={places}
+        items={items}
+        onUpdateScene={updateSceneFields}
       />
 
       <CreateProjectModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} onCreate={createProject} />

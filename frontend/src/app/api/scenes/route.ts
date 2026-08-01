@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     userId = context.userId
 
     const body = await request.json()
-    const { chapterId, name, description, outline, visibility } = body
+    const { chapterId, name, description, outline, visibility, tags } = body
 
     if (!chapterId) {
       return NextResponse.json({ error: 'Kapitel-ID erforderlich' }, { status: 400 })
@@ -74,6 +74,7 @@ export async function POST(request: NextRequest) {
         name: name || 'Neue Szene',
         description: description || '',
         outline: outline || '',
+        tags: Array.isArray(tags) ? tags : [],
         order,
         visibility: visibility || 'PRIVATE',
         chapterId,

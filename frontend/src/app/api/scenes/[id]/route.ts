@@ -29,7 +29,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { name, description, outline, order, visibility } = body
+    const { name, description, outline, order, visibility, tags } = body
 
     if (visibility !== undefined && !isValidVisibility(visibility)) {
       return NextResponse.json({ error: 'Sichtbarkeit muss PRIVATE oder FAMILY sein' }, { status: 400 })
@@ -39,6 +39,7 @@ export async function PUT(
     if (name !== undefined) updateData.name = name
     if (description !== undefined) updateData.description = description
     if (outline !== undefined) updateData.outline = outline
+    if (tags !== undefined) updateData.tags = Array.isArray(tags) ? tags : []
     if (order !== undefined) updateData.order = order
     if (visibility !== undefined) updateData.visibility = visibility
 

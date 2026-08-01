@@ -3,7 +3,6 @@
 import { MutableRefObject, useEffect, useRef, useState } from 'react'
 import { RichTextEditor, CommentEditorApi } from './RichTextEditor'
 import { ReferencePanel } from './ReferencePanel'
-import { ScenesPanel } from './ScenesPanel'
 import { CommentsPanel } from './CommentsPanel'
 import { ChapterVersionSwitcher } from './ChapterVersionSwitcher'
 import { Chapter, Character, Comment, CommentActions, Item, Place } from './types'
@@ -200,15 +199,6 @@ export function ManuscriptView({
               onToggleCommentsPanel={() => setSidePanel((p) => (p === 'comments' ? 'none' : 'comments'))}
               onAddComment={addComment}
               onCommentEditorReady={(api) => { commentEditorApiRef.current = api }}
-            />
-            <ScenesPanel
-              chapterId={selectedChapter.id}
-              characters={characters}
-              places={places}
-              items={items}
-              showError={showError}
-              requestConfirm={requestConfirm}
-              onConfirmed={onConfirmed}
             />
           </div>
           {sidePanel === 'reference' && (

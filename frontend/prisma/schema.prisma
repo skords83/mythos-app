@@ -275,6 +275,8 @@ model Scene {
   // C7: outline/notes for the scene's planned content, distinct from the
   // free-text `description` blurb (structural planning vs. summary).
   outline     String?
+  // Free-text tag chips (e.g. #transformation), independent of outline/description.
+  tags        String[]   @default([])
   order       Int        @default(0)
   visibility  Visibility @default(PRIVATE)
   chapterId   String

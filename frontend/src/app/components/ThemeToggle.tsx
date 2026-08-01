@@ -6,7 +6,7 @@ import { RADIUS, HOVER_SURFACE, EASE_STANDARD, ICON_PROPS } from '@/lib/theme'
 import { MonoLabel } from './MonoLabel'
 
 export function ThemeToggle() {
-  const [darkMode, setDarkMode] = useState(false)
+  const [darkMode, setDarkMode] = useState(true)
 
   useEffect(() => {
     const isDark = document.documentElement.classList.contains('dark')
@@ -14,8 +14,10 @@ export function ThemeToggle() {
   }, [])
 
   const toggleTheme = () => {
-    setDarkMode(!darkMode)
-    document.documentElement.classList.toggle('dark')
+    const next = !darkMode
+    setDarkMode(next)
+    document.documentElement.classList.toggle('dark', next)
+    localStorage.setItem('theme', next ? 'dark' : 'light')
   }
 
   return (

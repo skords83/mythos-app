@@ -34,6 +34,11 @@ export default function RootLayout({
   return (
     <html lang="de" suppressHydrationWarning className={`${robotoFlex.variable} ${roboto.variable} ${ibmPlexMono.variable}`}>
       <body className="min-h-screen">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='light'){document.documentElement.classList.remove('dark')}else{document.documentElement.classList.add('dark')}}catch(e){document.documentElement.classList.add('dark')}})()`,
+          }}
+        />
         {children}
       </body>
     </html>
