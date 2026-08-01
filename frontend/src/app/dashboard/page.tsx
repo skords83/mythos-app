@@ -16,7 +16,10 @@ import {
 import { useRouter } from 'next/navigation'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Toast } from '../components/Toast'
-import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, ACCENT_TEXT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, BORDER, HOVER_SURFACE, SURFACE } from '@/lib/theme'
+import { Card } from '../components/Card'
+import { EmptyState } from '../components/EmptyState'
+import { HairlineButton } from '../components/HairlineButton'
+import { OVERLAY, MODAL_PANEL, INPUT, ACCENT_TEXT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, HAIRLINE, HOVER_SURFACE, SURFACE } from '@/lib/theme'
 
 interface Project {
   id: string
@@ -86,7 +89,7 @@ function CreateProjectModal({ isOpen, onClose, onCreate }: {
   return (
     <div className={OVERLAY}>
       <div className={`${MODAL_PANEL} p-6 w-full max-w-md`}>
-        <h2 className={`text-2xl font-serif font-bold mb-4 ${TEXT_PRIMARY}`}>
+        <h2 className={`text-2xl font-display font-light mb-4 ${TEXT_PRIMARY}`}>
           Neues Projekt
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -130,19 +133,12 @@ function CreateProjectModal({ isOpen, onClose, onCreate }: {
             />
           </div>
           <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className={`flex-1 px-4 py-2 ${BUTTON_SECONDARY} ${RADIUS}`}
-            >
+            <HairlineButton type="button" onClick={onClose} className="flex-1 justify-center">
               Abbrechen
-            </button>
-            <button
-              type="submit"
-              className={`flex-1 px-4 py-2 ${ACCENT} text-white ${RADIUS} transition-colors`}
-            >
+            </HairlineButton>
+            <HairlineButton type="submit" emphasised className="flex-1 justify-center">
               Erstellen
-            </button>
+            </HairlineButton>
           </div>
         </form>
       </div>
@@ -157,7 +153,7 @@ function ProjectCard({ project, onDelete, onOpen }: {
   onOpen: () => void
 }) {
   return (
-    <div className={`bg-white dark:bg-zinc-900 ${RADIUS} p-6 ${BORDER} group`}>
+    <Card>
       <div className="flex items-start justify-between mb-4">
         <div className={`w-12 h-12 ${RADIUS} bg-indigo-600 flex items-center justify-center text-white`}>
           <Book size={24} />
@@ -171,7 +167,7 @@ function ProjectCard({ project, onDelete, onOpen }: {
         </button>
       </div>
 
-      <h3 className={`text-xl font-serif font-bold ${TEXT_PRIMARY} mb-2`}>
+      <h3 className={`text-xl font-display font-light ${TEXT_PRIMARY} mb-2`}>
         {project.title}
       </h3>
 
@@ -194,14 +190,11 @@ function ProjectCard({ project, onDelete, onOpen }: {
       </div>
 
       {/* Open Button */}
-      <button
-        onClick={onOpen}
-        className={`w-full py-2 px-4 bg-indigo-600/10 hover:bg-indigo-600/20 ${ACCENT_TEXT} ${RADIUS} transition-colors flex items-center justify-center gap-2 font-medium`}
-      >
+      <HairlineButton emphasised onClick={onOpen} className="w-full justify-center">
         Öffnen
         <ArrowRight size={18} />
-      </button>
-    </div>
+      </HairlineButton>
+    </Card>
   )
 }
 
@@ -335,7 +328,7 @@ export default function DashboardPage() {
   return (
     <div className={`min-h-screen ${SURFACE}`}>
       {/* Header */}
-      <header className="bg-white dark:bg-zinc-900 border-b border-zinc-300 dark:border-zinc-700 sticky top-0 z-40">
+      <header className={`bg-white dark:bg-zinc-900 border-b ${HAIRLINE} sticky top-0 z-40`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
@@ -343,7 +336,7 @@ export default function DashboardPage() {
               <div className={`w-10 h-10 ${RADIUS} bg-indigo-600 flex items-center justify-center`}>
                 <Book size={20} className="text-white" />
               </div>
-              <span className={`text-xl font-serif font-bold ${TEXT_PRIMARY}`}>
+              <span className={`text-xl font-display font-light ${TEXT_PRIMARY}`}>
                 Mythos
               </span>
             </div>
@@ -380,20 +373,17 @@ export default function DashboardPage() {
         {/* Page Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className={`text-3xl font-serif font-bold ${TEXT_PRIMARY} mb-2`}>
+            <h1 className={`text-3xl font-display font-light ${TEXT_PRIMARY} mb-2`}>
               Deine Projekte
             </h1>
             <p className={TEXT_MUTED}>
               {projects.length} {projects.length === 1 ? 'Projekt' : 'Projekte'}
             </p>
           </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className={`px-4 py-2 ${ACCENT} text-white ${RADIUS} transition-colors flex items-center gap-2`}
-          >
+          <HairlineButton emphasised onClick={() => setShowCreateModal(true)}>
             <Plus size={20} />
             <span className="hidden sm:inline">Neues Projekt</span>
-          </button>
+          </HairlineButton>
         </div>
 
         {/* Projects Grid */}
@@ -409,22 +399,17 @@ export default function DashboardPage() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-16">
-            <Book size={64} className={`mx-auto ${TEXT_MUTED} mb-4`} />
-            <h2 className={`text-xl font-serif ${TEXT_SECONDARY} mb-2`}>
-              Noch keine Projekte
-            </h2>
-            <p className={`${TEXT_MUTED} mb-6 max-w-md mx-auto`}>
-              Erstelle dein erstes Projekt und beginne mit deinem nächsten Meisterwerk.
-            </p>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className={`px-6 py-3 ${ACCENT} text-white ${RADIUS} transition-colors inline-flex items-center gap-2`}
-            >
-              <Plus size={20} />
-              Erstes Projekt erstellen
-            </button>
-          </div>
+          <EmptyState
+            icon={Book}
+            label="Noch keine Projekte"
+            description="Erstelle dein erstes Projekt und beginne mit deinem nächsten Meisterwerk."
+            action={
+              <HairlineButton emphasised onClick={() => setShowCreateModal(true)}>
+                <Plus size={20} />
+                Erstes Projekt erstellen
+              </HairlineButton>
+            }
+          />
         )}
       </main>
 

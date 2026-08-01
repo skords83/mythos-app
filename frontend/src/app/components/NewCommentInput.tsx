@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { RADIUS, BORDER, TEXT_PRIMARY, ACCENT, BUTTON_SECONDARY, INPUT } from '@/lib/theme'
+import { HairlineButton } from './HairlineButton'
+import { RADIUS, BORDER, TEXT_PRIMARY, INPUT } from '@/lib/theme'
 
 interface NewCommentInputProps {
   position: { x: number; y: number }
@@ -28,7 +29,7 @@ export function NewCommentInput({ position, onCancel, onSubmit }: NewCommentInpu
           top: Math.min(position.y, typeof window !== 'undefined' ? window.innerHeight - 240 : 240),
         }}
       >
-        <h3 className={`font-serif font-bold text-sm ${TEXT_PRIMARY} mb-2`}>Kommentar hinzufügen</h3>
+        <h3 className={`font-display font-light text-sm ${TEXT_PRIMARY} mb-2`}>Kommentar hinzufügen</h3>
         <textarea
           autoFocus
           value={content}
@@ -46,21 +47,18 @@ export function NewCommentInput({ position, onCancel, onSubmit }: NewCommentInpu
           <option value="FAMILY">Familie (alle sehen)</option>
         </select>
         <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className={`px-3 py-1.5 text-xs ${BUTTON_SECONDARY} ${RADIUS}`}
-          >
+          <HairlineButton type="button" onClick={onCancel} className="px-3 py-1.5 text-xs">
             Abbrechen
-          </button>
-          <button
+          </HairlineButton>
+          <HairlineButton
             type="button"
+            emphasised
             onClick={submit}
             disabled={!content.trim()}
-            className={`px-3 py-1.5 text-xs ${RADIUS} ${ACCENT} text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+            className="px-3 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Kommentieren
-          </button>
+          </HairlineButton>
         </div>
       </div>
     </>

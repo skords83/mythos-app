@@ -3,7 +3,8 @@
 import React, { useState } from 'react'
 import { Book, Eye, EyeOff, LogIn, UserPlus, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { MODAL_PANEL, INPUT, ACCENT, ACCENT_TEXT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, SURFACE } from '@/lib/theme'
+import { HairlineButton } from '../components/HairlineButton'
+import { MODAL_PANEL, INPUT, ACCENT_TEXT, RADIUS, HAIRLINE, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, SURFACE } from '@/lib/theme'
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true)
@@ -55,7 +56,7 @@ export default function LoginPage() {
           <div className={`inline-flex items-center justify-center w-16 h-16 ${RADIUS} bg-indigo-600 mb-4`}>
             <Book size={32} className="text-white" />
           </div>
-          <h1 className={`text-3xl font-serif font-bold ${TEXT_PRIMARY} mb-2`}>
+          <h1 className={`text-3xl font-display font-light ${TEXT_PRIMARY} mb-2`}>
             Mythos
           </h1>
           <p className={TEXT_MUTED}>
@@ -135,10 +136,11 @@ export default function LoginPage() {
             )}
 
             {/* Submit Button */}
-            <button
+            <HairlineButton
               type="submit"
+              emphasised
               disabled={isLoading}
-              className={`w-full py-3 px-4 ${ACCENT} text-white font-medium ${RADIUS} transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+              className="w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>
@@ -151,11 +153,11 @@ export default function LoginPage() {
                   {isLogin ? 'Anmelden' : 'Konto erstellen'}
                 </>
               )}
-            </button>
+            </HairlineButton>
           </form>
 
           {/* Toggle Login/Register */}
-          <div className="mt-6 pt-6 border-t border-zinc-300 dark:border-zinc-700">
+          <div className={`mt-6 pt-6 border-t ${HAIRLINE}`}>
             <p className={`text-sm ${TEXT_MUTED} text-center`}>
               {isLogin ? 'Noch kein Konto?' : 'Bereits ein Konto?'}
               <button

@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import { CommentPopoverState } from './types'
-import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ACCENT_TEXT, ACCENT, RADIUS, BORDER, BUTTON_SECONDARY, INPUT } from '@/lib/theme'
+import { Chip } from './Chip'
+import { HairlineButton } from './HairlineButton'
+import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, ACCENT_TEXT, RADIUS, BORDER, INPUT } from '@/lib/theme'
 
 interface CommentPopoverProps {
   state: CommentPopoverState
@@ -46,16 +48,14 @@ export function CommentPopover({ state, currentUserId, onClose, onUpdate, onTogg
         }}
       >
         <div className="flex items-start gap-3 mb-3">
-          <div className={`w-9 h-9 ${RADIUS} ${ACCENT} flex items-center justify-center text-white text-sm font-bold flex-shrink-0`}>
+          <div className={`w-9 h-9 ${RADIUS} bg-zinc-700 dark:bg-zinc-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0`}>
             {(comment.author?.name || '?').charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className={`font-serif font-bold text-sm ${TEXT_PRIMARY} truncate`}>
+            <h3 className={`font-display font-light text-sm ${TEXT_PRIMARY} truncate`}>
               {comment.author?.name || 'Unbekannt'}
             </h3>
-            <span className={`text-xs ${comment.resolved ? TEXT_MUTED : ACCENT_TEXT} font-medium`}>
-              {comment.resolved ? 'Erledigt' : 'Offen'}
-            </span>
+            <Chip className="mt-1">{comment.resolved ? 'Erledigt' : 'Offen'}</Chip>
           </div>
           <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors">
             ×
@@ -80,21 +80,22 @@ export function CommentPopover({ state, currentUserId, onClose, onUpdate, onTogg
               <option value="FAMILY">Familie (alle sehen)</option>
             </select>
             <div className="flex justify-end gap-2">
-              <button
+              <HairlineButton
                 type="button"
                 onClick={() => setEditing(false)}
-                className={`px-3 py-1.5 text-xs ${BUTTON_SECONDARY} ${RADIUS}`}
+                className="px-3 py-1.5 text-xs"
               >
                 Abbrechen
-              </button>
-              <button
+              </HairlineButton>
+              <HairlineButton
                 type="button"
+                emphasised
                 onClick={saveEdit}
                 disabled={!draftContent.trim()}
-                className={`px-3 py-1.5 text-xs ${RADIUS} ${ACCENT} text-white disabled:opacity-50`}
+                className="px-3 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Speichern
-              </button>
+              </HairlineButton>
             </div>
           </div>
         ) : (
