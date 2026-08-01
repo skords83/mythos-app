@@ -4,6 +4,7 @@
 
 :root {
   --accent: #4f46e5;
+  --text-muted: #a1a1aa;
 
   /* Entity-type swatch colors — see frontend/src/lib/theme.ts ENTITY_SWATCH_*.
      Never applied to icon fill/stroke, only swatches/chips/accent strips. */
@@ -20,6 +21,7 @@ html {
 }
 
 html.dark {
+  --text-muted: #71717a;
   --entity-person: #E39471;
   --entity-place: #8FC49E;
   --entity-thing: #8CA9E0;
