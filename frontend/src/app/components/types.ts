@@ -4,6 +4,8 @@ export interface Project {
   description: string | null
   coverImage?: string | null
   wordGoal: number
+  wordCountBaseline: number
+  wordCountBaselineDate: string | null
   createdAt: string
   updatedAt: string
   _count?: {

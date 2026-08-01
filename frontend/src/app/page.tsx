@@ -67,7 +67,7 @@ export default function Page() {
   const { errorToast, setErrorToast, confirmDialog, setConfirmDialog, showError, requestConfirm } = useNotifications()
   const onConfirmed = () => setConfirmDialog(null)
 
-  const { projects, selectedProject, setSelectedProject, isLoading, createProject, updateProject, deleteProject } =
+  const { projects, selectedProject, setSelectedProject, isLoading, createProject, updateProject, rolloverDailyWordCount, deleteProject } =
     useProjects({ isCheckingAuth, showError })
 
   const {
@@ -149,6 +149,18 @@ export default function Page() {
   const commentActionsRef = useRef<CommentActions | null>(null)
 
   const totalWordCount = Array.isArray(chapters) ? chapters.reduce((sum, ch) => sum + (ch.wordCount || 0), 0) : 0
+
+  const todayDateString = new Date().toISOString().slice(0, 10)
+  const todayWordCount = selectedProject && selectedProject.wordCountBaselineDate === todayDateString
+    ? Math.max(0, totalWordCount - selectedProject.wordCountBaseline)
+    : 0
+
+  useEffect(() => {
+    if (!selectedProject) return
+    if (selectedProject.wordCountBaselineDate !== todayDateString) {
+      rolloverDailyWordCount(selectedProject.id, totalWordCount, todayDateString)
+    }
+  }, [selectedProject?.id, selectedProject?.wordCountBaselineDate])
 
   useEffect(() => {
     if (!selectedProject) return
@@ -279,7 +291,7 @@ export default function Page() {
         selectedProject={selectedProject}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        totalWordCount={totalWordCount}
+        todayWordCount={todayWordCount}
         onGoToDashboard={() => router.push('/dashboard')}
         onOpenEditProject={() => setShowEditProjectModal(true)}
         onOpenExport={() => setShowExportModal(true)}

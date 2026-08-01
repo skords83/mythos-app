@@ -102,6 +102,24 @@ export function useProjects({ isCheckingAuth, showError }: UseProjectsArgs) {
     }
   }
 
+  const rolloverDailyWordCount = async (id: string, baseline: number, date: string) => {
+    try {
+      const response = await fetch(`/api/projects/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wordCountBaseline: baseline, wordCountBaselineDate: date })
+      })
+      if (!response.ok) return
+      const updatedProject = await response.json()
+      setProjects(projects.map(p => p.id === id ? updatedProject : p))
+      if (selectedProject?.id === id) {
+        setSelectedProject(updatedProject)
+      }
+    } catch (error) {
+      console.error('Error rolling over daily word count:', error)
+    }
+  }
+
   const deleteProject = async (projectId: string) => {
     try {
       const response = await fetch(`/api/projects/${projectId}`, { method: 'DELETE' })
@@ -128,6 +146,7 @@ export function useProjects({ isCheckingAuth, showError }: UseProjectsArgs) {
     loadProjects,
     createProject,
     updateProject,
+    rolloverDailyWordCount,
     deleteProject,
   }
 }

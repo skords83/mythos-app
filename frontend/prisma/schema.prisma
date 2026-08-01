@@ -88,6 +88,8 @@ model Project {
   description String?
   coverImage String?
   wordGoal Int @default(500)
+  wordCountBaseline Int @default(0)
+  wordCountBaselineDate String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   userId String

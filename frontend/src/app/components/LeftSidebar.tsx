@@ -4,7 +4,7 @@ import { Book, ChevronLeft, ChevronRight, Clock, Download, Gem, MapPin, Scroll, 
 import { NavItem } from './ThemeToggle'
 import { WordProgress } from './WordProgress'
 import { Project } from './types'
-import { SURFACE_ALT, TEXT_PRIMARY, RADIUS, HOVER_SURFACE, HAIRLINE, EASE_STANDARD, ICON_PROPS } from '@/lib/theme'
+import { SURFACE_ALT, TEXT_PRIMARY, TEXT_MUTED, RADIUS, HOVER_SURFACE, HAIRLINE, EASE_STANDARD, ICON_PROPS } from '@/lib/theme'
 
 export type ActiveTab = 'manuscript' | 'characters' | 'places' | 'items' | 'factions' | 'notes' | 'timeline' | 'lore'
 
@@ -15,7 +15,7 @@ interface LeftSidebarProps {
   selectedProject: Project
   activeTab: ActiveTab
   setActiveTab: (tab: ActiveTab) => void
-  totalWordCount: number
+  todayWordCount: number
   onGoToDashboard: () => void
   onOpenEditProject: () => void
   onOpenExport: () => void
@@ -29,7 +29,7 @@ export function LeftSidebar({
   selectedProject,
   activeTab,
   setActiveTab,
-  totalWordCount,
+  todayWordCount,
   onGoToDashboard,
   onOpenEditProject,
   onOpenExport,
@@ -107,7 +107,8 @@ export function LeftSidebar({
 
       {leftSidebarOpen && selectedProject && (
         <div className={`p-4 border-t ${HAIRLINE}`}>
-          <WordProgress current={totalWordCount} goal={selectedProject.wordGoal} />
+          <p className={`text-xs ${TEXT_MUTED} text-center uppercase tracking-wide`}>Heute</p>
+          <WordProgress current={todayWordCount} goal={selectedProject.wordGoal} />
         </div>
       )}
     </aside>

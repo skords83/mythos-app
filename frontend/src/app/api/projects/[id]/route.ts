@@ -57,13 +57,15 @@ export async function PUT(
     }
 
 const body = await request.json()
-  const { title, description, wordGoal, coverImage } = body
+  const { title, description, wordGoal, coverImage, wordCountBaseline, wordCountBaselineDate } = body
 
   const updateData: any = {}
   if (title !== undefined) updateData.title = title
   if (description !== undefined) updateData.description = description
   if (wordGoal !== undefined) updateData.wordGoal = wordGoal
   if (coverImage !== undefined) updateData.coverImage = coverImage
+  if (wordCountBaseline !== undefined) updateData.wordCountBaseline = wordCountBaseline
+  if (wordCountBaselineDate !== undefined) updateData.wordCountBaselineDate = wordCountBaselineDate
 
     const project = await prisma.project.update({
       where: { id: params.id },
