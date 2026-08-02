@@ -21,6 +21,7 @@ export function extractContent(content: any): string {
 export function useChapters({ selectedProject, showError, requestConfirm, onConfirmed }: UseChaptersArgs) {
   const router = useRouter()
   const [chapters, setChapters] = useState<Chapter[]>([])
+  const [chaptersLoaded, setChaptersLoaded] = useState(false)
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null)
   const [editorContent, setEditorContent] = useState('')
   const [isSaving, setIsSaving] = useState(false)
@@ -98,14 +99,18 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
       console.error('Error loading chapters:', error)
       showError('Kapitel konnten nicht geladen werden.')
       setChapters([])
+    } finally {
+      setChaptersLoaded(true)
     }
   }
 
   useEffect(() => {
     if (selectedProject) {
+      setChaptersLoaded(false)
       loadChapters(selectedProject.id)
     } else {
       setChapters([])
+      setChaptersLoaded(false)
       setSelectedChapter(null)
       setEditorContent('')
       setPendingDraft(null)
@@ -269,6 +274,7 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
   return {
     chapters,
     setChapters,
+    chaptersLoaded,
     selectedChapter,
     setSelectedChapter,
     editorContent,

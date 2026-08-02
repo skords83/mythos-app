@@ -76,6 +76,7 @@ export default function Page() {
 
   const {
     chapters,
+    chaptersLoaded,
     selectedChapter,
     setSelectedChapter,
     editorContent,
@@ -175,19 +176,19 @@ export default function Page() {
     : 0
 
   useEffect(() => {
-    if (!selectedProject) return
+    if (!selectedProject || !chaptersLoaded) return
     if (selectedProject.wordCountBaselineDate !== todayDateString) {
       rolloverDailyWordCount(selectedProject.id, totalWordCount, todayDateString)
     }
-  }, [selectedProject?.id, selectedProject?.wordCountBaselineDate])
+  }, [selectedProject?.id, selectedProject?.wordCountBaselineDate, chaptersLoaded])
 
   // C11: log today's running total for the activity heatmap/streaks, riding
   // the same wordCount changes (already debounced upstream by chapter
   // autosave) that drive the "today" baseline rollover above.
   useEffect(() => {
-    if (!selectedProject) return
+    if (!selectedProject || !chaptersLoaded) return
     recordWordCount(selectedProject.id, todayDateString, todayWordCount)
-  }, [selectedProject?.id, todayDateString, todayWordCount])
+  }, [selectedProject?.id, todayDateString, todayWordCount, chaptersLoaded])
 
   useEffect(() => {
     if (!selectedProject) return
