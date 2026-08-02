@@ -106,3 +106,12 @@ h1, h2, h3, h4, h5, h6 {
 .tippy-box[data-theme~='transparent'] > .tippy-content {
   padding: 0;
 }
+
+/* Saved chapter/reference HTML can carry inline color styles (e.g. from pasted
+   content) that override the theme's dark-mode text color. Force these back to
+   the inherited theme color so rich text stays readable regardless of what's
+   baked into stored content. */
+.ProseMirror [style*='color'],
+.prose [style*='color'] {
+  color: inherit !important;
+}
