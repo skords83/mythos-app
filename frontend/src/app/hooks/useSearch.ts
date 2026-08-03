@@ -17,11 +17,12 @@ export interface SearchResults {
   scenes: SearchResultItem[]
   timelineEvents: SearchResultItem[]
   loreEntries: SearchResultItem[]
+  ideas: SearchResultItem[]
 }
 
 const EMPTY_RESULTS: SearchResults = {
   chapters: [], characters: [], places: [], notes: [],
-  items: [], factions: [], scenes: [], timelineEvents: [], loreEntries: [],
+  items: [], factions: [], scenes: [], timelineEvents: [], loreEntries: [], ideas: [],
 }
 
 export function useSearch(projectId: string | undefined) {

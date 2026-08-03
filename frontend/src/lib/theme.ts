@@ -80,4 +80,5 @@ export const ENTITY_KIND_BY_MODEL: Record<string, EntityKind> = {
   Faction: 'group',
   TimelineEvent: 'event',
   LoreEntry: 'idea',
+  Idea: 'idea',
 }

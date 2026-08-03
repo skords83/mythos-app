@@ -28,6 +28,8 @@ import {
   EditTimelineEventModal,
   AddLoreEntryModal,
   EditLoreEntryModal,
+  AddIdeaModal,
+  EditIdeaModal,
   EditProjectModal,
   ExportModal,
   CharacterQuickCard,
@@ -46,6 +48,7 @@ import {
   FactionsView,
   TimelineView,
   LoreView,
+  IdeaBoardView,
   NotesView,
   SearchModal,
   StatsModal,
@@ -63,6 +66,7 @@ import { useItems } from './hooks/useItems'
 import { useFactions } from './hooks/useFactions'
 import { useTimelineEvents } from './hooks/useTimelineEvents'
 import { useLoreEntries } from './hooks/useLoreEntries'
+import { useIdeas } from './hooks/useIdeas'
 import { useNotes } from './hooks/useNotes'
 import { useSearch } from './hooks/useSearch'
 import { ActiveTab } from './components/LeftSidebar'
@@ -128,6 +132,9 @@ export default function Page() {
   const { loreEntries, editingLoreEntry, setEditingLoreEntry, addLoreEntry, updateLoreEntry, deleteLoreEntry } =
     useLoreEntries({ selectedProject, showError, requestConfirm, onConfirmed })
 
+  const { ideas, editingIdea, setEditingIdea, addIdea, updateIdea, deleteIdea } =
+    useIdeas({ selectedProject, showError, requestConfirm, onConfirmed })
+
   const { notes, addNote, updateNote, deleteNote } =
     useNotes({ selectedChapterId: selectedChapter?.id, showError, requestConfirm, onConfirmed })
 
@@ -147,6 +154,7 @@ export default function Page() {
   const [showFactionModal, setShowFactionModal] = useState(false)
   const [showTimelineEventModal, setShowTimelineEventModal] = useState(false)
   const [showLoreEntryModal, setShowLoreEntryModal] = useState(false)
+  const [showIdeaModal, setShowIdeaModal] = useState(false)
   const [showEditProjectModal, setShowEditProjectModal] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
   const [showSearchModal, setShowSearchModal] = useState(false)
@@ -271,6 +279,14 @@ export default function Page() {
     }
   }
 
+  const handleSelectSearchIdea = (ideaId: string) => {
+    const idea = ideas.find(i => i.id === ideaId)
+    if (idea) {
+      setEditingIdea(idea)
+      setActiveTab('ideas')
+    }
+  }
+
   if (isLoading) {
     return (
       <div className={`min-h-screen ${SURFACE} flex items-center justify-center`}>
@@ -378,6 +394,7 @@ export default function Page() {
             {activeTab === 'factions' && <h2 className={`text-lg font-display font-light ${TEXT_PRIMARY}`}>Fraktionen & Organisationen</h2>}
             {activeTab === 'timeline' && <h2 className={`text-lg font-display font-light ${TEXT_PRIMARY}`}>Der Zeitstrahl</h2>}
             {activeTab === 'lore' && <h2 className={`text-lg font-display font-light ${TEXT_PRIMARY}`}>Lore-Bibel</h2>}
+            {activeTab === 'ideas' && <h2 className={`text-lg font-display font-light ${TEXT_PRIMARY}`}>Ideenboard</h2>}
             {activeTab === 'notes' && <h2 className={`text-lg font-display font-light ${TEXT_PRIMARY}`}>Notizen</h2>}
           </div>
           <div className="flex items-center gap-3">
@@ -523,6 +540,15 @@ export default function Page() {
             />
           )}
 
+          {activeTab === 'ideas' && (
+            <IdeaBoardView
+              ideas={ideas}
+              onAddClick={() => setShowIdeaModal(true)}
+              onEdit={setEditingIdea}
+              onDelete={deleteIdea}
+            />
+          )}
+
           {activeTab === 'notes' && (
             <NotesView
               notes={notes}
@@ -587,6 +613,13 @@ export default function Page() {
         items={items}
         factions={factions}
         onUpdate={updateLoreEntry}
+      />
+      <AddIdeaModal isOpen={showIdeaModal} onClose={() => setShowIdeaModal(false)} onAdd={addIdea} />
+      <EditIdeaModal
+        isOpen={!!editingIdea}
+        onClose={() => setEditingIdea(null)}
+        idea={editingIdea}
+        onUpdate={updateIdea}
       />
       <CharacterQuickCard state={quickCard} onClose={() => setQuickCard(prev => ({ ...prev, visible: false }))} />
       <PlaceQuickCard state={placeQuickCard} onClose={() => setPlaceQuickCard(prev => ({ ...prev, visible: false }))} />
@@ -653,6 +686,7 @@ export default function Page() {
         onSelectScene={handleSelectSearchScene}
         onSelectTimelineEvent={handleSelectSearchTimelineEvent}
         onSelectLoreEntry={handleSelectSearchLoreEntry}
+        onSelectIdea={handleSelectSearchIdea}
       />
     </div>
   )

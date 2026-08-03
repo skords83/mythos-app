@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef } from 'react'
-import { Book, Clapperboard, Clock, Gem, MapPin, Scroll, Search, Shield, StickyNote, Users, X } from 'lucide-react'
+import { Book, Clapperboard, Clock, Gem, Lightbulb, MapPin, Scroll, Search, Shield, StickyNote, Users, X } from 'lucide-react'
 import { SearchResultItem, SearchResults } from '../hooks/useSearch'
 import { MODAL_PANEL, RADIUS, TEXT_PRIMARY, TEXT_MUTED } from '@/lib/theme'
 import { MastheadDivider } from './MastheadDivider'
@@ -22,6 +22,7 @@ interface SearchModalProps {
   onSelectScene: (chapterId: string) => void
   onSelectTimelineEvent: (id: string) => void
   onSelectLoreEntry: (id: string) => void
+  onSelectIdea: (id: string) => void
 }
 
 interface Section {
@@ -47,6 +48,7 @@ export function SearchModal({
   onSelectScene,
   onSelectTimelineEvent,
   onSelectLoreEntry,
+  onSelectIdea,
 }: SearchModalProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -68,6 +70,7 @@ export function SearchModal({
     { key: 'scenes', label: 'Szenen', icon: Clapperboard, onSelect: (item) => item.chapterId && onSelectScene(item.chapterId) },
     { key: 'timelineEvents', label: 'Zeitstrahl', icon: Clock, onSelect: (item) => onSelectTimelineEvent(item.id) },
     { key: 'loreEntries', label: 'Lore-Bibel', icon: Scroll, onSelect: (item) => onSelectLoreEntry(item.id) },
+    { key: 'ideas', label: 'Ideen', icon: Lightbulb, onSelect: (item) => onSelectIdea(item.id) },
   ]
 
   const hasQuery = query.trim().length >= 2

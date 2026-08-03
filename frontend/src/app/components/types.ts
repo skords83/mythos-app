@@ -155,6 +155,19 @@ export interface LoreEntry {
   updatedAt: string
 }
 
+export interface Idea {
+  id: string
+  title: string
+  content: string | null
+  tags: string[]
+  visibility: 'PRIVATE' | 'FAMILY'
+  projectId: string | null
+  familyId: string
+  authorId: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Note {
   id: string
   title: string

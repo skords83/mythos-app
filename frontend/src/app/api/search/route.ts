@@ -16,7 +16,7 @@ const MAX_RESULTS_PER_TYPE = 8
 
 const EMPTY_SEARCH_RESULTS = {
   chapters: [], characters: [], places: [], notes: [],
-  items: [], factions: [], scenes: [], timelineEvents: [], loreEntries: [],
+  items: [], factions: [], scenes: [], timelineEvents: [], loreEntries: [], ideas: [],
 }
 
 // GET /api/search?projectId=xxx&q=yyy - Volltextsuche über alle Entitäten eines Projekts
@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
       sceneMatches,
       timelineEventMatches,
       loreEntryMatches,
+      ideaMatches,
     ] = await Promise.all([
       prisma.character.findMany({
         where: {
@@ -200,6 +201,22 @@ export async function GET(request: NextRequest) {
         take: MAX_RESULTS_PER_TYPE,
         select: { id: true, title: true, content: true }
       }),
+      prisma.idea.findMany({
+        where: {
+          projectId,
+          AND: [
+            {
+              OR: [
+                { title: { contains: q, mode: 'insensitive' } },
+                { content: { contains: q, mode: 'insensitive' } },
+              ]
+            },
+            visible,
+          ]
+        },
+        take: MAX_RESULTS_PER_TYPE,
+        select: { id: true, title: true, content: true }
+      }),
     ])
 
     const characters: SearchResult[] = characterMatches.map(c => ({
@@ -268,7 +285,13 @@ export async function GET(request: NextRequest) {
       snippet: buildSnippet(l.content || l.title, q)
     }))
 
-    return NextResponse.json({ chapters, characters, places, notes, items, factions, scenes, timelineEvents, loreEntries })
+    const ideas: SearchResult[] = ideaMatches.map(i => ({
+      id: i.id,
+      title: i.title,
+      snippet: buildSnippet(i.content || i.title, q)
+    }))
+
+    return NextResponse.json({ chapters, characters, places, notes, items, factions, scenes, timelineEvents, loreEntries, ideas })
   } catch (error) {
     logger.error(error, { route: 'GET /api/search', userId })
     return NextResponse.json({ error: 'Fehler bei der Suche' }, { status: 500 })

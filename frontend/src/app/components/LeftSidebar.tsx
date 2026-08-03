@@ -1,12 +1,12 @@
 'use client'
 
-import { Book, ChevronLeft, ChevronRight, Clock, Download, Flame, Gem, MapPin, Scroll, Search, Settings, Shield, StickyNote, Users, Home as HomeIcon } from 'lucide-react'
+import { Book, ChevronLeft, ChevronRight, Clock, Download, Flame, Gem, Lightbulb, MapPin, Scroll, Search, Settings, Shield, StickyNote, Users, Home as HomeIcon } from 'lucide-react'
 import { NavItem } from './ThemeToggle'
 import { WordProgress } from './WordProgress'
 import { Project } from './types'
 import { SURFACE_ALT, TEXT_PRIMARY, TEXT_MUTED, RADIUS, HOVER_SURFACE, HAIRLINE, EASE_STANDARD, ICON_PROPS } from '@/lib/theme'
 
-export type ActiveTab = 'manuscript' | 'characters' | 'places' | 'items' | 'factions' | 'notes' | 'timeline' | 'lore'
+export type ActiveTab = 'manuscript' | 'characters' | 'places' | 'items' | 'factions' | 'notes' | 'timeline' | 'lore' | 'ideas'
 
 interface LeftSidebarProps {
   focusMode: boolean
@@ -111,6 +111,7 @@ export function LeftSidebar({
         <NavItem icon={Shield} label="Fraktionen" shortLabel="FRAK" active={activeTab === 'factions'} onClick={() => setActiveTab('factions')} collapsed={!leftSidebarOpen} />
         <NavItem icon={Clock} label="Zeitstrahl" shortLabel="ZEIT" active={activeTab === 'timeline'} onClick={() => setActiveTab('timeline')} collapsed={!leftSidebarOpen} />
         <NavItem icon={Scroll} label="Lore-Bibel" shortLabel="LORE" active={activeTab === 'lore'} onClick={() => setActiveTab('lore')} collapsed={!leftSidebarOpen} />
+        <NavItem icon={Lightbulb} label="Ideenboard" shortLabel="IDEE" active={activeTab === 'ideas'} onClick={() => setActiveTab('ideas')} collapsed={!leftSidebarOpen} />
         <NavItem icon={StickyNote} label="Notizen" shortLabel="NOTE" active={activeTab === 'notes'} onClick={() => setActiveTab('notes')} collapsed={!leftSidebarOpen} />
       </nav>
 
