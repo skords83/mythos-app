@@ -1,17 +1,18 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { 
-  Book, 
-  Plus, 
-  Trash2, 
-  Moon, 
+import {
+  Book,
+  Plus,
+  Trash2,
+  Moon,
   Sun,
   LogOut,
   FileText,
   Users,
   ArrowRight,
-  Loader2
+  Loader2,
+  Lightbulb
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { ConfirmDialog } from '../components/ConfirmDialog'
@@ -19,6 +20,10 @@ import { Toast } from '../components/Toast'
 import { Card } from '../components/Card'
 import { EmptyState } from '../components/EmptyState'
 import { HairlineButton } from '../components/HairlineButton'
+import { IdeaCard } from '../components/IdeaCard'
+import { AddIdeaModal } from '../components/AddIdeaModal'
+import { EditIdeaModal } from '../components/EditIdeaModal'
+import { Idea } from '../components/types'
 import { OVERLAY, MODAL_PANEL, INPUT, ACCENT_TEXT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, HAIRLINE, HOVER_SURFACE, SURFACE } from '@/lib/theme'
 
 interface Project {
@@ -206,6 +211,9 @@ export default function DashboardPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [errorToast, setErrorToast] = useState<string | null>(null)
   const [confirmDialog, setConfirmDialog] = useState<{ title: string, message: string, onConfirm: () => void } | null>(null)
+  const [ideas, setIdeas] = useState<Idea[]>([])
+  const [showAddIdeaModal, setShowAddIdeaModal] = useState(false)
+  const [editingIdea, setEditingIdea] = useState<Idea | null>(null)
   const router = useRouter()
 
   // Check auth and load projects
@@ -217,18 +225,91 @@ export default function DashboardPage() {
     try {
       const res = await fetch('/api/auth')
       const data = await res.json()
-      
+
       if (!data.user) {
         router.push('/login')
         return
       }
-      
+
       setUser(data.user)
       loadProjects()
+      loadIdeas()
     } catch (error) {
       console.error('Auth check error:', error)
       router.push('/login')
     }
+  }
+
+  // Ideas without a projectId form the family-wide Ideenboard, for quickly
+  // jotting something down before it belongs to any particular Geschichte.
+  const loadIdeas = async () => {
+    try {
+      const response = await fetch('/api/ideas')
+      if (!response.ok) return
+      const data = await response.json()
+      setIdeas(data.filter((idea: Idea) => !idea.projectId))
+    } catch (error) {
+      console.error('Error loading ideas:', error)
+    }
+  }
+
+  const addIdea = async (title: string, content: string, tags: string[], visibility: 'PRIVATE' | 'FAMILY') => {
+    try {
+      const response = await fetch('/api/ideas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, content, tags, visibility })
+      })
+      if (!response.ok) {
+        setErrorToast('Idee konnte nicht erstellt werden.')
+        return
+      }
+      const newIdea = await response.json()
+      setIdeas([newIdea, ...ideas])
+    } catch (error) {
+      console.error('Error adding idea:', error)
+      setErrorToast('Idee konnte nicht erstellt werden.')
+    }
+  }
+
+  const updateIdea = async (id: string, title: string, content: string, tags: string[], visibility: 'PRIVATE' | 'FAMILY') => {
+    try {
+      const response = await fetch(`/api/ideas/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, content, tags, visibility })
+      })
+      if (!response.ok) {
+        setErrorToast('Idee konnte nicht gespeichert werden.')
+        return
+      }
+      const updated = await response.json()
+      setIdeas(ideas.map(i => i.id === id ? updated : i))
+    } catch (error) {
+      console.error('Error updating idea:', error)
+      setErrorToast('Idee konnte nicht gespeichert werden.')
+    }
+  }
+
+  const deleteIdea = (ideaId: string) => {
+    setConfirmDialog({
+      title: 'Idee löschen',
+      message: 'Möchtest du diese Idee wirklich löschen?',
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        try {
+          const response = await fetch(`/api/ideas/${ideaId}`, { method: 'DELETE' })
+          if (!response.ok) {
+            setErrorToast('Idee konnte nicht gelöscht werden.')
+            return
+          }
+          setIdeas(ideas.filter(i => i.id !== ideaId))
+        } catch (error) {
+          console.error('Error deleting idea:', error)
+          setErrorToast('Idee konnte nicht gelöscht werden.')
+        }
+      }
+    })
   }
 
   const loadProjects = async () => {
@@ -370,47 +451,88 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8 items-start">
           <div>
-            <h1 className={`text-3xl font-display font-light ${TEXT_PRIMARY} mb-2`}>
-              Deine Projekte
-            </h1>
-            <p className={TEXT_MUTED}>
-              {projects.length} {projects.length === 1 ? 'Projekt' : 'Projekte'}
-            </p>
-          </div>
-          <HairlineButton emphasised onClick={() => setShowCreateModal(true)}>
-            <Plus size={20} />
-            <span className="hidden sm:inline">Neues Projekt</span>
-          </HairlineButton>
-        </div>
-
-        {/* Projects Grid */}
-        {projects.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((project) => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                onDelete={() => deleteProject(project.id)}
-                onOpen={() => openProject(project.id)}
-              />
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            icon={Book}
-            label="Noch keine Projekte"
-            description="Erstelle dein erstes Projekt und beginne mit deinem nächsten Meisterwerk."
-            action={
+            {/* Page Header */}
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h1 className={`text-3xl font-display font-light ${TEXT_PRIMARY} mb-2`}>
+                  Deine Projekte
+                </h1>
+                <p className={TEXT_MUTED}>
+                  {projects.length} {projects.length === 1 ? 'Projekt' : 'Projekte'}
+                </p>
+              </div>
               <HairlineButton emphasised onClick={() => setShowCreateModal(true)}>
                 <Plus size={20} />
-                Erstes Projekt erstellen
+                <span className="hidden sm:inline">Neues Projekt</span>
               </HairlineButton>
-            }
-          />
-        )}
+            </div>
+
+            {/* Projects Grid */}
+            {projects.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {projects.map((project) => (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    onDelete={() => deleteProject(project.id)}
+                    onOpen={() => openProject(project.id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={Book}
+                label="Noch keine Projekte"
+                description="Erstelle dein erstes Projekt und beginne mit deinem nächsten Meisterwerk."
+                action={
+                  <HairlineButton emphasised onClick={() => setShowCreateModal(true)}>
+                    <Plus size={20} />
+                    Erstes Projekt erstellen
+                  </HairlineButton>
+                }
+              />
+            )}
+          </div>
+
+          {/* Quick Idea Board — for capturing an idea before it belongs to any project */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className={`text-lg font-display font-light ${TEXT_PRIMARY}`}>
+                Ideenboard
+              </h2>
+              <HairlineButton emphasised onClick={() => setShowAddIdeaModal(true)}>
+                <Plus size={16} />
+                <span className="hidden sm:inline">Neue Idee</span>
+              </HairlineButton>
+            </div>
+            {ideas.length > 0 ? (
+              <div className="space-y-3">
+                {ideas.map((idea) => (
+                  <IdeaCard
+                    key={idea.id}
+                    idea={idea}
+                    onEdit={() => setEditingIdea(idea)}
+                    onDelete={() => deleteIdea(idea.id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={Lightbulb}
+                label="Noch keine Ideen"
+                description="Halte spontane Ideen fest, bevor sie einem Projekt zugeordnet sind."
+                action={
+                  <HairlineButton emphasised onClick={() => setShowAddIdeaModal(true)}>
+                    <Plus size={16} />
+                    Idee festhalten
+                  </HairlineButton>
+                }
+              />
+            )}
+          </div>
+        </div>
       </main>
 
       {/* Create Modal */}
@@ -418,6 +540,17 @@ export default function DashboardPage() {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onCreate={createProject}
+      />
+      <AddIdeaModal
+        isOpen={showAddIdeaModal}
+        onClose={() => setShowAddIdeaModal(false)}
+        onAdd={addIdea}
+      />
+      <EditIdeaModal
+        isOpen={!!editingIdea}
+        idea={editingIdea}
+        onClose={() => setEditingIdea(null)}
+        onUpdate={updateIdea}
       />
       <ConfirmDialog
         isOpen={!!confirmDialog}
