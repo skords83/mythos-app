@@ -1,12 +1,10 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import {
   Book,
   Plus,
   Trash2,
-  Moon,
-  Sun,
   LogOut,
   FileText,
   Users,
@@ -23,8 +21,10 @@ import { HairlineButton } from '../components/HairlineButton'
 import { IdeaCard } from '../components/IdeaCard'
 import { AddIdeaModal } from '../components/AddIdeaModal'
 import { EditIdeaModal } from '../components/EditIdeaModal'
+import { ThemeToggle } from '../components/ThemeToggle'
+import { AppSidebar } from '../components/AppSidebar'
 import { Idea } from '../components/types'
-import { OVERLAY, MODAL_PANEL, INPUT, ACCENT_TEXT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, HAIRLINE, HOVER_SURFACE, SURFACE } from '@/lib/theme'
+import { OVERLAY, MODAL_PANEL, INPUT, ACCENT_TEXT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, HAIRLINE, HOVER_SURFACE, SURFACE, SURFACE_ALT, MONO_LABEL_MUTED } from '@/lib/theme'
 
 interface Project {
   id: string
@@ -43,31 +43,6 @@ interface User {
   id: string
   email: string
   name: string | null
-}
-
-// Theme Toggle Component
-function ThemeToggle() {
-  const [darkMode, setDarkMode] = useState(false)
-
-  useEffect(() => {
-    const isDark = document.documentElement.classList.contains('dark')
-    setDarkMode(isDark)
-  }, [])
-
-  const toggleTheme = () => {
-    setDarkMode(!darkMode)
-    document.documentElement.classList.toggle('dark')
-  }
-
-  return (
-    <button
-      onClick={toggleTheme}
-      className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors`}
-      aria-label="Theme wechseln"
-    >
-      {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-    </button>
-  )
 }
 
 // Create Project Modal
@@ -152,19 +127,22 @@ function CreateProjectModal({ isOpen, onClose, onCreate }: {
 }
 
 // Project Card Component
-function ProjectCard({ project, onDelete, onOpen }: { 
+function ProjectCard({ project, onDelete, onOpen }: {
   project: Project
   onDelete: () => void
   onOpen: () => void
 }) {
   return (
-    <Card>
+    <Card
+      onClick={onOpen}
+      className="hover:border-zinc-400 dark:hover:border-zinc-500 flex flex-col"
+    >
       <div className="flex items-start justify-between mb-4">
         <div className={`w-12 h-12 ${RADIUS} bg-indigo-600 flex items-center justify-center text-white`}>
           <Book size={24} />
         </div>
         <button
-          onClick={onDelete}
+          onClick={(e) => { e.stopPropagation(); onDelete() }}
           className={`p-2 ${TEXT_MUTED} hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity`}
           title="Projekt löschen"
         >
@@ -194,11 +172,11 @@ function ProjectCard({ project, onDelete, onOpen }: {
         </div>
       </div>
 
-      {/* Open Button */}
-      <HairlineButton emphasised onClick={onOpen} className="w-full justify-center">
+      {/* Open affordance */}
+      <div className={`mt-auto flex items-center gap-1.5 text-sm ${ACCENT_TEXT}`}>
         Öffnen
-        <ArrowRight size={18} />
-      </HairlineButton>
+        <ArrowRight size={16} />
+      </div>
     </Card>
   )
 }
@@ -215,6 +193,11 @@ export default function DashboardPage() {
   const [showAddIdeaModal, setShowAddIdeaModal] = useState(false)
   const [editingIdea, setEditingIdea] = useState<Idea | null>(null)
   const router = useRouter()
+  const ideasPanelRef = useRef<HTMLDivElement>(null)
+
+  const scrollToIdeas = () => {
+    ideasPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   // Check auth and load projects
   useEffect(() => {
@@ -407,130 +390,117 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className={`min-h-screen ${SURFACE}`}>
-      {/* Header */}
-      <header className={`bg-white dark:bg-zinc-900 border-b ${HAIRLINE} sticky top-0 z-40`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 ${RADIUS} bg-indigo-600 flex items-center justify-center`}>
-                <Book size={20} className="text-white" />
-              </div>
-              <span className={`text-xl font-display font-light ${TEXT_PRIMARY}`}>
-                Mythos
+    <div className={`h-screen overflow-hidden ${SURFACE} flex`}>
+      <AppSidebar onIdeenboardClick={scrollToIdeas} />
+
+      <main className="flex-1 flex flex-col min-w-0">
+        {/* Header */}
+        <header className={`h-16 ${SURFACE_ALT} border-b ${HAIRLINE} flex items-center justify-between px-6 flex-shrink-0`}>
+          <span className={MONO_LABEL_MUTED}>
+            {projects.length} {projects.length === 1 ? 'Projekt' : 'Projekte'} · {ideas.length} {ideas.length === 1 ? 'Idee' : 'Ideen'}
+          </span>
+          <div className="flex items-center gap-3">
+            {user && (
+              <span className={`text-sm ${TEXT_SECONDARY} hidden sm:block`}>
+                {user.name || user.email}
               </span>
-            </div>
+            )}
+            <ThemeToggle />
+            <button
+              onClick={handleLogout}
+              className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors ${TEXT_SECONDARY}`}
+              title="Abmelden"
+            >
+              <LogOut size={20} />
+            </button>
+          </div>
+        </header>
 
-            {/* User info & Actions */}
-            <div className="flex items-center gap-3">
-              {user && (
-                <span className={`text-sm ${TEXT_SECONDARY} hidden sm:block`}>
-                  {user.name || user.email}
-                </span>
+        {/* Main Content */}
+        <div className="flex-1 overflow-y-auto p-8">
+          <div className="grid grid-cols-1 lg:grid-cols-[13fr_7fr] gap-8 items-start">
+            <div>
+              {/* Page Header */}
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <h1 className={`text-3xl font-display font-light ${TEXT_PRIMARY}`}>
+                    Deine Projekte
+                  </h1>
+                  <span className={`px-2 py-0.5 ${RADIUS} border ${HAIRLINE} ${MONO_LABEL_MUTED}`}>
+                    {projects.length} {projects.length === 1 ? 'Projekt' : 'Projekte'}
+                  </span>
+                </div>
+                <HairlineButton emphasised onClick={() => setShowCreateModal(true)}>
+                  <Plus size={20} />
+                  <span className="hidden sm:inline">Neues Projekt</span>
+                </HairlineButton>
+              </div>
+
+              {/* Projects Grid */}
+              {projects.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {projects.map((project) => (
+                    <ProjectCard
+                      key={project.id}
+                      project={project}
+                      onDelete={() => deleteProject(project.id)}
+                      onOpen={() => openProject(project.id)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  icon={Book}
+                  label="Noch keine Projekte"
+                  description="Erstelle dein erstes Projekt und beginne mit deinem nächsten Meisterwerk."
+                  action={
+                    <HairlineButton emphasised onClick={() => setShowCreateModal(true)}>
+                      <Plus size={20} />
+                      Erstes Projekt erstellen
+                    </HairlineButton>
+                  }
+                />
               )}
-              <ThemeToggle />
-              <button
-                onClick={() => router.push('/family')}
-                className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors ${TEXT_SECONDARY}`}
-                title="Familie verwalten"
-              >
-                <Users size={20} />
-              </button>
-              <button
-                onClick={handleLogout}
-                className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors ${TEXT_SECONDARY}`}
-                title="Abmelden"
-              >
-                <LogOut size={20} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8 items-start">
-          <div>
-            {/* Page Header */}
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h1 className={`text-3xl font-display font-light ${TEXT_PRIMARY} mb-2`}>
-                  Deine Projekte
-                </h1>
-                <p className={TEXT_MUTED}>
-                  {projects.length} {projects.length === 1 ? 'Projekt' : 'Projekte'}
-                </p>
-              </div>
-              <HairlineButton emphasised onClick={() => setShowCreateModal(true)}>
-                <Plus size={20} />
-                <span className="hidden sm:inline">Neues Projekt</span>
-              </HairlineButton>
             </div>
 
-            {/* Projects Grid */}
-            {projects.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {projects.map((project) => (
-                  <ProjectCard
-                    key={project.id}
-                    project={project}
-                    onDelete={() => deleteProject(project.id)}
-                    onOpen={() => openProject(project.id)}
-                  />
-                ))}
+            {/* Quick Idea Board — for capturing an idea before it belongs to any project */}
+            <div ref={ideasPanelRef} className={`${SURFACE_ALT} border ${HAIRLINE} ${RADIUS} p-5`}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className={`text-lg font-display font-light ${TEXT_PRIMARY}`}>
+                  Ideenboard
+                </h2>
+                <HairlineButton emphasised onClick={() => setShowAddIdeaModal(true)}>
+                  <Plus size={16} />
+                  <span className="hidden sm:inline">Neue Idee</span>
+                </HairlineButton>
               </div>
-            ) : (
-              <EmptyState
-                icon={Book}
-                label="Noch keine Projekte"
-                description="Erstelle dein erstes Projekt und beginne mit deinem nächsten Meisterwerk."
-                action={
-                  <HairlineButton emphasised onClick={() => setShowCreateModal(true)}>
-                    <Plus size={20} />
-                    Erstes Projekt erstellen
-                  </HairlineButton>
-                }
-              />
-            )}
-          </div>
-
-          {/* Quick Idea Board — for capturing an idea before it belongs to any project */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className={`text-lg font-display font-light ${TEXT_PRIMARY}`}>
-                Ideenboard
-              </h2>
-              <HairlineButton emphasised onClick={() => setShowAddIdeaModal(true)}>
-                <Plus size={16} />
-                <span className="hidden sm:inline">Neue Idee</span>
-              </HairlineButton>
+              {ideas.length > 0 ? (
+                <div className="space-y-3">
+                  {ideas.map((idea) => (
+                    <IdeaCard
+                      key={idea.id}
+                      idea={idea}
+                      onEdit={() => setEditingIdea(idea)}
+                      onDelete={() => deleteIdea(idea.id)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  icon={Lightbulb}
+                  iconSize={56}
+                  label="Noch keine Ideen"
+                  description="Halte spontane Ideen fest, bevor sie einem Projekt zugeordnet sind."
+                  className="py-10"
+                  action={
+                    <HairlineButton emphasised onClick={() => setShowAddIdeaModal(true)}>
+                      <Plus size={16} />
+                      Idee festhalten
+                    </HairlineButton>
+                  }
+                />
+              )}
             </div>
-            {ideas.length > 0 ? (
-              <div className="space-y-3">
-                {ideas.map((idea) => (
-                  <IdeaCard
-                    key={idea.id}
-                    idea={idea}
-                    onEdit={() => setEditingIdea(idea)}
-                    onDelete={() => deleteIdea(idea.id)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                icon={Lightbulb}
-                label="Noch keine Ideen"
-                description="Halte spontane Ideen fest, bevor sie einem Projekt zugeordnet sind."
-                action={
-                  <HairlineButton emphasised onClick={() => setShowAddIdeaModal(true)}>
-                    <Plus size={16} />
-                    Idee festhalten
-                  </HairlineButton>
-                }
-              />
-            )}
           </div>
         </div>
       </main>
