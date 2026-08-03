@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Moon, Sun } from 'lucide-react'
-import { RADIUS, HOVER_SURFACE, EASE_STANDARD, ICON_PROPS } from '@/lib/theme'
+import { Moon, Sun, SpellCheck } from 'lucide-react'
+import { RADIUS, HOVER_SURFACE, ACTIVE_SURFACE, HAIRLINE, EASE_STANDARD, ICON_PROPS } from '@/lib/theme'
 import { MonoLabel } from './MonoLabel'
 
 export function ThemeToggle() {
@@ -53,6 +53,35 @@ export function FocusToggle({ isFocusMode, onToggle }: { isFocusMode: boolean, o
         <circle cx="12" cy="12" r="3"/>
       </svg>
     </button>
+  )
+}
+
+export function SpellcheckToggle({ enabled, onToggle }: { enabled: boolean, onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      className={`p-2 ${RADIUS} transition-colors ${enabled ? ACTIVE_SURFACE : HOVER_SURFACE}`}
+      title={enabled ? 'Rechtschreibprüfung deaktivieren' : 'Rechtschreibprüfung aktivieren'}
+      aria-pressed={enabled}
+    >
+      <SpellCheck size={20} />
+    </button>
+  )
+}
+
+export function SpellcheckLocaleSelect({ locale, onChange }: { locale: string | null, onChange: (locale: string | null) => void }) {
+  return (
+    <select
+      value={locale ?? ''}
+      onChange={(e) => onChange(e.target.value || null)}
+      className={`h-9 text-sm ${RADIUS} border ${HAIRLINE} bg-transparent px-2 ${HOVER_SURFACE} transition-colors`}
+      title="Wörterbuch für Rechtschreibprüfung"
+      aria-label="Wörterbuch für Rechtschreibprüfung"
+    >
+      <option value="">Systemstandard</option>
+      <option value="de-DE">Deutsch</option>
+      <option value="en-US">English</option>
+    </select>
   )
 }
 

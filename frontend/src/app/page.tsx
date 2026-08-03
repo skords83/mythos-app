@@ -13,6 +13,8 @@ import {
   CommentActions,
   ThemeToggle,
   FocusToggle,
+  SpellcheckToggle,
+  SpellcheckLocaleSelect,
   CreateProjectModal,
   AddCharacterModal,
   EditCharacterModal,
@@ -49,6 +51,7 @@ import {
   StatsModal,
 } from './components'
 import { useAuth } from './hooks/useAuth'
+import { useSettings } from './hooks/useSettings'
 import { useNotifications } from './hooks/useNotifications'
 import { useProjects } from './hooks/useProjects'
 import { useDailyWordCounts } from './hooks/useDailyWordCounts'
@@ -69,6 +72,7 @@ export default function Page() {
   const router = useRouter()
   const { isCheckingAuth, user } = useAuth()
   const { errorToast, setErrorToast, confirmDialog, setConfirmDialog, showError, requestConfirm } = useNotifications()
+  const { settings, updateSettings } = useSettings({ showError })
   const onConfirmed = () => setConfirmDialog(null)
 
   const { projects, selectedProject, setSelectedProject, isLoading, createProject, updateProject, rolloverDailyWordCount, deleteProject } =
@@ -134,7 +138,8 @@ export default function Page() {
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('manuscript')
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true)
-  const [focusMode, setFocusMode] = useState(false)
+  const focusMode = settings.focusModeEnabled
+  const setFocusMode = (value: boolean) => updateSettings({ focusModeEnabled: value })
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showCharacterModal, setShowCharacterModal] = useState(false)
   const [showPlaceModal, setShowPlaceModal] = useState(false)
@@ -379,6 +384,18 @@ export default function Page() {
             {activeTab === 'manuscript' && (
               <FocusToggle isFocusMode={focusMode} onToggle={() => setFocusMode(!focusMode)} />
             )}
+            {activeTab === 'manuscript' && settings.spellcheckEnabled && (
+              <SpellcheckLocaleSelect
+                locale={settings.spellcheckLocale}
+                onChange={(locale) => updateSettings({ spellcheckLocale: locale })}
+              />
+            )}
+            {activeTab === 'manuscript' && (
+              <SpellcheckToggle
+                enabled={settings.spellcheckEnabled}
+                onToggle={() => updateSettings({ spellcheckEnabled: !settings.spellcheckEnabled })}
+              />
+            )}
             <ThemeToggle />
             {activeTab === 'manuscript' && (
               <button
@@ -440,6 +457,8 @@ export default function Page() {
               }}
               commentActionsRef={commentActionsRef}
               focusMode={focusMode}
+              spellcheckEnabled={settings.spellcheckEnabled}
+              spellcheckLocale={settings.spellcheckLocale}
               showError={showError}
               requestConfirm={requestConfirm}
               onConfirmed={onConfirmed}

@@ -36,6 +36,8 @@ interface ManuscriptViewProps {
   onCommentClick: (payload: { comment: Comment; position: { x: number; y: number } }) => void
   commentActionsRef: MutableRefObject<CommentActions | null>
   focusMode: boolean
+  spellcheckEnabled: boolean
+  spellcheckLocale: string | null
   showError: (message: string) => void
   requestConfirm: (title: string, message: string, onConfirm: () => void) => void
   onConfirmed: () => void
@@ -59,6 +61,8 @@ export function ManuscriptView({
   onCommentClick,
   commentActionsRef,
   focusMode,
+  spellcheckEnabled,
+  spellcheckLocale,
   showError,
   requestConfirm,
   onConfirmed,
@@ -191,6 +195,8 @@ export function ManuscriptView({
               splitScreenActive={sidePanel === 'reference'}
               onToggleSplitScreen={() => setSidePanel((p) => (p === 'reference' ? 'none' : 'reference'))}
               typewriterMode={focusMode}
+              spellcheckEnabled={spellcheckEnabled}
+              spellcheckLocale={spellcheckLocale}
               onCommentClick={(result) => {
                 const comment = comments.find((c) => c.id === result.commentId)
                 if (comment) onCommentClick({ comment, position: result.position })

@@ -38,6 +38,8 @@ interface RichTextEditorProps {
   splitScreenActive: boolean
   onToggleSplitScreen: () => void
   typewriterMode?: boolean
+  spellcheckEnabled?: boolean
+  spellcheckLocale?: string | null
   onCommentClick: (result: CommentClickResult) => void
   commentsPanelActive: boolean
   onToggleCommentsPanel: () => void
@@ -45,7 +47,7 @@ interface RichTextEditorProps {
   onCommentEditorReady?: (api: CommentEditorApi) => void
 }
 
-export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu schreiben...', onEditorReady, characters, places, items, onMentionClick, splitScreenActive, onToggleSplitScreen, typewriterMode = false, onCommentClick, commentsPanelActive, onToggleCommentsPanel, onAddComment, onCommentEditorReady }: RichTextEditorProps) {
+export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu schreiben...', onEditorReady, characters, places, items, onMentionClick, splitScreenActive, onToggleSplitScreen, typewriterMode = false, spellcheckEnabled = true, spellcheckLocale = null, onCommentClick, commentsPanelActive, onToggleCommentsPanel, onAddComment, onCommentEditorReady }: RichTextEditorProps) {
   // useEditor has no deps array below (editor is created once) — mirror useChapters.ts's
   // stale-closure fix so suggestion filtering and click handling always see current data.
   const mentionDataRef = useRef<MentionableData>({ characters, places, items })
@@ -144,6 +146,18 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
       })
     }
   }, [editor])
+
+  // C12: editor is created once with no deps, so spellcheck/dictionary changes are
+  // applied directly to the ProseMirror DOM node rather than recreating the editor.
+  useEffect(() => {
+    if (!editor) return
+    editor.view.dom.setAttribute('spellcheck', spellcheckEnabled ? 'true' : 'false')
+    if (spellcheckLocale) {
+      editor.view.dom.setAttribute('lang', spellcheckLocale)
+    } else {
+      editor.view.dom.removeAttribute('lang')
+    }
+  }, [editor, spellcheckEnabled, spellcheckLocale])
 
   // Schreibmaschinen-Effekt: hält die aktuelle Zeile beim Schreiben vertikal zentriert
   useEffect(() => {

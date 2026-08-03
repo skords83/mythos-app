@@ -1,4 +1,4 @@
-export { ThemeToggle, FocusToggle, NavItem } from './ThemeToggle'
+export { ThemeToggle, FocusToggle, SpellcheckToggle, SpellcheckLocaleSelect, NavItem } from './ThemeToggle'
 export { CharacterCard } from './CharacterCard'
 export { WordProgress, FloatingToolbar } from './WordProgress'
 export { CreateProjectModal } from './CreateProjectModal'
