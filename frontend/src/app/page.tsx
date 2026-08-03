@@ -311,7 +311,7 @@ export default function Page() {
   }
 
   return (
-    <div className={`min-h-screen ${SURFACE} flex`}>
+    <div className={`h-screen overflow-hidden ${SURFACE} flex`}>
       <LeftSidebar
         focusMode={focusMode}
         leftSidebarOpen={leftSidebarOpen}

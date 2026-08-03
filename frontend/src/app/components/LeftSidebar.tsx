@@ -103,7 +103,7 @@ export function LeftSidebar({
         )}
       </div>
 
-      <nav className="flex-1 p-3 space-y-1">
+      <nav className="flex-1 overflow-y-auto p-3 space-y-1">
         <NavItem icon={Book} label="Manuskript" shortLabel="MANU" active={activeTab === 'manuscript'} onClick={() => setActiveTab('manuscript')} collapsed={!leftSidebarOpen} />
         <NavItem icon={Users} label="Charaktere" shortLabel="CHAR" active={activeTab === 'characters'} onClick={() => setActiveTab('characters')} collapsed={!leftSidebarOpen} />
         <NavItem icon={MapPin} label="Orte" shortLabel="ORTE" active={activeTab === 'places'} onClick={() => setActiveTab('places')} collapsed={!leftSidebarOpen} />
