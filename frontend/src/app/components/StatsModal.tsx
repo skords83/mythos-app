@@ -22,7 +22,7 @@ export function StatsModal({ isOpen, onClose, entries, todayDateString }: StatsM
 
   return (
     <div className={OVERLAY}>
-      <div className={`${MODAL_PANEL} p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto`}>
+      <div className={`${MODAL_PANEL} p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden`}>
         <div className="flex items-center justify-between mb-6">
           <h2 className={`text-xl font-display font-light ${TEXT_PRIMARY}`}>Schreib-Statistik</h2>
           <button onClick={onClose} className={`${TEXT_MUTED} hover:${TEXT_PRIMARY} transition-colors`}>

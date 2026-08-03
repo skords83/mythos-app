@@ -88,7 +88,7 @@ export function EditCharacterModal({ isOpen, onClose, character, characters, pla
 
   return (
     <div className={OVERLAY}>
-      <div className={`${MODAL_PANEL} p-6 w-full max-w-md max-h-[90vh] overflow-y-auto`}>
+      <div className={`${MODAL_PANEL} p-6 w-full max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden`}>
         <h2 className={`text-2xl font-display font-light ${TEXT_PRIMARY}`}>
           Charakter bearbeiten
         </h2>

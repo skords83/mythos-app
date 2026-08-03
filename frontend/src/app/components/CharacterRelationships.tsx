@@ -112,15 +112,15 @@ export function CharacterRelationships({ character, characters }: CharacterRelat
           return (
             <div
               key={r.id}
-              className={`flex items-center justify-between text-sm px-2 py-1 bg-zinc-100 dark:bg-zinc-800 ${RADIUS}`}
+              className={`flex items-center justify-between gap-2 text-sm px-2 py-1 bg-zinc-100 dark:bg-zinc-800 ${RADIUS}`}
             >
-              <span className={TEXT_PRIMARY}>
+              <span className={`${TEXT_PRIMARY} truncate min-w-0`}>
                 {isSource ? '' : '← '}{relationLabel(r.relationType)} {counterpart?.name ?? '?'}
               </span>
               <button
                 type="button"
                 onClick={() => handleDelete(r.id)}
-                className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                className="p-1 text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
               >
                 <Trash2 size={14} />
               </button>
