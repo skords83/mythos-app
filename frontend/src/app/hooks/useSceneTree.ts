@@ -66,15 +66,18 @@ export function useSceneTree({ chapters, selectedChapter, showError, requestConf
     chapters.forEach((chapter) => expandChapter(chapter.id))
   }
 
-  // Keep the tree in sync when the open chapter changes from elsewhere
-  // (search jump, chapter list click) - reveal its scenes, drop any
-  // stale scene selection that belonged to a different chapter.
+  // Keep the tree in sync when the active chapter changes from elsewhere
+  // (search jump, chapter list click) - only the active chapter is open
+  // by default; other chapters stay collapsed unless expanded by hand.
   useEffect(() => {
     if (!selectedChapter) {
       setSelectedScene(null)
       return
     }
-    expandChapter(selectedChapter.id)
+    setExpandedChapterIds(new Set([selectedChapter.id]))
+    if (!scenesByChapter[selectedChapter.id]) {
+      loadScenesFor(selectedChapter.id)
+    }
     setSelectedScene((prev) => (prev && prev.chapterId === selectedChapter.id ? prev : null))
   }, [selectedChapter?.id])
 
