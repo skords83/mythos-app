@@ -82,6 +82,21 @@ model User {
   loreEntries LoreEntry[]
   comments   Comment[]
   chapterVersions ChapterVersion[]
+  settings   UserSettings?
+}
+
+// Z7: generic per-user preference store. Fields are additive as future
+// features need persistence (e.g. C12 spellcheck, C5 focus mode) — no
+// feature currently reads/writes these beyond this foundation.
+model UserSettings {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  focusModeEnabled  Boolean  @default(false)
+  spellcheckEnabled Boolean  @default(true)
+  spellcheckLocale  String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model Project {

@@ -177,6 +177,12 @@ export interface Comment {
   author?: { name: string | null }
 }
 
+export interface UserSettings {
+  focusModeEnabled: boolean
+  spellcheckEnabled: boolean
+  spellcheckLocale: string | null
+}
+
 export interface CommentPopoverState {
   comment: Comment | null
   position: { x: number, y: number }
