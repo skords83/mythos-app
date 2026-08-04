@@ -9,9 +9,7 @@ import {
   FileText,
   Users,
   ArrowRight,
-  Loader2,
-  Lightbulb,
-  X
+  Loader2
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { ConfirmDialog } from '../components/ConfirmDialog'
@@ -19,9 +17,6 @@ import { Toast } from '../components/Toast'
 import { Card } from '../components/Card'
 import { EmptyState } from '../components/EmptyState'
 import { HairlineButton } from '../components/HairlineButton'
-import { IdeaCard } from '../components/IdeaCard'
-import { AddIdeaModal } from '../components/AddIdeaModal'
-import { EditIdeaModal } from '../components/EditIdeaModal'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { AppSidebar } from '../components/AppSidebar'
 import { Idea } from '../components/types'
@@ -182,80 +177,6 @@ function ProjectCard({ project, onDelete, onOpen }: {
   )
 }
 
-// Ideenboard Drawer — slides in from the right when opened via the sidebar link,
-// rather than sitting permanently next to the projects grid.
-function IdeaBoardDrawer({ isOpen, onClose, ideas, onAddClick, onEdit, onDelete }: {
-  isOpen: boolean
-  onClose: () => void
-  ideas: Idea[]
-  onAddClick: () => void
-  onEdit: (idea: Idea) => void
-  onDelete: (id: string) => void
-}) {
-  useEffect(() => {
-    if (!isOpen) return
-    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
-  }, [isOpen, onClose])
-
-  if (!isOpen) return null
-
-  return (
-    <div className="fixed inset-0 bg-zinc-950/60 z-50 flex justify-end animate-fade-in" onClick={onClose}>
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className={`w-full max-w-md h-full ${SURFACE_ALT} border-l ${HAIRLINE} p-5 overflow-y-auto`}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className={`text-lg font-display font-light ${TEXT_PRIMARY}`}>
-            Ideenboard
-          </h2>
-          <div className="flex items-center gap-2">
-            <HairlineButton emphasised onClick={onAddClick}>
-              <Plus size={16} />
-              <span className="hidden sm:inline">Neue Idee</span>
-            </HairlineButton>
-            <button
-              onClick={onClose}
-              className={`p-2 ${RADIUS} ${HOVER_SURFACE} transition-colors ${TEXT_SECONDARY}`}
-              title="Schließen"
-            >
-              <X size={18} />
-            </button>
-          </div>
-        </div>
-        {ideas.length > 0 ? (
-          <div className="space-y-3">
-            {ideas.map((idea) => (
-              <IdeaCard
-                key={idea.id}
-                idea={idea}
-                onEdit={() => onEdit(idea)}
-                onDelete={() => onDelete(idea.id)}
-              />
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            icon={Lightbulb}
-            iconSize={56}
-            label="Noch keine Ideen"
-            description="Halte spontane Ideen fest, bevor sie einem Projekt zugeordnet sind."
-            className="py-10"
-            action={
-              <HairlineButton emphasised onClick={onAddClick}>
-                <Plus size={16} />
-                Idee festhalten
-              </HairlineButton>
-            }
-          />
-        )}
-      </div>
-    </div>
-  )
-}
-
 // Main Dashboard Component
 export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([])
@@ -265,9 +186,6 @@ export default function DashboardPage() {
   const [errorToast, setErrorToast] = useState<string | null>(null)
   const [confirmDialog, setConfirmDialog] = useState<{ title: string, message: string, onConfirm: () => void } | null>(null)
   const [ideas, setIdeas] = useState<Idea[]>([])
-  const [showAddIdeaModal, setShowAddIdeaModal] = useState(false)
-  const [editingIdea, setEditingIdea] = useState<Idea | null>(null)
-  const [showIdeaBoard, setShowIdeaBoard] = useState(false)
   const router = useRouter()
 
   // Check auth and load projects
@@ -305,65 +223,6 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error loading ideas:', error)
     }
-  }
-
-  const addIdea = async (title: string, content: string, tags: string[], visibility: 'PRIVATE' | 'FAMILY') => {
-    try {
-      const response = await fetch('/api/ideas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content, tags, visibility })
-      })
-      if (!response.ok) {
-        setErrorToast('Idee konnte nicht erstellt werden.')
-        return
-      }
-      const newIdea = await response.json()
-      setIdeas([newIdea, ...ideas])
-    } catch (error) {
-      console.error('Error adding idea:', error)
-      setErrorToast('Idee konnte nicht erstellt werden.')
-    }
-  }
-
-  const updateIdea = async (id: string, title: string, content: string, tags: string[], visibility: 'PRIVATE' | 'FAMILY') => {
-    try {
-      const response = await fetch(`/api/ideas/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content, tags, visibility })
-      })
-      if (!response.ok) {
-        setErrorToast('Idee konnte nicht gespeichert werden.')
-        return
-      }
-      const updated = await response.json()
-      setIdeas(ideas.map(i => i.id === id ? updated : i))
-    } catch (error) {
-      console.error('Error updating idea:', error)
-      setErrorToast('Idee konnte nicht gespeichert werden.')
-    }
-  }
-
-  const deleteIdea = (ideaId: string) => {
-    setConfirmDialog({
-      title: 'Idee löschen',
-      message: 'Möchtest du diese Idee wirklich löschen?',
-      onConfirm: async () => {
-        setConfirmDialog(null)
-        try {
-          const response = await fetch(`/api/ideas/${ideaId}`, { method: 'DELETE' })
-          if (!response.ok) {
-            setErrorToast('Idee konnte nicht gelöscht werden.')
-            return
-          }
-          setIdeas(ideas.filter(i => i.id !== ideaId))
-        } catch (error) {
-          console.error('Error deleting idea:', error)
-          setErrorToast('Idee konnte nicht gelöscht werden.')
-        }
-      }
-    })
   }
 
   const loadProjects = async () => {
@@ -462,7 +321,7 @@ export default function DashboardPage() {
 
   return (
     <div className={`h-screen overflow-hidden ${SURFACE} flex`}>
-      <AppSidebar onIdeenboardClick={() => setShowIdeaBoard(true)} />
+      <AppSidebar />
 
       <main className="flex-1 flex flex-col min-w-0">
         {/* Header */}
@@ -538,25 +397,6 @@ export default function DashboardPage() {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onCreate={createProject}
-      />
-      <IdeaBoardDrawer
-        isOpen={showIdeaBoard}
-        onClose={() => setShowIdeaBoard(false)}
-        ideas={ideas}
-        onAddClick={() => setShowAddIdeaModal(true)}
-        onEdit={setEditingIdea}
-        onDelete={deleteIdea}
-      />
-      <AddIdeaModal
-        isOpen={showAddIdeaModal}
-        onClose={() => setShowAddIdeaModal(false)}
-        onAdd={addIdea}
-      />
-      <EditIdeaModal
-        isOpen={!!editingIdea}
-        idea={editingIdea}
-        onClose={() => setEditingIdea(null)}
-        onUpdate={updateIdea}
       />
       <ConfirmDialog
         isOpen={!!confirmDialog}

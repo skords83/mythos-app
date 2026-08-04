@@ -2,21 +2,18 @@
 
 import { useState } from 'react'
 import { Book, ChevronLeft, ChevronRight, Lightbulb, Users } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { NavItem } from './ThemeToggle'
 import { SURFACE_ALT, TEXT_PRIMARY, RADIUS, HOVER_SURFACE, HAIRLINE, EASE_STANDARD, ICON_PROPS } from '@/lib/theme'
 
-interface AppSidebarProps {
-  onIdeenboardClick: () => void
-}
-
-// App-level sidebar for screens outside a project (dashboard). Mirrors
-// LeftSidebar's visual language (width/collapse/hairline/NavItem) but with
-// account-level nav instead of per-project entity tabs, since those routes
-// only exist once a project is selected.
-export function AppSidebar({ onIdeenboardClick }: AppSidebarProps) {
+// App-level sidebar for screens outside a project (dashboard, ideas, family).
+// Mirrors LeftSidebar's visual language (width/collapse/hairline/NavItem) but
+// with account-level nav instead of per-project entity tabs, since those
+// routes only exist once a project is selected.
+export function AppSidebar() {
   const [open, setOpen] = useState(true)
   const router = useRouter()
+  const pathname = usePathname()
 
   return (
     <aside
@@ -54,9 +51,9 @@ export function AppSidebar({ onIdeenboardClick }: AppSidebarProps) {
       </div>
 
       <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-        <NavItem icon={Book} label="Projekte" shortLabel="PROJ" active onClick={() => {}} collapsed={!open} />
-        <NavItem icon={Lightbulb} label="Ideenboard" shortLabel="IDEE" active={false} onClick={onIdeenboardClick} collapsed={!open} />
-        <NavItem icon={Users} label="Familie" shortLabel="FAM" active={false} onClick={() => router.push('/family')} collapsed={!open} />
+        <NavItem icon={Book} label="Projekte" shortLabel="PROJ" active={pathname === '/dashboard'} onClick={() => router.push('/dashboard')} collapsed={!open} />
+        <NavItem icon={Lightbulb} label="Ideenboard" shortLabel="IDEE" active={pathname === '/ideas'} onClick={() => router.push('/ideas')} collapsed={!open} />
+        <NavItem icon={Users} label="Familie" shortLabel="FAM" active={pathname === '/family'} onClick={() => router.push('/family')} collapsed={!open} />
       </nav>
     </aside>
   )
