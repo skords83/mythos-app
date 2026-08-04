@@ -48,9 +48,20 @@ describe('GET /api/ideas', () => {
     )
   })
 
-  it('returns the family-wide idea board when no projectId is given', async () => {
+  it('returns the family-wide idea board when no projectId is given, excluding archived ideas', async () => {
     mockedPrisma.idea.findMany.mockResolvedValue([])
     const response = await GET(authedRequest('http://localhost/api/ideas'))
+    expect(response.status).toBe(200)
+    expect(mockedPrisma.idea.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { familyId: 'fam-1', OR: [{ visibility: 'FAMILY' }, { authorId: 'user-1' }], archivedAt: null },
+      })
+    )
+  })
+
+  it('includes archived ideas when includeArchived=1 is passed', async () => {
+    mockedPrisma.idea.findMany.mockResolvedValue([])
+    const response = await GET(authedRequest('http://localhost/api/ideas?includeArchived=1'))
     expect(response.status).toBe(200)
     expect(mockedPrisma.idea.findMany).toHaveBeenCalledWith(
       expect.objectContaining({

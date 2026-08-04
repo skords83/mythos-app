@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Idea, Project } from '../components/types'
+import { Idea, IdeaStatus, Project } from '../components/types'
 
 interface UseIdeasArgs {
   selectedProject: Project | null
@@ -16,7 +16,7 @@ export function useIdeas({ selectedProject, showError, requestConfirm, onConfirm
 
   const loadIdeas = async (projectId: string) => {
     try {
-      const response = await fetch(`/api/ideas?projectId=${projectId}`)
+      const response = await fetch(`/api/ideas?projectId=${projectId}&includeArchived=1`)
       if (response.status === 401) {
         router.push('/login')
         return
@@ -93,6 +93,55 @@ export function useIdeas({ selectedProject, showError, requestConfirm, onConfirm
     }
   }
 
+  // Kanban drag&drop: optimistic status change with rollback on failure, so
+  // dropping a card into another column feels instant instead of waiting
+  // on the round trip.
+  const updateIdeaStatus = async (id: string, status: IdeaStatus) => {
+    const previous = ideas
+    setIdeas(ideas.map(i => i.id === id ? { ...i, status } : i))
+    try {
+      const response = await fetch(`/api/ideas/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      })
+      if (!response.ok) {
+        setIdeas(previous)
+        showError('Status konnte nicht geändert werden.')
+        return
+      }
+      const updated = await response.json()
+      setIdeas(prev => prev.map(i => i.id === id ? updated : i))
+    } catch (error) {
+      console.error('Error updating idea status:', error)
+      setIdeas(previous)
+      showError('Status konnte nicht geändert werden.')
+    }
+  }
+
+  const setIdeaArchived = async (id: string, archived: boolean) => {
+    const previous = ideas
+    setIdeas(ideas.map(i => i.id === id ? { ...i, archivedAt: archived ? new Date().toISOString() : null } : i))
+    try {
+      const response = await fetch(`/api/ideas/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ archived })
+      })
+      if (!response.ok) {
+        setIdeas(previous)
+        showError(archived ? 'Idee konnte nicht archiviert werden.' : 'Idee konnte nicht wiederhergestellt werden.')
+        return
+      }
+      const updated = await response.json()
+      setIdeas(prev => prev.map(i => i.id === id ? updated : i))
+    } catch (error) {
+      console.error('Error toggling idea archive state:', error)
+      setIdeas(previous)
+      showError(archived ? 'Idee konnte nicht archiviert werden.' : 'Idee konnte nicht wiederhergestellt werden.')
+    }
+  }
+
   const deleteIdea = (ideaId: string) => {
     requestConfirm('Idee löschen', 'Möchtest du diese Idee wirklich löschen?', async () => {
       onConfirmed()
@@ -116,6 +165,8 @@ export function useIdeas({ selectedProject, showError, requestConfirm, onConfirm
     setEditingIdea,
     addIdea,
     updateIdea,
+    updateIdeaStatus,
+    setIdeaArchived,
     deleteIdea,
   }
 }

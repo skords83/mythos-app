@@ -4,6 +4,8 @@ import { getAuthContext } from '@/lib/auth'
 import { logger } from '@/lib/logger'
 import { isValidVisibility } from '@/lib/visibility'
 
+const IDEA_STATUSES = ['IDEE', 'IN_ARBEIT', 'UMGESETZT'] as const
+
 // PUT /api/ideas/[id] - Idee aktualisieren (nur Autor)
 export async function PUT(
   request: NextRequest,
@@ -28,10 +30,13 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { title, content, tags, visibility } = body
+    const { title, content, tags, visibility, status, archived } = body
 
     if (visibility !== undefined && !isValidVisibility(visibility)) {
       return NextResponse.json({ error: 'Sichtbarkeit muss PRIVATE oder FAMILY sein' }, { status: 400 })
+    }
+    if (status !== undefined && !IDEA_STATUSES.includes(status)) {
+      return NextResponse.json({ error: 'Status muss IDEE, IN_ARBEIT oder UMGESETZT sein' }, { status: 400 })
     }
 
     const updateData: any = {}
@@ -39,6 +44,8 @@ export async function PUT(
     if (content !== undefined) updateData.content = content
     if (tags !== undefined) updateData.tags = Array.isArray(tags) ? tags : []
     if (visibility !== undefined) updateData.visibility = visibility
+    if (status !== undefined) updateData.status = status
+    if (archived !== undefined) updateData.archivedAt = archived ? new Date() : null
 
     const updated = await prisma.idea.update({ where: { id: params.id }, data: updateData })
     return NextResponse.json(updated)

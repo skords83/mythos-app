@@ -41,6 +41,13 @@ enum CharacterRole {
   MENTOR
 }
 
+// Kanban status for an Idea on the Ideenboard (E1 follow-up).
+enum IdeaStatus {
+  IDEE
+  IN_ARBEIT
+  UMGESETZT
+}
+
 model Family {
   id         String      @id @default(cuid())
   name       String
@@ -377,6 +384,8 @@ model Idea {
   content     String?
   tags        String[]   @default([])
   visibility  Visibility @default(PRIVATE)
+  status      IdeaStatus @default(IDEE)
+  archivedAt  DateTime?
   projectId   String?
   project     Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   familyId    String

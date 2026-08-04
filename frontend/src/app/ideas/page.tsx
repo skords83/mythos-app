@@ -1,18 +1,16 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Plus, LogOut, Lightbulb, Loader2 } from 'lucide-react'
+import { LogOut, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Toast } from '../components/Toast'
-import { EmptyState } from '../components/EmptyState'
-import { HairlineButton } from '../components/HairlineButton'
-import { IdeaCard } from '../components/IdeaCard'
 import { AddIdeaModal } from '../components/AddIdeaModal'
 import { EditIdeaModal } from '../components/EditIdeaModal'
+import { IdeaBoardView } from '../components/IdeaBoardView'
 import { AppSidebar } from '../components/AppSidebar'
-import { Idea } from '../components/types'
-import { ACCENT_TEXT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY, HAIRLINE, HOVER_SURFACE, SURFACE, SURFACE_ALT, MONO_LABEL_MUTED } from '@/lib/theme'
+import { Idea, IdeaStatus } from '../components/types'
+import { ACCENT_TEXT, RADIUS, TEXT_SECONDARY, HAIRLINE, HOVER_SURFACE, SURFACE, SURFACE_ALT, MONO_LABEL_MUTED } from '@/lib/theme'
 
 interface User {
   id: string
@@ -58,7 +56,7 @@ export default function IdeasPage() {
   // jotting something down before it belongs to any particular Geschichte.
   const loadIdeas = async () => {
     try {
-      const response = await fetch('/api/ideas')
+      const response = await fetch('/api/ideas?includeArchived=1')
       if (!response.ok) return
       const data = await response.json()
       setIdeas(data.filter((idea: Idea) => !idea.projectId))
@@ -102,6 +100,54 @@ export default function IdeasPage() {
     } catch (error) {
       console.error('Error updating idea:', error)
       setErrorToast('Idee konnte nicht gespeichert werden.')
+    }
+  }
+
+  // Kanban drag&drop: optimistic status change with rollback on failure,
+  // mirrors useIdeas.ts's project-scoped equivalent.
+  const updateIdeaStatus = async (id: string, status: IdeaStatus) => {
+    const previous = ideas
+    setIdeas(ideas.map(i => i.id === id ? { ...i, status } : i))
+    try {
+      const response = await fetch(`/api/ideas/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      })
+      if (!response.ok) {
+        setIdeas(previous)
+        setErrorToast('Status konnte nicht geändert werden.')
+        return
+      }
+      const updated = await response.json()
+      setIdeas(prev => prev.map(i => i.id === id ? updated : i))
+    } catch (error) {
+      console.error('Error updating idea status:', error)
+      setIdeas(previous)
+      setErrorToast('Status konnte nicht geändert werden.')
+    }
+  }
+
+  const setIdeaArchived = async (id: string, archived: boolean) => {
+    const previous = ideas
+    setIdeas(ideas.map(i => i.id === id ? { ...i, archivedAt: archived ? new Date().toISOString() : null } : i))
+    try {
+      const response = await fetch(`/api/ideas/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ archived })
+      })
+      if (!response.ok) {
+        setIdeas(previous)
+        setErrorToast(archived ? 'Idee konnte nicht archiviert werden.' : 'Idee konnte nicht wiederhergestellt werden.')
+        return
+      }
+      const updated = await response.json()
+      setIdeas(prev => prev.map(i => i.id === id ? updated : i))
+    } catch (error) {
+      console.error('Error toggling idea archive state:', error)
+      setIdeas(previous)
+      setErrorToast(archived ? 'Idee konnte nicht archiviert werden.' : 'Idee konnte nicht wiederhergestellt werden.')
     }
   }
 
@@ -174,48 +220,15 @@ export default function IdeasPage() {
         </header>
 
         {/* Main Content */}
-        <div className="flex-1 overflow-y-auto p-8">
-          {/* Page Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <h1 className={`text-3xl font-display font-light ${TEXT_PRIMARY}`}>
-                Ideenboard
-              </h1>
-              <span className={`px-2 py-0.5 ${RADIUS} border ${HAIRLINE} ${MONO_LABEL_MUTED}`}>
-                {ideas.length} {ideas.length === 1 ? 'Idee' : 'Ideen'}
-              </span>
-            </div>
-            <HairlineButton emphasised onClick={() => setShowAddIdeaModal(true)}>
-              <Plus size={20} />
-              <span className="hidden sm:inline">Neue Idee</span>
-            </HairlineButton>
-          </div>
-
-          {/* Ideas Grid */}
-          {ideas.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {ideas.map((idea) => (
-                <IdeaCard
-                  key={idea.id}
-                  idea={idea}
-                  onEdit={() => setEditingIdea(idea)}
-                  onDelete={() => deleteIdea(idea.id)}
-                />
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon={Lightbulb}
-              label="Noch keine Ideen"
-              description="Halte spontane Ideen fest, bevor sie einem Projekt zugeordnet sind."
-              action={
-                <HairlineButton emphasised onClick={() => setShowAddIdeaModal(true)}>
-                  <Plus size={20} />
-                  Idee festhalten
-                </HairlineButton>
-              }
-            />
-          )}
+        <div className="flex-1 overflow-y-auto">
+          <IdeaBoardView
+            ideas={ideas}
+            onAddClick={() => setShowAddIdeaModal(true)}
+            onEdit={setEditingIdea}
+            onDelete={deleteIdea}
+            onStatusChange={updateIdeaStatus}
+            onArchiveToggle={setIdeaArchived}
+          />
         </div>
       </main>
 

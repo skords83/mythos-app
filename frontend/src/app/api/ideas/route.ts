@@ -16,6 +16,8 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
+    const includeArchived = searchParams.get('includeArchived') === '1'
+    const archivedWhere = includeArchived ? {} : { archivedAt: null }
 
     if (projectId) {
       const project = await prisma.project.findFirst({
@@ -26,14 +28,14 @@ export async function GET(request: NextRequest) {
       }
 
       const ideas = await prisma.idea.findMany({
-        where: { projectId, OR: visibilityWhere(context) },
+        where: { projectId, OR: visibilityWhere(context), ...archivedWhere },
         orderBy: { createdAt: 'desc' },
       })
       return NextResponse.json(ideas)
     }
 
     const ideas = await prisma.idea.findMany({
-      where: { familyId: context.familyId, OR: visibilityWhere(context) },
+      where: { familyId: context.familyId, OR: visibilityWhere(context), ...archivedWhere },
       orderBy: { createdAt: 'desc' },
     })
     return NextResponse.json(ideas)

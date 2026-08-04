@@ -132,7 +132,7 @@ export default function Page() {
   const { loreEntries, editingLoreEntry, setEditingLoreEntry, addLoreEntry, updateLoreEntry, deleteLoreEntry } =
     useLoreEntries({ selectedProject, showError, requestConfirm, onConfirmed })
 
-  const { ideas, editingIdea, setEditingIdea, addIdea, updateIdea, deleteIdea } =
+  const { ideas, editingIdea, setEditingIdea, addIdea, updateIdea, updateIdeaStatus, setIdeaArchived, deleteIdea } =
     useIdeas({ selectedProject, showError, requestConfirm, onConfirmed })
 
   const { notes, addNote, updateNote, deleteNote } =
@@ -546,6 +546,8 @@ export default function Page() {
               onAddClick={() => setShowIdeaModal(true)}
               onEdit={setEditingIdea}
               onDelete={deleteIdea}
+              onStatusChange={updateIdeaStatus}
+              onArchiveToggle={setIdeaArchived}
             />
           )}
 

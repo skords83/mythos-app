@@ -155,12 +155,16 @@ export interface LoreEntry {
   updatedAt: string
 }
 
+export type IdeaStatus = 'IDEE' | 'IN_ARBEIT' | 'UMGESETZT'
+
 export interface Idea {
   id: string
   title: string
   content: string | null
   tags: string[]
   visibility: 'PRIVATE' | 'FAMILY'
+  status: IdeaStatus
+  archivedAt: string | null
   projectId: string | null
   familyId: string
   authorId: string
