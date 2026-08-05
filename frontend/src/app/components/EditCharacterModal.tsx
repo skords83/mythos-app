@@ -88,7 +88,7 @@ export function EditCharacterModal({ isOpen, onClose, character, characters, pla
 
   return (
     <div className={OVERLAY}>
-      <div className={`${MODAL_PANEL} p-6 w-full max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden`}>
+      <div className={`${MODAL_PANEL} p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden`}>
         <h2 className={`text-2xl font-display font-light ${TEXT_PRIMARY}`}>
           Charakter bearbeiten
         </h2>
@@ -155,33 +155,35 @@ export function EditCharacterModal({ isOpen, onClose, character, characters, pla
               placeholder="Was treibt den Charakter an?"
             />
           </div>
-          <div>
-            <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>
-              Rolle
-            </label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as '' | 'PROTAGONIST' | 'ANTAGONIST' | 'MENTOR')}
-              className={INPUT}
-            >
-              <option value="">Keine Rolle</option>
-              <option value="PROTAGONIST">Protagonist:in</option>
-              <option value="ANTAGONIST">Antagonist:in</option>
-              <option value="MENTOR">Mentor:in</option>
-            </select>
-          </div>
-          <div>
-            <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>
-              Sichtbarkeit
-            </label>
-            <select
-              value={visibility}
-              onChange={(e) => setVisibility(e.target.value as 'PRIVATE' | 'FAMILY')}
-              className={INPUT}
-            >
-              <option value="PRIVATE">Privat (nur ich)</option>
-              <option value="FAMILY">Familie (alle Familienmitglieder)</option>
-            </select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>
+                Rolle
+              </label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value as '' | 'PROTAGONIST' | 'ANTAGONIST' | 'MENTOR')}
+                className={INPUT}
+              >
+                <option value="">Keine Rolle</option>
+                <option value="PROTAGONIST">Protagonist:in</option>
+                <option value="ANTAGONIST">Antagonist:in</option>
+                <option value="MENTOR">Mentor:in</option>
+              </select>
+            </div>
+            <div>
+              <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>
+                Sichtbarkeit
+              </label>
+              <select
+                value={visibility}
+                onChange={(e) => setVisibility(e.target.value as 'PRIVATE' | 'FAMILY')}
+                className={INPUT}
+              >
+                <option value="PRIVATE">Privat (nur ich)</option>
+                <option value="FAMILY">Familie (alle Familienmitglieder)</option>
+              </select>
+            </div>
           </div>
           <CharacterRelationships character={character} characters={characters} />
           <CharacterPlaceLinks character={character} places={places} />

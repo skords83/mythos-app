@@ -231,6 +231,14 @@ export default function Page() {
     }
   }
 
+  const handleSelectSearchPlace = (placeId: string) => {
+    const place = places.find(p => p.id === placeId)
+    if (place) {
+      setEditingPlace(place)
+      setActiveTab('places')
+    }
+  }
+
   const handleSelectSearchNote = (chapterId: string) => {
     const chapter = chapters.find(ch => ch.id === chapterId)
     if (chapter) {
@@ -681,7 +689,7 @@ export default function Page() {
         isSearching={isSearching}
         onSelectChapter={handleSelectSearchChapter}
         onSelectCharacter={handleSelectSearchCharacter}
-        onSelectPlace={() => setActiveTab('places')}
+        onSelectPlace={handleSelectSearchPlace}
         onSelectNote={handleSelectSearchNote}
         onSelectItem={handleSelectSearchItem}
         onSelectFaction={handleSelectSearchFaction}

@@ -164,6 +164,8 @@ model Chapter {
   versions  ChapterVersion[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([projectId])
 }
 
 // C9: named, switchable alternate drafts of a chapter's prose. The chapter's own
@@ -205,6 +207,8 @@ model Character {
   author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+
+  @@index([projectId])
 }
 
 model Note {
@@ -240,6 +244,8 @@ model Place {
   images      PlaceImage[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+
+  @@index([projectId])
 }
 
 // A10: map/visualization images for a Place (1:n). Kept as a plain, directly
@@ -275,6 +281,8 @@ model Item {
   author       User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+
+  @@index([projectId])
 }
 
 model Faction {
@@ -291,6 +299,8 @@ model Faction {
   author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+
+  @@index([projectId])
 }
 
 model Scene {
@@ -352,6 +362,8 @@ model TimelineEvent {
   author      User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
+
+  @@index([projectId])
 }
 
 // B3: Weltenregeln / Lore-Bibel — atemporal canon facts (magic systems, laws,
@@ -372,6 +384,8 @@ model LoreEntry {
   author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+
+  @@index([projectId])
 }
 
 // E1: Idea Board — freeform, structure-independent story ideas, distinct from
@@ -394,6 +408,8 @@ model Idea {
   author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+
+  @@index([projectId])
 }
 
 // Generic relation/join infrastructure (Z5). A single polymorphic edge type

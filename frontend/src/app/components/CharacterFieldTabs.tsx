@@ -46,7 +46,7 @@ export default function CharacterFieldTabs({ activeTab, onTabChange, values, onC
           onChange={(e) => onChange(tab.key, e.target.value)}
           className={`${INPUT} resize-none mt-3`}
           placeholder={tab.placeholder}
-          rows={3}
+          rows={4}
         />
       ))}
     </div>
