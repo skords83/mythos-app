@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getAuthContext } from '@/lib/auth'
 import { visibilityWhere } from '@/lib/visibility'
@@ -13,6 +14,13 @@ interface SearchResult {
 }
 
 const MAX_RESULTS_PER_TYPE = 8
+
+/** Escapes LIKE/ILIKE metacharacters (`\`, `%`, `_`) so a literal search term
+ * can't be widened into an unintended wildcard pattern. Order matters: the
+ * escape character itself must be escaped first. */
+function escapeLikePattern(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_')
+}
 
 const EMPTY_SEARCH_RESULTS = {
   chapters: [], characters: [], places: [], notes: [],
@@ -112,10 +120,25 @@ export async function GET(request: NextRequest) {
         take: MAX_RESULTS_PER_TYPE,
         select: { id: true, title: true, content: true, chapterId: true }
       }),
-      prisma.chapter.findMany({
-        where: { projectId },
-        select: { id: true, title: true, content: true }
-      }),
+      // Chapter.content is a Json column holding the editor's HTML string.
+      // Prisma's JSON filters (`string_contains`) have no `mode: 'insensitive'`
+      // option on Postgres, so a plain Prisma where-clause can't replicate the
+      // case-insensitive match this route needs. Raw SQL with ILIKE sidesteps
+      // that gap and, unlike the previous full-project findMany, lets Postgres
+      // do the filtering + limiting instead of shipping every chapter's full
+      // content to the app server on every keystroke.
+      prisma.$queryRaw<{ id: string; title: string; content: unknown }[]>(
+        Prisma.sql`
+          SELECT id, title, content
+          FROM "Chapter"
+          WHERE "projectId" = ${projectId}
+            AND (
+              title ILIKE ${'%' + escapeLikePattern(q) + '%'}
+              OR content::text ILIKE ${'%' + escapeLikePattern(q) + '%'}
+            )
+          LIMIT ${MAX_RESULTS_PER_TYPE}
+        `
+      ),
       prisma.item.findMany({
         where: {
           projectId,
