@@ -255,3 +255,35 @@ describe('useChapters — draft recovery', () => {
     expect(result.current.pendingDraft).toBeNull()
   })
 })
+
+describe('useChapters — editor content stability across autosave', () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  it('does not push content back into the editor when the same chapter is autosaved', async () => {
+    mockInitialLoadFetch()
+    const { result } = renderChaptersHook()
+    await flush()
+    expect(result.current.selectedChapter?.id).toBe('c1')
+
+    const setContentMock = jest.fn()
+    act(() => { result.current.editorSetContentRef.current = setContentMock })
+
+    ;(global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true, json: async () => chapter } as Response)
+    await act(async () => {
+      await result.current.saveChapter(undefined, '<p>Text mit Leerzeichen am Ende </p>')
+    })
+
+    // Re-pushing content into the editor here (via setSelectedChapter -> the [selectedChapter]
+    // effect) would force TipTap's editor.commands.setContent to re-parse the HTML.
+    // ProseMirror's default HTML parsing normalizes whitespace, silently dropping a trailing
+    // space at the end of a line on every autosave. For the same chapter, the editor already
+    // has the correct live content — it must not be touched.
+    expect(setContentMock).not.toHaveBeenCalled()
+  })
+})

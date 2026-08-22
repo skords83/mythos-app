@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Book, Plus, Save } from 'lucide-react'
-import { ACCENT, RADIUS, SURFACE, SURFACE_ALT, TEXT_PRIMARY, TEXT_MUTED, MONO_LABEL_MUTED } from '@/lib/theme'
+import { ACCENT, RADIUS, SURFACE, SURFACE_ALT, TEXT_PRIMARY, TEXT_MUTED } from '@/lib/theme'
 import { MastheadDivider } from './components/MastheadDivider'
 import {
   QuickCardState,
@@ -384,15 +384,6 @@ export default function Page() {
       <main className="flex-1 flex flex-col min-w-0">
         <header className={`h-16 ${SURFACE_ALT} flex items-center justify-between px-6`}>
           <div className="flex items-center gap-4">
-            {activeTab === 'manuscript' && selectedChapter && (
-              <>
-                <h2 className={`text-lg font-display font-light ${TEXT_PRIMARY}`}>{selectedChapter.title}</h2>
-                <span className={`text-sm ${TEXT_MUTED}`}>{selectedChapter.wordCount || 0} Wörter</span>
-              </>
-            )}
-            <span className={MONO_LABEL_MUTED}>
-              {Array.isArray(chapters) ? chapters.length : 0} Kapitel · {totalWordCount} Wörter
-            </span>
             {activeTab === 'manuscript' && !selectedChapter && (
               <span className={TEXT_MUTED}>Kein Kapitel ausgewählt</span>
             )}
