@@ -39,6 +39,12 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
   // slow-resolving fetch/getDraft chain for a chapter the user has since switched away
   // from cannot clobber pendingDraft for the chapter that's actually open.
   const latestChapterRequestRef = useRef<string | null>(null)
+  // Tracks which chapter's content was last pushed into the editor via setContent, so
+  // in-place updates to selectedChapter (autosave echoing the saved content back, a title
+  // edit) don't re-push content for the chapter already open. Re-parsing the same HTML
+  // through editor.commands.setContent while the user keeps typing would strip trailing
+  // whitespace (ProseMirror's HTML parser normalizes it) on every autosave.
+  const loadedIntoEditorChapterIdRef = useRef<string | null>(null)
 
   useEffect(() => { editorContentRef.current = editorContent }, [editorContent])
   useEffect(() => { selectedChapterRef.current = selectedChapter }, [selectedChapter])
@@ -114,11 +120,13 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
       setSelectedChapter(null)
       setEditorContent('')
       setPendingDraft(null)
+      loadedIntoEditorChapterIdRef.current = null
     }
   }, [selectedProject])
 
   useEffect(() => {
-    if (selectedChapter) {
+    if (selectedChapter && selectedChapter.id !== loadedIntoEditorChapterIdRef.current) {
+      loadedIntoEditorChapterIdRef.current = selectedChapter.id
       const c = extractContent(selectedChapter.content)
       setEditorContent(c)
       editorSetContentRef.current?.(c)
