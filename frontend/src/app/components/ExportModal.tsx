@@ -6,7 +6,8 @@ import { Chapter, Project } from './types'
 import { extractContent } from '../hooks/useChapters'
 import { parseHtmlToBlocks, blocksToMarkdown, blocksToRtf, buildDocxBlob } from '@/lib/exportConvert'
 import { OVERLAY, MODAL_PANEL, ACCENT, RADIUS, BUTTON_SECONDARY, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED } from '@/lib/theme'
-import { buildEpubArchive, escapeXml } from '@/lib/exportEpub'
+import { buildEpubArchive } from '@/lib/exportEpub'
+import { loadProjectExportContent } from '@/lib/exportContent'
 import { MastheadDivider } from './MastheadDivider'
 
 interface ExportModalProps {
@@ -14,6 +15,7 @@ interface ExportModalProps {
   onClose: () => void
   project: Project | null
   chapters: Chapter[]
+  editorContent?: string
   selectedChapter?: Chapter | null
 }
 
@@ -44,7 +46,7 @@ function downloadTextFile(filename: string, mimeType: string, text: string) {
   downloadBlob(filename, new Blob([text], { type: mimeType }))
 }
 
-export function ExportModal({ isOpen, onClose, project, chapters, selectedChapter }: ExportModalProps) {
+export function ExportModal({ isOpen, onClose, project, chapters, selectedChapter, editorContent }: ExportModalProps) {
   const [exportType, setExportType] = useState<'project' | 'chapter'>(selectedChapter ? 'chapter' : 'project')
   const [format, setFormat] = useState<ExportFormat>('pdf')
   const [isExporting, setIsExporting] = useState(false)
@@ -79,23 +81,23 @@ export function ExportModal({ isOpen, onClose, project, chapters, selectedChapte
     downloadBlob(`${sanitizeFilename(title)}.epub`, await zip.generateAsync({ type: 'blob', mimeType: 'application/epub+zip' }))
   }
 
-  const gatherContent = (): { title: string; html: string } => {
-    if (exportType === 'chapter' && selectedChapter) {
-      return { title: selectedChapter.title, html: extractContent(selectedChapter.content) }
+  const gatherContent = async (): Promise<{ title: string; html: string }> => {
+    const currentChapter = selectedChapter ? {
+      id: selectedChapter.id,
+      title: selectedChapter.title,
+      content: editorContent ?? extractContent(selectedChapter.content),
+    } : undefined
+    if (exportType === 'chapter' && currentChapter) {
+      return { title: currentChapter.title, html: currentChapter.content }
     }
-    // Ganzes Projekt - alle Kapitel zusammenfassen
-    const sortedChapters = [...chapters].sort((a, b) => a.id.localeCompare(b.id))
-    const html = sortedChapters
-      .map(ch => `<h2>${escapeXml(ch.title)}</h2>${extractContent(ch.content)}`)
-      .join('<br/><br/>')
-    return { title: project!.title, html }
+    return { title: project!.title, html: await loadProjectExportContent(project!.id, currentChapter) }
   }
 
   const handleExport = async () => {
     setIsExporting(true)
     setExportError(null)
     try {
-      const { title, html } = gatherContent()
+      const { title, html } = await gatherContent()
 
       if (format === 'pdf') {
         const coverImg = project!.coverImage ? `<img src="${project!.coverImage}" style="max-width: 300px; float: right; margin-left: 20px;"/>` : ''
