@@ -287,3 +287,82 @@ describe('useChapters — editor content stability across autosave', () => {
     expect(setContentMock).not.toHaveBeenCalled()
   })
 })
+
+describe('useChapters — never save unloaded chapter content', () => {
+  const second = { ...chapter, id: 'c2', title: 'Kapitel 2', content: '<p>Wichtiger Text</p>' }
+  const metadata = { ...second, content: undefined } as unknown as Chapter
+  let showError: jest.Mock
+  let confirm: () => void | Promise<void>
+
+  beforeEach(() => {
+    jest.useFakeTimers()
+    jest.clearAllMocks()
+    ;(getDraft as jest.Mock).mockResolvedValue(undefined)
+    showError = jest.fn()
+    confirm = () => {}
+  })
+  afterEach(() => { jest.useRealTimers() })
+
+  function setup(secondResponse: object) {
+    global.fetch = jest.fn((url: string, init?: RequestInit) => {
+      if (url.includes('?')) return Promise.resolve({ ok: true, json: async () => ({ chapters: [chapter, metadata] }) })
+      if (init?.method) return Promise.resolve({ ok: true })
+      return Promise.resolve(url.endsWith('/c1') ? { ok: true, json: async () => chapter } : secondResponse)
+    }) as unknown as typeof fetch
+    return renderHook(() => useChapters({ selectedProject: project, showError,
+      requestConfirm: (_title, _message, callback) => { confirm = callback }, onConfirmed: jest.fn() }))
+  }
+
+  it.each([
+    ['HTTP failure', { ok: false }],
+    ['incomplete response', { ok: true, json: async () => ({ id: 'c2', title: 'Kapitel 2' }) }],
+  ])('keeps the current text on %s and never writes the unloaded target', async (_name, response) => {
+    const { result } = setup(response)
+    await flush()
+    act(() => { result.current.setEditorContent('<p>Aktueller Text</p>') })
+    await act(async () => { await result.current.switchChapter(metadata) })
+    expect(result.current.selectedChapter?.id).toBe('c1')
+    expect(result.current.editorContent).toBe('<p>Aktueller Text</p>')
+    expect(showError).toHaveBeenCalled()
+    act(() => { jest.advanceTimersByTime(2500) })
+    await flush()
+    expect(global.fetch).not.toHaveBeenCalledWith('/api/chapters/c2', expect.objectContaining({ method: 'PUT' }))
+    expect(mockSaveDraft).not.toHaveBeenCalledWith('c2', '')
+  })
+
+  it('loads the remaining chapter before editing or autosaving after deletion', async () => {
+    let resolve!: (value: object) => void
+    const loading = new Promise<object>(done => { resolve = done })
+    const { result } = setup(loading)
+    await flush()
+    act(() => { result.current.deleteChapter('c1') })
+    let deletion!: Promise<void>
+    act(() => { deletion = Promise.resolve(confirm()) })
+    await flush()
+    expect(result.current.selectedChapter).toBeNull()
+    act(() => { jest.advanceTimersByTime(2500) })
+    await flush()
+    expect(global.fetch).not.toHaveBeenCalledWith('/api/chapters/c2', expect.objectContaining({ method: 'PUT' }))
+    await act(async () => { resolve({ ok: true, json: async () => second }); await deletion })
+    expect(result.current.editorContent).toBe(second.content)
+    act(() => { jest.advanceTimersByTime(2500) })
+    await flush()
+    expect(global.fetch).toHaveBeenCalledWith('/api/chapters/c2', expect.objectContaining({ method: 'PUT', body: JSON.stringify({ title: second.title, content: second.content, wordCount: 2 }) }))
+  })
+
+  it('leaves no editable chapter if loading after deletion fails, and permits retry', async () => {
+    const { result } = setup({ ok: false })
+    await flush()
+    act(() => { result.current.deleteChapter('c1') })
+    await act(async () => { await confirm() })
+    expect(result.current.selectedChapter).toBeNull()
+    expect(showError).toHaveBeenCalled()
+    act(() => { jest.advanceTimersByTime(2500) })
+    await flush()
+    expect(global.fetch).not.toHaveBeenCalledWith('/api/chapters/c2', expect.objectContaining({ method: 'PUT' }))
+    ;(global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true, json: async () => second })
+    await act(async () => { await result.current.switchChapter(metadata) })
+    expect(result.current.selectedChapter?.id).toBe('c2')
+    expect(result.current.editorContent).toBe(second.content)
+  })
+})

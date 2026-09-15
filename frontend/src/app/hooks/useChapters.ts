@@ -56,6 +56,8 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
       const response = await fetch(`/api/chapters/${chapterId}`)
       if (!response.ok) return null
       const data = await response.json()
+      // A metadata-only response must never become editable empty content.
+      if (!data || data.id !== chapterId || !Object.prototype.hasOwnProperty.call(data, 'content')) return null
       let draft
       try {
         draft = await getDraft(chapterId)
@@ -189,7 +191,7 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
         ch.id === chapter.id ? { ...ch, title: chapter.title, content, wordCount } : ch
       ))
       if (!chapterOverride) {
-        setSelectedChapter(prev => prev ? { ...prev, content, wordCount } : prev)
+        setSelectedChapter(prev => prev?.id === chapter.id ? { ...prev, content, wordCount } : prev)
       }
       setAutoSaveStatus('saved')
       setTimeout(() => setAutoSaveStatus('idle'), 2000)
@@ -240,11 +242,28 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
           showError('Kapitel konnte nicht gelöscht werden.')
           return
         }
-        const remaining = chapters.filter(ch => ch.id !== chapterId)
+        const remaining = chaptersRef.current.filter(ch => ch.id !== chapterId)
         setChapters(remaining)
-        if (selectedChapter?.id === chapterId) {
-          setSelectedChapter(remaining.length > 0 ? remaining[0] : null)
-          setEditorContent(remaining.length > 0 ? extractContent(remaining[0].content) : '')
+        if (selectedChapterRef.current?.id === chapterId) {
+          // No editable chapter until its full content has actually loaded.
+          if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
+          if (localDraftTimer.current) clearTimeout(localDraftTimer.current)
+          selectedChapterRef.current = null
+          setSelectedChapter(null)
+          setEditorContent('')
+          setPendingDraft(null)
+          loadedIntoEditorChapterIdRef.current = null
+          const next = remaining[0]
+          if (next) {
+            const full = await loadChapterContent(next.id)
+            if (latestChapterRequestRef.current !== next.id) return
+            if (!full) {
+              showError('Das nächste Kapitel konnte nicht geladen werden. Bitte wähle es erneut aus.')
+              return
+            }
+            setEditorContent(extractContent(full.content))
+            setSelectedChapter(full)
+          }
         }
       } catch (error) {
         console.error('Error deleting chapter:', error)
@@ -261,9 +280,13 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
       await saveChapter(selectedChapterRef.current, currentContent)
     }
     const full = await loadChapterContent(chapter.id)
-    const loaded = full ?? chapter
-    setEditorContent(extractContent(loaded.content))
-    setSelectedChapter(loaded)
+    if (latestChapterRequestRef.current !== chapter.id) return
+    if (!full) {
+      showError('Kapitel konnte nicht geladen werden. Das bisherige Kapitel bleibt geöffnet.')
+      return
+    }
+    setEditorContent(extractContent(full.content))
+    setSelectedChapter(full)
   }
 
   const restoreDraft = () => {
