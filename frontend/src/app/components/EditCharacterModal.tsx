@@ -1,5 +1,6 @@
 'use client'
 
+import { AliasEditor } from './AliasEditor'
 import React, { useState, useRef } from 'react'
 import { Character, Place } from './types'
 import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY } from '@/lib/theme'
@@ -93,6 +94,7 @@ export function EditCharacterModal({ isOpen, onClose, character, characters, pla
           Charakter bearbeiten
         </h2>
         <MastheadDivider surface="bg-stone-50 dark:bg-zinc-900" className="mb-4" />
+        <AliasEditor key={character.id} id={character.id} kind="characters" aliases={character.aliases} />
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex items-center gap-4">
             <div className={`w-16 h-16 ${RADIUS} ${ACCENT} flex items-center justify-center text-white font-semibold text-xl flex-shrink-0 overflow-hidden`}>

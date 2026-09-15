@@ -1,3 +1,4 @@
+import { parseAliases } from '@/lib/storyTools'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthContext } from '@/lib/auth'
@@ -56,6 +57,8 @@ export async function POST(request: NextRequest) {
     userId = context.userId
 
     const body = await request.json()
+    const aliases = parseAliases(body.aliases)
+    if (aliases === null) return NextResponse.json({ error: 'Aliase: maximal 30 Namen mit je 100 Zeichen.' }, { status: 400 })
     const { name, description, location, climate, importance, history, politics, sensoryDetails, projectId, visibility, parentId } = body
 
     if (visibility !== undefined && !isValidVisibility(visibility)) {
@@ -90,6 +93,7 @@ export async function POST(request: NextRequest) {
 
     const place = await prisma.place.create({
       data: {
+        ...(aliases !== undefined ? { aliases } : {}),
         name: name || 'Neuer Ort',
         description: description || '',
         location: location || '',

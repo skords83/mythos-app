@@ -35,6 +35,12 @@ export function usePlaces({ selectedProject, showError, requestConfirm, onConfir
     }
   }, [selectedProject])
 
+  useEffect(() => {
+    const reload = () => { if (selectedProject) void loadPlaces(selectedProject.id) }
+    window.addEventListener('story-entities-updated', reload)
+    return () => window.removeEventListener('story-entities-updated', reload)
+  }, [selectedProject?.id])
+
   const addPlace = async (name: string, description: string, location: string, climate: string, importance: string, history: string, politics: string, sensoryDetails: string, visibility: 'PRIVATE' | 'FAMILY', parentId: string | null = null) => {
     if (!selectedProject) return
     try {

@@ -20,8 +20,9 @@ interface EditTimelineEventModalProps {
     description: string,
     date: string,
     type: 'LORE' | 'PLOT',
-    visibility: 'PRIVATE' | 'FAMILY'
-  ) => void
+    visibility: 'PRIVATE' | 'FAMILY',
+    details?: {duration:string;order:number;chapterId:string|null}
+  ) => Promise<boolean | void> | void
 }
 
 export function EditTimelineEventModal({
@@ -34,6 +35,18 @@ export function EditTimelineEventModal({
   factions,
   onUpdate,
 }: EditTimelineEventModalProps) {
+  const [chapterId, setChapterId] = useState('')
+  const [chapterOptions, setChapterOptions] = useState<{id:string;title:string}[]>([])
+  React.useEffect(() => {
+    let cancelled = false
+    setChapterOptions([])
+    if (isOpen && timelineEvent?.projectId) fetch(`/api/projects/${timelineEvent.projectId}/story`).then(r => { if (!r.ok) throw new Error(); return r.json() }).then(d => { if (!cancelled) setChapterOptions(d.chapters) }).catch(() => { if (!cancelled) setSaveError('Kapitel konnten nicht geladen werden.') })
+    return () => { cancelled = true }
+  }, [isOpen, timelineEvent?.projectId])
+  const [duration, setDuration] = useState('')
+  const [order, setOrder] = useState(0)
+  const [saveError, setSaveError] = useState('')
+  const [saving, setSaving] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [date, setDate] = useState('')
@@ -42,6 +55,9 @@ export function EditTimelineEventModal({
 
   React.useEffect(() => {
     if (timelineEvent) {
+      setChapterId(timelineEvent.chapterId || '')
+      setDuration(timelineEvent.duration || '')
+      setOrder(timelineEvent.order)
       setTitle(timelineEvent.title)
       setDescription(timelineEvent.description || '')
       setDate(timelineEvent.date || '')
@@ -52,10 +68,10 @@ export function EditTimelineEventModal({
 
   if (!isOpen || !timelineEvent) return null
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onUpdate(timelineEvent.id, title, description, date, type, visibility)
-    onClose()
+    setSaving(true); setSaveError('')
+    try { const ok = await onUpdate(timelineEvent.id, title, description, date, type, visibility, {duration,order,chapterId:chapterId || null}); if (ok === false) setSaveError('Ereignis konnte nicht gespeichert werden.'); else onClose() } catch { setSaveError('Ereignis konnte nicht gespeichert werden.') } finally { setSaving(false) }
   }
 
   return (
@@ -66,6 +82,10 @@ export function EditTimelineEventModal({
         </h2>
         <MastheadDivider surface="bg-stone-50 dark:bg-zinc-900" className="mb-4" />
         <form onSubmit={handleSubmit} className="space-y-4">
+          <label className="block text-sm">Kapitel (optional)<select className={INPUT} value={chapterId} onChange={e=>setChapterId(e.target.value)}><option value="">Keine Zuordnung</option>{chapterId && !chapterOptions.some(c=>c.id===chapterId) && <option value={chapterId}>Zugeordnetes Kapitel</option>}{chapterOptions.map(c=><option key={c.id} value={c.id}>{c.title}</option>)}</select></label>
+          <label className="block text-sm">Dauer (optional)<input className={INPUT} value={duration} maxLength={100} onChange={e=>setDuration(e.target.value)} placeholder="z. B. drei Tage" /></label>
+          <label className="block text-sm">Chronologische Position<input className={INPUT} type="number" min={0} max={1000000} value={order} onChange={e=>setOrder(Number(e.target.value))}/></label>
+          {saveError && <p role="alert">{saveError}</p>}
           <div>
             <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>
               Titel *
@@ -144,7 +164,7 @@ export function EditTimelineEventModal({
               Abbrechen
             </button>
             <button
-              type="submit"
+              type="submit" disabled={saving}
               className={`flex-1 px-4 py-2 ${ACCENT} text-white ${RADIUS} transition-colors`}
             >
               Speichern

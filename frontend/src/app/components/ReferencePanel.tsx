@@ -85,7 +85,7 @@ export function ReferencePanel({ chapters, characters, places, currentChapterId,
   const loadedChapter = chapterResult?.id === chapterId ? chapterResult : null
 
   return (
-    <div className={`w-[380px] shrink-0 ${BORDER} ${RADIUS} ${SURFACE} overflow-hidden sticky top-6 max-h-[calc(100vh-6rem)] flex flex-col`}>
+    <div className={`w-full lg:w-[380px] shrink-0 ${BORDER} ${RADIUS} ${SURFACE} overflow-hidden sticky top-6 max-h-[calc(100vh-6rem)] flex flex-col`}>
       <div className={`flex items-center gap-1 p-2 border-b ${HAIRLINE} ${SURFACE_ALT}`}>
         {(['chapter', 'character', 'place'] as ReferenceMode[]).map((m) => (
           <button

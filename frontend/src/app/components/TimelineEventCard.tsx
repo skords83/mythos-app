@@ -34,6 +34,7 @@ export function TimelineEventCard({ timelineEvent, onEdit, onDelete }: TimelineE
               <Trash2 size={16} strokeWidth={ICON_PROPS.strokeWidth} />
             </button>
           </div>
+          {timelineEvent.duration && <p className={`text-xs ${TEXT_MUTED} mt-1`}>Dauer: {timelineEvent.duration}</p>}
           {timelineEvent.date && (
             <p className={`text-xs ${TEXT_MUTED} mt-1`}>{timelineEvent.date}</p>
           )}

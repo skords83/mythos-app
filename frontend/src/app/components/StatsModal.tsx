@@ -1,5 +1,7 @@
 'use client'
 
+import { WritingProgress } from './WritingProgress'
+import { Chapter } from './types'
 import React, { useMemo } from 'react'
 import { X, Flame, Trophy, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { OVERLAY, MODAL_PANEL, TEXT_PRIMARY, TEXT_MUTED, MONO_LABEL_MUTED, HAIRLINE, ICON_PROPS } from '@/lib/theme'
@@ -7,13 +9,15 @@ import { ActivityHeatmap } from './ActivityHeatmap'
 import { DailyWordCountEntry, computeCurrentStreak, computeLongestStreak, computeWeekOverWeekChange } from '@/lib/activityStats'
 
 interface StatsModalProps {
+  projectId?: string
+  chapters?: Chapter[]
   isOpen: boolean
   onClose: () => void
   entries: DailyWordCountEntry[]
   todayDateString: string
 }
 
-export function StatsModal({ isOpen, onClose, entries, todayDateString }: StatsModalProps) {
+export function StatsModal({ isOpen, onClose, entries, todayDateString, projectId, chapters = [] }: StatsModalProps) {
   const currentStreak = useMemo(() => computeCurrentStreak(entries, todayDateString), [entries, todayDateString])
   const longestStreak = useMemo(() => computeLongestStreak(entries), [entries])
   const weekChange = useMemo(() => computeWeekOverWeekChange(entries, todayDateString), [entries, todayDateString])
@@ -66,6 +70,7 @@ export function StatsModal({ isOpen, onClose, entries, todayDateString }: StatsM
           </div>
         </div>
 
+        {projectId && <WritingProgress key={projectId} projectId={projectId} chapters={chapters} today={todayDateString} />}
         <ActivityHeatmap entries={entries} todayDateString={todayDateString} />
       </div>
     </div>

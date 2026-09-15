@@ -1,0 +1,36 @@
+'use client'
+import { useEffect, useMemo, useState } from 'react'
+import { occurrences, mentionLabels, discoverNames } from '@/lib/storyTools'
+import { INPUT, BORDER, SURFACE, TEXT_MUTED } from '@/lib/theme'
+import { CHARACTER_PLACE_RELATION_TYPES } from './characterPlaceRelations'
+import { AliasEditor } from './AliasEditor'
+export interface StoryData {
+  chapters: {id:string;title:string;text:string;linkedNames?:Record<string,string[]>;order:number;wordCount:number;updatedAt:string}[]
+  entities: {id:string;kind:string;name:string;aliases:string[];appearance?:string;personality?:string;description?:string;backstory?:string}[]
+  scenes: {id:string;name:string;chapterId:string;order:number}[]
+  events: {id:string;title:string;order:number}[]
+  relations: {id:string;sourceId:string;sourceType:string;targetId:string;targetType:string;relationType:string;label?:string}[]
+  suggestions: {name:string;count:number}[]
+}
+export function StoryExplorer({projectId, selection, currentChapterId, currentText, currentHtml, onNavigate}: {projectId:string;selection?:{id:string;kind:string}|null;currentChapterId:string;currentText:string;currentHtml?:string;onNavigate?:(id:string)=>void}) {
+  const [data,setData]=useState<StoryData|null>(null),[error,setError]=useState(''),[revision,setRevision]=useState(0)
+  const [chosen,setChosen]=useState(''),[all,setAll]=useState(false),[busy,setBusy]=useState(false),[ignored,setIgnored]=useState<string[]>([])
+  useEffect(()=>{setChosen(selection ? `${selection.kind}:${selection.id}` : '');setAll(false)},[selection])
+  useEffect(()=>{let cancelled=false;setData(null);setError('');fetch(`/api/projects/${projectId}/story`).then(r=>{if(!r.ok)throw Error();return r.json()}).then(d=>{if(!cancelled)setData(d)}).catch(()=>{if(!cancelled)setError('Explorer konnte nicht geladen werden.')});return()=>{cancelled=true}},[projectId,revision])
+  const entity=data?.entities.find(e=>`${e.kind}:${e.id}`===chosen)
+  const matches=useMemo(()=>entity&&data?data.chapters.flatMap(c=>occurrences(c.id===currentChapterId?currentText:c.text,[entity.name,...entity.aliases,...((c.id===currentChapterId ? mentionLabels(currentHtml) : c.linkedNames)?.[`${entity.kind}:${entity.id}`] ?? [])]).map(m=>({...m,chapter:c}))).sort((a,b)=>b.chapter.order-a.chapter.order||b.offset-a.offset):[],[data,entity,currentChapterId,currentText,currentHtml])
+  const related=data?.relations.filter(r=>(r.sourceId===entity?.id&&r.sourceType===entity?.kind)||(r.targetId===entity?.id&&r.targetType===entity?.kind))??[]
+  const suggestions = useMemo(() => data ? discoverNames(data.chapters.map(c => c.id === currentChapterId ? currentText : c.text), data.entities.flatMap(e => [e.name, ...e.aliases])) : [], [data, currentChapterId, currentText])
+  if(!data)return <div className="p-3" role="status">{error||'Story Explorer wird geladen…'}{error&&<button onClick={()=>setRevision(v=>v+1)}>Erneut versuchen</button>}</div>
+  const relationLabels: Record<string, string> = {PARENT_OF:'ist Elternteil von', CHILD_OF:'ist Kind von', SIBLING_OF:'ist Geschwister von', PARTNER_OF:'ist Partner/in von', FRIEND_OF:'ist befreundet mit', RIVAL_OF:'rivalisiert mit', ENEMY_OF:'ist verfeindet mit', MENTOR_OF:'ist Mentor/in von', APPEARS_IN:'kommt vor in', INVOLVES:'bezieht ein'}
+  const entityName = (id: string) => data.entities.find(e=>e.id===id)?.name ?? data.scenes.find(e=>e.id===id)?.name ?? data.events.find(e=>e.id===id)?.title ?? ''
+  const describeRelation = (r: StoryData['relations'][number]) => `${entityName(r.sourceId)} ${r.label || relationLabels[r.relationType] || CHARACTER_PLACE_RELATION_TYPES.find(t=>t.value===r.relationType)?.characterLabel || r.relationType} ${entityName(r.targetId)}`
+  return <section className={`p-3 space-y-4 ${BORDER} ${SURFACE}`}><h3 className="font-medium">Story Explorer</h3>
+    <label className="block text-sm">Eintrag<select className={INPUT} value={chosen} onChange={e=>{setChosen(e.target.value);setAll(false)}}><option value="">Namen entdecken</option>{data.entities.map(e=><option key={`${e.kind}:${e.id}`} value={`${e.kind}:${e.id}`}>{e.name} · {e.kind==='CHARACTER'?'Charakter':e.kind==='PLACE'?'Ort':'Item'}</option>)}</select></label>
+    {entity?<><h4 className="text-lg">{entity.name}</h4><p className="text-sm whitespace-pre-wrap">{entity.personality||entity.description||entity.appearance||entity.backstory||'Noch kein Kurzprofil vorhanden.'}</p>
+      <AliasEditor key={entity.id} id={entity.id} kind={entity.kind==='CHARACTER'?'characters':entity.kind==='PLACE'?'places':'items'} aliases={entity.aliases} onSaved={()=>setRevision(v=>v+1)}/>
+      {['CHARACTER','PLACE','ITEM','SCENE','EVENT'].map(kind=>{const rows=related.flatMap(r=>{const source=r.sourceId===entity.id&&r.sourceType===entity.kind;const id=source?r.targetId:r.sourceId;const type=source?r.targetType:r.sourceType;if(type!==kind)return [];const target=kind==='SCENE'?data.scenes.find(s=>s.id===id):kind==='EVENT'?data.events.find(e=>e.id===id):data.entities.find(e=>e.id===id&&e.kind===kind);return target?[{r,target}]:[]});return rows.length>0&&<div key={kind}><h4 className="text-sm font-medium">{kind==='PLACE'?'Relevante Orte':kind==='SCENE'?'Verknüpfte Szenen':kind==='EVENT'?'Ereignisse':'Beziehungen'}</h4>{rows.map(({r,target})=><button key={r.id} className="block text-left text-sm underline py-1" onClick={()=>{if('chapterId'in target)onNavigate?.(target.chapterId);else if('kind'in target)setChosen(`${target.kind}:${target.id}`)}}>{describeRelation(r)}</button>)}</div>})}
+      <div><h4 className="text-sm font-medium">{all?'Alle Vorkommen im Manuskript':'Letzte Erwähnungen (Manuskriptreihenfolge)'} · {matches.length}</h4>{matches.length===0&&<p className={`text-sm ${TEXT_MUTED}`}>Keine Vorkommen gefunden.</p>}{(all?matches:matches.slice(0,5)).map(m=><button key={`${m.chapter.id}:${m.offset}`} onClick={()=>onNavigate?.(m.chapter.id)} className="block text-left text-sm py-2"><strong>{m.chapter.title}</strong><p className={TEXT_MUTED}>{m.snippet}</p></button>)}<button className="text-sm underline" onClick={()=>setAll(v=>!v)}>{all?'Weniger anzeigen':'Alle Vorkommen im Manuskript'}</button></div>
+    </>:<><p className={`text-xs ${TEXT_MUTED}`}>Wiederholte, großgeschriebene Wörter sind mögliche Namen. Prüfe den Vorschlag und wähle den passenden Typ.</p>{suggestions.filter(s=>!ignored.includes(s.name)).map(s=><div key={s.name} className="space-y-2 border-b py-2"><p className="text-sm">{s.name} kommt {s.count}× vor</p><div className="flex flex-wrap gap-2">{[['characters','Charakter'],['places','Ort'],['items','Item']].map(([path,label])=><button disabled={busy} className="text-xs underline" key={path} onClick={async()=>{setBusy(true);setError('');try{const r=await fetch(`/api/${path}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:s.name,projectId,visibility:'PRIVATE'})});if(!r.ok)throw Error();window.dispatchEvent(new Event('story-entities-updated'));setRevision(v=>v+1)}catch{setError('Eintrag konnte nicht angelegt werden.')}finally{setBusy(false)}}}>{label} anlegen</button>)}<button className="text-xs" onClick={()=>setIgnored(v=>[...v,s.name])}>Ignorieren</button></div></div>)}{!suggestions.length&&<p className="text-sm">Keine wiederholten unbekannten Namen gefunden.</p>}</>}{error&&<p role="alert">{error}</p>}
+  </section>
+}

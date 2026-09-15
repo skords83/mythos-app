@@ -46,5 +46,5 @@ export const CharacterMention = Mention.extend({
 export function filterCharacters(query: string, characters: Character[]): Character[] {
   const q = query.trim().toLowerCase()
   if (!q) return characters
-  return characters.filter(c => c.name.toLowerCase().includes(q))
+  return characters.filter(c => [c.name, ...(c.aliases ?? [])].some(name => name.toLowerCase().includes(q)))
 }

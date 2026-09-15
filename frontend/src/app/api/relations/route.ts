@@ -95,6 +95,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Ziel-Entität nicht gefunden' }, { status: 404 })
     }
 
+    if (['BEFORE', 'TAKES_PLACE_AT', 'REFERENCES_PAST'].includes(relationType)) {
+      if (!isRelationVisible(context, source, target)) return NextResponse.json({error:'Entität nicht gefunden'}, {status:404})
+      if (targetType !== 'EVENT' || sourceType !== (relationType === 'BEFORE' ? 'EVENT' : 'SCENE')) return NextResponse.json({error:'Ungültige Timeline-Verknüpfung'}, {status:400})
+      const event = await prisma.timelineEvent.findFirst({where:{id:targetId}})
+      const origin = sourceType === 'EVENT' ? await prisma.timelineEvent.findFirst({where:{id:sourceId}}) : await prisma.scene.findFirst({where:{id:sourceId},include:{chapter:true}})
+      const originProject = origin && ('chapter' in origin ? origin.chapter.projectId : origin.projectId)
+      if (!event?.projectId || event.projectId !== originProject) return NextResponse.json({error:'Verknüpfungen müssen im selben Projekt liegen'}, {status:400})
+      if (relationType === 'TAKES_PLACE_AT' && await prisma.relation.findFirst({where:{sourceType,sourceId,relationType}})) return NextResponse.json({error:'Die Szene hat bereits einen Zeitpunkt. Entferne zuerst die bestehende Zuordnung.'}, {status:409})
+      if (await prisma.relation.findFirst({where:{sourceType,sourceId,targetType,targetId,relationType}})) return NextResponse.json({error:'Verknüpfung besteht bereits'}, {status:409})
+    }
     const relation = await prisma.relation.create({
       data: {
         sourceType,

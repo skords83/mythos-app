@@ -43,6 +43,12 @@ export function useCharacters({ selectedProject, showError, requestConfirm, onCo
     }
   }, [selectedProject])
 
+  useEffect(() => {
+    const reload = () => { if (selectedProject) void loadCharacters(selectedProject.id) }
+    window.addEventListener('story-entities-updated', reload)
+    return () => window.removeEventListener('story-entities-updated', reload)
+  }, [selectedProject?.id])
+
   const addCharacter = async (name: string, appearance: string, personality: string, backstory: string, motivation: string, flaw: string, secrets: string, role: '' | 'PROTAGONIST' | 'ANTAGONIST' | 'MENTOR', visibility: 'PRIVATE' | 'FAMILY') => {
     if (!selectedProject) return
     try {

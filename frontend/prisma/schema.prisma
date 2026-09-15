@@ -109,6 +109,9 @@ model UserSettings {
 }
 
 model Project {
+  totalWordGoal Int?
+  writingSessions WritingSession[]
+  growthSnapshots GrowthSnapshot[]
   id String @id @default(cuid())
   title String
   description String?
@@ -151,6 +154,7 @@ model DailyWordCount {
 }
 
 model Chapter {
+  timelineEvents TimelineEvent[]
   id        String   @id @default(cuid())
   title     String
   content   Json?
@@ -188,6 +192,7 @@ model ChapterVersion {
 }
 
 model Character {
+  aliases String[] @default([])
   id          String     @id @default(cuid())
   name        String
   appearance  String?
@@ -222,6 +227,7 @@ model Note {
 }
 
 model Place {
+  aliases String[] @default([])
   id          String     @id @default(cuid())
   name        String
   description String?
@@ -267,6 +273,7 @@ model PlaceImage {
 }
 
 model Item {
+  aliases String[] @default([])
   id           String     @id @default(cuid())
   name         String
   description  String?
@@ -347,6 +354,9 @@ model Comment {
 // `date` is a free-text in-world date/era label since fictional calendars
 // don't fit a real DateTime.
 model TimelineEvent {
+  chapterId String?
+  chapter Chapter? @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  duration String?
   id          String            @id @default(cuid())
   title       String
   description String?
@@ -448,4 +458,24 @@ model Relation {
 model Upload {
   filename String @id
   ownerIds String[]
+}
+
+model WritingSession {
+  id String @id
+  projectId String
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  date String
+  activeSeconds Int @default(0)
+  words Int @default(0)
+  startedAt DateTime @default(now())
+  @@index([projectId, date])
+}
+model GrowthSnapshot {
+  id String @id @default(cuid())
+  projectId String
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  date String
+  wordCount Int
+  chapters Json
+  @@unique([projectId, date])
 }

@@ -2,6 +2,8 @@
 
 import { MutableRefObject, useEffect, useRef, useState } from 'react'
 import { RichTextEditor, CommentEditorApi } from './RichTextEditor'
+import { manuscriptText } from '@/lib/storyTools'
+import { StoryExplorer } from './StoryExplorer'
 import { ReferencePanel } from './ReferencePanel'
 import { CommentsPanel } from './CommentsPanel'
 import { ChapterVersionSwitcher } from './ChapterVersionSwitcher'
@@ -19,6 +21,8 @@ import { stripHtml } from '@/lib/text'
 type SidePanel = 'none' | 'reference' | 'comments'
 
 interface ManuscriptViewProps {
+  onWritingActivity?: (before: string, after: string) => void
+  onNavigateChapter?: (id: string) => void
   selectedChapter: Chapter | null
   chapters: Chapter[]
   places: Place[]
@@ -45,6 +49,8 @@ interface ManuscriptViewProps {
 
 export function ManuscriptView({
   selectedChapter,
+  onNavigateChapter,
+  onWritingActivity,
   chapters,
   places,
   items,
@@ -67,6 +73,7 @@ export function ManuscriptView({
   requestConfirm,
   onConfirmed,
 }: ManuscriptViewProps) {
+  const [explorerSelection, setExplorerSelection] = useState<{id:string;kind:string}|null>(null)
   const [sidePanel, setSidePanel] = useState<SidePanel>('none')
   const splitScreenOpen = sidePanel !== 'none'
 
@@ -137,6 +144,7 @@ export function ManuscriptView({
   }
 
   const handleEditorChange = (html: string) => {
+    if (!activeVersionId) onWritingActivity?.(editorContent, html)
     if (activeVersionId) {
       setActiveVersionContent(html)
     } else {
@@ -163,7 +171,7 @@ export function ManuscriptView({
   return (
     <div className={`${splitScreenOpen ? 'max-w-6xl' : 'max-w-3xl'} mx-auto px-8 py-12 relative`}>
       {selectedChapter ? (
-        <div className={splitScreenOpen ? 'flex gap-6 items-start' : ''}>
+        <div className={splitScreenOpen ? 'flex flex-col lg:flex-row gap-6 items-start' : ''}>
           <div className={splitScreenOpen ? 'flex-1 min-w-0' : ''}>
             {pendingDraft && pendingDraft.chapterId === selectedChapter.id && (
               <DraftRecoveryBanner draft={pendingDraft} onRestore={onRestoreDraft} onDiscard={onDiscardDraft} />
@@ -191,7 +199,7 @@ export function ManuscriptView({
               characters={characters}
               places={places}
               items={items}
-              onMentionClick={onMentionClick}
+              onMentionClick={result => { setExplorerSelection({id:result.id,kind:result.kind}); setSidePanel('reference') }}
               splitScreenActive={sidePanel === 'reference'}
               onToggleSplitScreen={() => setSidePanel((p) => (p === 'reference' ? 'none' : 'reference'))}
               typewriterMode={focusMode}
@@ -208,6 +216,10 @@ export function ManuscriptView({
             />
           </div>
           {sidePanel === 'reference' && (
+            <aside className="w-full lg:w-[380px] shrink-0 space-y-3 lg:sticky lg:top-6 max-h-[calc(100vh-6rem)] overflow-y-auto">
+            <button className="text-sm underline" onClick={() => setSidePanel('none')}>Story Explorer schließen</button>
+            <StoryExplorer key={selectedChapter.projectId} projectId={selectedChapter.projectId} selection={explorerSelection} currentChapterId={selectedChapter.id} currentText={manuscriptText(editorContent)} currentHtml={editorContent} onNavigate={onNavigateChapter}/>
+            <details><summary className="text-sm cursor-pointer">Weitere Referenz daneben lesen</summary>
             <ReferencePanel
               chapters={chapters}
               characters={characters}
@@ -215,6 +227,8 @@ export function ManuscriptView({
               currentChapterId={selectedChapter.id}
               onClose={() => setSidePanel('none')}
             />
+            </details>
+            </aside>
           )}
           {sidePanel === 'comments' && (
             <CommentsPanel

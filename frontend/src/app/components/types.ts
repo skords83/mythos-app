@@ -1,4 +1,5 @@
 export interface Project {
+  totalWordGoal?: number | null
   id: string
   title: string
   description: string | null
@@ -26,6 +27,7 @@ export interface Chapter {
 }
 
 export interface Character {
+  aliases?: string[]
   id: string
   name: string
   appearance: string | null
@@ -52,6 +54,7 @@ export interface PlaceImage {
 }
 
 export interface Place {
+  aliases?: string[]
   id: string
   name: string
   description: string | null
@@ -72,6 +75,7 @@ export interface Place {
 }
 
 export interface Item {
+  aliases?: string[]
   id: string
   name: string
   description: string | null
@@ -128,6 +132,8 @@ export interface ChapterVersion {
 }
 
 export interface TimelineEvent {
+  chapterId?: string | null
+  duration?: string | null
   id: string
   title: string
   description: string | null

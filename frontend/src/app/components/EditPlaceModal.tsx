@@ -1,5 +1,6 @@
 'use client'
 
+import { AliasEditor } from './AliasEditor'
 import React, { useState } from 'react'
 import { Place } from './types'
 import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY } from '@/lib/theme'
@@ -62,6 +63,7 @@ export function EditPlaceModal({ isOpen, onClose, place, onUpdate }: EditPlaceMo
           Ort bearbeiten
         </h2>
         <MastheadDivider surface="bg-stone-50 dark:bg-zinc-900" className="mb-4" />
+        <AliasEditor key={place.id} id={place.id} kind="places" aliases={place.aliases} />
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-1`}>

@@ -1,5 +1,6 @@
 'use client'
 
+import { TimelinePlanner } from './TimelinePlanner'
 import { useState } from 'react'
 import { Plus, Clock } from 'lucide-react'
 import { TimelineEventCard } from './TimelineEventCard'
@@ -12,13 +13,14 @@ import { HairlineButton } from './HairlineButton'
 type FilterType = 'ALL' | 'LORE' | 'PLOT'
 
 interface TimelineViewProps {
+  projectId?: string
   timelineEvents: TimelineEvent[]
   onAddClick: () => void
   onEdit: (timelineEvent: TimelineEvent) => void
   onDelete: (id: string) => void
 }
 
-export function TimelineView({ timelineEvents, onAddClick, onEdit, onDelete }: TimelineViewProps) {
+export function TimelineView({ projectId, timelineEvents, onAddClick, onEdit, onDelete }: TimelineViewProps) {
   const [filter, setFilter] = useState<FilterType>('ALL')
 
   const filteredEvents = timelineEvents.filter((e) => filter === 'ALL' || e.type === filter)
@@ -39,6 +41,7 @@ export function TimelineView({ timelineEvents, onAddClick, onEdit, onDelete }: T
           </button>
         ))}
       </div>
+      {projectId && <TimelinePlanner key={projectId} projectId={projectId} revision={timelineEvents.map(e=>`${e.id}:${e.updatedAt}`).join()} />}
       <div className="space-y-3">
         {filteredEvents.map((event) => (
           <TimelineEventCard

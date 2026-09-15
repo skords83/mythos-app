@@ -61,8 +61,8 @@ export const EntityMention = Node.create({
   },
 })
 
-export function filterByName<T extends { name: string }>(query: string, entities: T[]): T[] {
+export function filterByName<T extends { name: string; aliases?: string[] }>(query: string, entities: T[]): T[] {
   const q = query.trim().toLowerCase()
   if (!q) return entities
-  return entities.filter(e => e.name.toLowerCase().includes(q))
+  return entities.filter(e => [e.name, ...(e.aliases ?? [])].some(name => name.toLowerCase().includes(q)))
 }

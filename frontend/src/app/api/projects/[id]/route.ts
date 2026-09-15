@@ -59,7 +59,9 @@ export async function PUT(
 const body = await request.json()
   const { title, description, wordGoal, coverImage, wordCountBaseline, wordCountBaselineDate } = body
 
+  if (body.totalWordGoal !== undefined && body.totalWordGoal !== null && (!Number.isInteger(body.totalWordGoal) || body.totalWordGoal < 1 || body.totalWordGoal > 10000000)) return NextResponse.json({ error: 'Ungültiges Gesamtziel' }, { status: 400 })
   const updateData: any = {}
+  if (body.totalWordGoal !== undefined) updateData.totalWordGoal = body.totalWordGoal
   if (title !== undefined) updateData.title = title
   if (description !== undefined) updateData.description = description
   if (wordGoal !== undefined) updateData.wordGoal = wordGoal

@@ -15,7 +15,7 @@ import { resolveMentionClick, MentionClickResult } from '@/lib/tiptap/mentionCli
 import { resolveCommentClick, CommentClickResult } from '@/lib/tiptap/commentClick'
 import { CommentMark, applyCommentResolvedState, removeCommentMark, commentIdsInDoc } from '@/lib/tiptap/commentMark'
 import { BlockDragHandle, findTopLevelBlockAt, moveTopLevelBlock } from '@/lib/tiptap/blockDragHandleExtension'
-import { PassiveEntityDetection, PassiveDetectionDataRef } from '@/lib/tiptap/passiveEntityDetection'
+import { PassiveEntityDetection, PassiveDetectionDataRef, passiveEntityDetectionKey } from '@/lib/tiptap/passiveEntityDetection'
 import { NewCommentInput } from './NewCommentInput'
 import type { Character, Item, Place, Comment } from './types'
 
@@ -50,6 +50,8 @@ interface RichTextEditorProps {
 export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu schreiben...', onEditorReady, characters, places, items, onMentionClick, splitScreenActive, onToggleSplitScreen, typewriterMode = false, spellcheckEnabled = true, spellcheckLocale = null, onCommentClick, commentsPanelActive, onToggleCommentsPanel, onAddComment, onCommentEditorReady }: RichTextEditorProps) {
   // useEditor has no deps array below (editor is created once) — mirror useChapters.ts's
   // stale-closure fix so suggestion filtering and click handling always see current data.
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
   const mentionDataRef = useRef<MentionableData>({ characters, places, items })
   useEffect(() => { mentionDataRef.current = { characters, places, items } }, [characters, places, items])
 
@@ -57,17 +59,17 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
   // no new component props needed, it just flags names already known elsewhere in the project.
   const passiveDataRef: PassiveDetectionDataRef = useRef({
     candidates: [
-      ...characters.map((c) => ({ id: c.id, name: c.name, kind: 'CHARACTER' as const })),
-      ...places.map((p) => ({ id: p.id, name: p.name, kind: 'PLACE' as const })),
-      ...items.map((i) => ({ id: i.id, name: i.name, kind: 'ITEM' as const })),
+      ...characters.flatMap((c) => [c.name, ...(c.aliases ?? [])].map(name => ({ id: c.id, name, kind: 'CHARACTER' as const }))),
+      ...places.flatMap((p) => [p.name, ...(p.aliases ?? [])].map(name => ({ id: p.id, name, kind: 'PLACE' as const }))),
+      ...items.flatMap((i) => [i.name, ...(i.aliases ?? [])].map(name => ({ id: i.id, name, kind: 'ITEM' as const }))),
     ],
   })
   useEffect(() => {
     passiveDataRef.current = {
       candidates: [
-        ...characters.map((c) => ({ id: c.id, name: c.name, kind: 'CHARACTER' as const })),
-        ...places.map((p) => ({ id: p.id, name: p.name, kind: 'PLACE' as const })),
-        ...items.map((i) => ({ id: i.id, name: i.name, kind: 'ITEM' as const })),
+        ...characters.flatMap((c) => [c.name, ...(c.aliases ?? [])].map(name => ({ id: c.id, name, kind: 'CHARACTER' as const }))),
+        ...places.flatMap((p) => [p.name, ...(p.aliases ?? [])].map(name => ({ id: p.id, name, kind: 'PLACE' as const }))),
+        ...items.flatMap((i) => [i.name, ...(i.aliases ?? [])].map(name => ({ id: i.id, name, kind: 'ITEM' as const }))),
       ],
     }
   }, [characters, places, items])
@@ -95,7 +97,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
     ],
     content: content || '',
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML())
+      onChangeRef.current(editor.getHTML())
     },
     editorProps: {
       attributes: {
@@ -119,12 +121,14 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
 
   // The editor may become ready after content has loaded. Initialize from the
   // current prop once per editor instance; never reparse on typing/autosave.
+  useEffect(() => { if (editor) editor.view.dispatch(editor.state.tr.setMeta(passiveEntityDetectionKey, {rescan:true})) }, [editor, characters, places, items])
+
   useEffect(() => {
     if (!editor) return
     editor.commands.setContent(content || '', false)
     if (onEditorReady) {
       onEditorReady((newContent: string) => {
-        editor.commands.setContent(newContent || '')
+        editor.commands.setContent(newContent || '', false)
       })
     }
   }, [editor])
@@ -291,7 +295,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
           active={commentsPanelActive} title="Kommentare"><MessageSquare {...ICON_PROPS} /></ToolButton>
         <div className={`w-px h-6 ${DIVIDER} mx-1`} />
         <ToolButton onClick={onToggleSplitScreen}
-          active={splitScreenActive} title="Referenz-Modus (Split-Screen)"><Columns2 {...ICON_PROPS} /></ToolButton>
+          active={splitScreenActive} title="Story Explorer und Referenzen"><Columns2 {...ICON_PROPS} /></ToolButton>
       </div>
       <EditorContent editor={editor} />
       {newCommentDraft && (

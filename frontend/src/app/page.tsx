@@ -1,5 +1,6 @@
 'use client'
 
+import { useWritingSession } from './hooks/useWritingSession'
 import React, { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Book, Plus, Save } from 'lucide-react'
@@ -101,6 +102,7 @@ export default function Page() {
     restoreDraft,
     discardDraft,
   } = useChapters({ selectedProject, showError, requestConfirm, onConfirmed })
+  const trackWriting = useWritingSession(selectedProject?.id, selectedChapter?.id, showError)
 
   const {
     expandedChapterIds,
@@ -182,6 +184,11 @@ export default function Page() {
   const commentActionsRef = useRef<CommentActions | null>(null)
 
   const totalWordCount = Array.isArray(chapters) ? chapters.reduce((sum, ch) => sum + (ch.wordCount || 0), 0) : 0
+
+  // Refresh the historical snapshot after autosave has persisted the new word count.
+  useEffect(() => {
+    if (chaptersLoaded) window.dispatchEvent(new Event('writing-session-flush'))
+  }, [totalWordCount, chaptersLoaded])
 
   const todayDateString = new Date().toISOString().slice(0, 10)
   const todayWordCount = selectedProject && selectedProject.wordCountBaselineDate === todayDateString
@@ -430,6 +437,8 @@ export default function Page() {
         <div className="flex-1 overflow-auto">
           {activeTab === 'manuscript' && (
             <ManuscriptView
+              onWritingActivity={trackWriting}
+              onNavigateChapter={id => { const chapter = chapters.find(c => c.id === id); if (chapter) switchChapter(chapter) }}
               selectedChapter={selectedChapter}
               chapters={chapters}
               places={places}
@@ -523,6 +532,7 @@ export default function Page() {
 
           {activeTab === 'timeline' && (
             <TimelineView
+              projectId={selectedProject?.id}
               timelineEvents={timelineEvents}
               onAddClick={() => setShowTimelineEventModal(true)}
               onEdit={setEditingTimelineEvent}
@@ -659,6 +669,8 @@ export default function Page() {
         selectedChapter={selectedChapter}
       />
       <StatsModal
+        projectId={selectedProject?.id}
+        chapters={chapters}
         isOpen={showStatsModal}
         onClose={() => setShowStatsModal(false)}
         entries={dailyWordCounts}

@@ -43,6 +43,12 @@ export function useItems({ selectedProject, showError, requestConfirm, onConfirm
     }
   }, [selectedProject])
 
+  useEffect(() => {
+    const reload = () => { if (selectedProject) void loadItems(selectedProject.id) }
+    window.addEventListener('story-entities-updated', reload)
+    return () => window.removeEventListener('story-entities-updated', reload)
+  }, [selectedProject?.id])
+
   const addItem = async (name: string, description: string, origin: string, significance: string, visibility: 'PRIVATE' | 'FAMILY') => {
     if (!selectedProject) return
     try {

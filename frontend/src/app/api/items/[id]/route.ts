@@ -1,3 +1,4 @@
+import { parseAliases } from '@/lib/storyTools'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthContext } from '@/lib/auth'
@@ -29,6 +30,8 @@ export async function PUT(
     }
 
     const body = await request.json()
+    const aliases = parseAliases(body.aliases)
+    if (aliases === null) return NextResponse.json({ error: 'Aliase: maximal 30 Namen mit je 100 Zeichen.' }, { status: 400 })
     const { name, description, origin, significance, visibility } = body
 
     if (visibility !== undefined && !isValidVisibility(visibility)) {
@@ -36,6 +39,7 @@ export async function PUT(
     }
 
     const updateData: any = {}
+    if (aliases !== undefined) updateData.aliases = aliases
     if (name !== undefined) updateData.name = name
     if (description !== undefined) updateData.description = description
     if (origin !== undefined) updateData.origin = origin

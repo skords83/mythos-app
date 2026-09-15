@@ -1,3 +1,4 @@
+import { parseAliases } from '@/lib/storyTools'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthContext } from '@/lib/auth'
@@ -54,6 +55,8 @@ export async function POST(request: NextRequest) {
     userId = context.userId
 
     const body = await request.json()
+    const aliases = parseAliases(body.aliases)
+    if (aliases === null) return NextResponse.json({ error: 'Aliase: maximal 30 Namen mit je 100 Zeichen.' }, { status: 400 })
     const { name, description, origin, significance, projectId, visibility } = body
 
     if (visibility !== undefined && !isValidVisibility(visibility)) {
@@ -71,6 +74,7 @@ export async function POST(request: NextRequest) {
 
     const item = await prisma.item.create({
       data: {
+        ...(aliases !== undefined ? { aliases } : {}),
         name: name || 'Neues Item',
         description: description || '',
         origin: origin || '',

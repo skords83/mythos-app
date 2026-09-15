@@ -43,7 +43,14 @@ export async function PUT(
       return NextResponse.json({ error: 'Typ muss LORE oder PLOT sein' }, { status: 400 })
     }
 
+    if (body.duration !== undefined && (typeof body.duration !== 'string' || body.duration.length > 100)) return NextResponse.json({error:'Ungültige Dauer'}, {status:400})
+    if (order !== undefined && (!Number.isInteger(order) || order < 0 || order > 1000000)) return NextResponse.json({error:'Ungültige Position'}, {status:400})
+    if (body.chapterId !== undefined && body.chapterId !== null) {
+      if (typeof body.chapterId !== 'string' || !timelineEvent.projectId || !await prisma.chapter.findFirst({where:{id:body.chapterId,projectId:timelineEvent.projectId}})) return NextResponse.json({error:'Kapitel nicht gefunden'}, {status:400})
+    }
     const updateData: any = {}
+    if (body.chapterId !== undefined) updateData.chapterId = body.chapterId
+    if (body.duration !== undefined) updateData.duration = body.duration
     if (title !== undefined) updateData.title = title
     if (description !== undefined) updateData.description = description
     if (date !== undefined) updateData.date = date

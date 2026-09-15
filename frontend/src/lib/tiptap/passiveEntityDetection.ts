@@ -44,7 +44,8 @@ function findMatches(
   dismissed: Set<string>
 ): PassiveMatch[] {
   const usable = candidates.filter(
-    (c) => c.name.trim().length >= MIN_NAME_LENGTH && !dismissed.has(`${c.kind}:${c.id}`)
+    (c) => c.name.trim().length >= MIN_NAME_LENGTH && !dismissed.has(`${c.kind}:${c.id}`) &&
+      !candidates.some(other => other.name.toLocaleLowerCase() === c.name.toLocaleLowerCase() && (other.id !== c.id || other.kind !== c.kind))
   )
   if (usable.length === 0) return []
 
@@ -55,13 +56,13 @@ function findMatches(
     // traversal never walks into already-linked text — nothing to exclude explicitly.
     if (!node.isText || !node.text) return
     const text = node.text
-    for (const candidate of usable) {
+    for (const candidate of [...usable].sort((a,b) => b.name.length-a.name.length)) {
       if (matches.length >= MAX_DECORATIONS) break
-      const re = new RegExp(`\\b${escapeRegExp(candidate.name)}\\b`, 'i')
-      const match = re.exec(text)
-      if (match) {
-        const from = pos + match.index
-        matches.push({ from, to: from + match[0].length, candidate })
+      const re = new RegExp(`(?<![\\p{L}\\p{N}_])${escapeRegExp(candidate.name)}(?![\\p{L}\\p{N}_])`, 'giu')
+      for (const match of Array.from(text.matchAll(re))) {
+        if (matches.length >= MAX_DECORATIONS) break
+        const from = pos + match.index!, to = from + match[0].length
+        if (!matches.some(m => from < m.to && to > m.from)) matches.push({ from, to, candidate })
       }
     }
   })
@@ -168,8 +169,8 @@ export const PassiveEntityDetection = Extension.create<PassiveEntityDetectionOpt
                 const { schema } = view.state
                 const node =
                   candidate.kind === 'CHARACTER'
-                    ? schema.nodes.characterMention.create({ characterId: candidate.id, label: candidate.name })
-                    : schema.nodes.entityMention.create({ kind: candidate.kind, entityId: candidate.id, label: candidate.name })
+                    ? schema.nodes.characterMention.create({ characterId: candidate.id, label: target.textContent || candidate.name })
+                    : schema.nodes.entityMention.create({ kind: candidate.kind, entityId: candidate.id, label: target.textContent || candidate.name })
                 view.dispatch(view.state.tr.replaceWith(from, to, node))
                 return true
               }

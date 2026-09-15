@@ -75,23 +75,26 @@ export function useTimelineEvents({ selectedProject, showError, requestConfirm, 
     description: string,
     date: string,
     type: 'LORE' | 'PLOT',
-    visibility: 'PRIVATE' | 'FAMILY'
+    visibility: 'PRIVATE' | 'FAMILY',
+    details?: {duration:string;order:number;chapterId:string|null}
   ) => {
     try {
       const response = await fetch(`/api/timeline-events/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, description, date, type, visibility })
+        body: JSON.stringify({ title, description, date, type, visibility, ...details })
       })
       if (!response.ok) {
         showError('Ereignis konnte nicht gespeichert werden.')
-        return
+        return false
       }
       const updated = await response.json()
-      setTimelineEvents(timelineEvents.map(e => e.id === id ? updated : e))
+      setTimelineEvents(timelineEvents.map(e => e.id === id ? updated : e).sort((a,b)=>a.order-b.order))
+      return true
     } catch (error) {
       console.error('Error updating timeline event:', error)
       showError('Ereignis konnte nicht gespeichert werden.')
+      return false
     }
   }
 
