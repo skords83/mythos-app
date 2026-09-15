@@ -366,3 +366,19 @@ describe('useChapters — never save unloaded chapter content', () => {
     expect(result.current.editorContent).toBe(second.content)
   })
 })
+
+describe('useChapters — initial chapter render', () => {
+  it('provides the loaded text in the first render with a selected chapter', async () => {
+    ;(getDraft as jest.Mock).mockResolvedValue(undefined)
+    mockInitialLoadFetch()
+    const renders: { id: string; content: string }[] = []
+    const { unmount } = renderHook(() => {
+      const state = useChapters({ selectedProject: project, showError: jest.fn(), requestConfirm: jest.fn(), onConfirmed: jest.fn() })
+      if (state.selectedChapter) renders.push({ id: state.selectedChapter.id, content: state.editorContent })
+      return state
+    })
+    await flush()
+    expect(renders[0]).toEqual({ id: chapter.id, content: chapter.content })
+    unmount()
+  })
+})

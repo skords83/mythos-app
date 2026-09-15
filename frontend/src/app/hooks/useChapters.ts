@@ -98,7 +98,11 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
         setChapters(chapterList)
         if (chapterList.length > 0 && !selectedChapter) {
           const full = await loadChapterContent(chapterList[0].id)
-          if (full) setSelectedChapter(full)
+          if (full) {
+            // Mount the editor with the loaded text, never with the previous empty state.
+            setEditorContent(extractContent(full.content))
+            setSelectedChapter(full)
+          }
         }
       } else {
         setChapters([])

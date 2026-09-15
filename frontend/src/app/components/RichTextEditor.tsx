@@ -117,9 +117,12 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
     },
   })
 
-  // Setter bei jedem Editor-Mount registrieren
+  // The editor may become ready after content has loaded. Initialize from the
+  // current prop once per editor instance; never reparse on typing/autosave.
   useEffect(() => {
-    if (editor && onEditorReady) {
+    if (!editor) return
+    editor.commands.setContent(content || '', false)
+    if (onEditorReady) {
       onEditorReady((newContent: string) => {
         editor.commands.setContent(newContent || '')
       })
