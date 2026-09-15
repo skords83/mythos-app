@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { loadAllPages, ListLoadError } from '@/lib/loadAllPages'
 import { Project } from '../components/types'
 
 interface UseProjectsArgs {
@@ -15,18 +16,7 @@ export function useProjects({ isCheckingAuth, showError }: UseProjectsArgs) {
 
   const loadProjects = async () => {
     try {
-      const response = await fetch('/api/projects')
-      if (response.status === 401) {
-        router.push('/login')
-        return
-      }
-      if (!response.ok) {
-        showError('Projekte konnten nicht geladen werden.')
-        setIsLoading(false)
-        return
-      }
-      const data = await response.json()
-      const projectList: Project[] = data.projects
+      const projectList = await loadAllPages<Project>('/api/projects?limit=100', 'projects')
       setProjects(projectList)
       const storedProjectId = localStorage.getItem('selectedProjectId')
       if (storedProjectId) {
@@ -42,6 +32,7 @@ export function useProjects({ isCheckingAuth, showError }: UseProjectsArgs) {
       }
       setIsLoading(false)
     } catch (error) {
+      if (error instanceof ListLoadError && error.status === 401) router.push('/login')
       console.error('Error loading projects:', error)
       showError('Projekte konnten nicht geladen werden.')
       setIsLoading(false)
@@ -68,11 +59,6 @@ export function useProjects({ isCheckingAuth, showError }: UseProjectsArgs) {
       const newProject = await response.json()
       setProjects([newProject, ...projects])
       setSelectedProject(newProject)
-      await fetch('/api/chapters', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Kapitel 1', projectId: newProject.id })
-      })
       return newProject
     } catch (error) {
       console.error('Error creating project:', error)

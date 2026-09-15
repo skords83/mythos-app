@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Chapter, Project } from '../components/types'
+import { loadAllPages, ListLoadError } from '@/lib/loadAllPages'
 import { stripHtml } from '@/lib/text'
 import { saveDraft, getDraft, deleteDraft, ChapterDraft } from '@/lib/chapterDraftStore'
 
@@ -29,6 +30,7 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
   const [pendingDraft, setPendingDraft] = useState<ChapterDraft | null>(null)
 
   // Refs to always have current values in callbacks (stale closure fix)
+  const pendingDraftRef = useRef(pendingDraft)
   const editorContentRef = useRef(editorContent)
   const selectedChapterRef = useRef(selectedChapter)
   const chaptersRef = useRef(chapters)
@@ -38,6 +40,7 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
   // Tracks the chapterId of the most recently started loadChapterContent call, so a
   // slow-resolving fetch/getDraft chain for a chapter the user has since switched away
   // from cannot clobber pendingDraft for the chapter that's actually open.
+  const projectGenerationRef = useRef(0)
   const latestChapterRequestRef = useRef<string | null>(null)
   // Tracks which chapter's content was last pushed into the editor via setContent, so
   // in-place updates to selectedChapter (autosave echoing the saved content back, a title
@@ -46,12 +49,15 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
   // whitespace (ProseMirror's HTML parser normalizes it) on every autosave.
   const loadedIntoEditorChapterIdRef = useRef<string | null>(null)
 
+  useEffect(() => { pendingDraftRef.current = pendingDraft }, [pendingDraft])
   useEffect(() => { editorContentRef.current = editorContent }, [editorContent])
   useEffect(() => { selectedChapterRef.current = selectedChapter }, [selectedChapter])
   useEffect(() => { chaptersRef.current = chapters }, [chapters])
 
   const loadChapterContent = async (chapterId: string) => {
+    const generation = projectGenerationRef.current
     latestChapterRequestRef.current = chapterId
+    const isCurrent = () => generation === projectGenerationRef.current && latestChapterRequestRef.current === chapterId
     try {
       const response = await fetch(`/api/chapters/${chapterId}`)
       if (!response.ok) return null
@@ -65,6 +71,7 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
         console.error('Error reading local draft:', draftError)
         draft = undefined
       }
+      if (!isCurrent()) return null
       if (draft && draft.updatedAt > new Date(data.updatedAt).getTime()) {
         if (latestChapterRequestRef.current === chapterId) setPendingDraft(draft)
       } else {
@@ -81,23 +88,16 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
   }
 
   const loadChapters = async (projectId: string) => {
+    const generation = projectGenerationRef.current
+    const isCurrent = () => generation === projectGenerationRef.current
     try {
-      const response = await fetch(`/api/chapters?projectId=${projectId}&limit=200`)
-      if (response.status === 401) {
-        router.push('/login')
-        return
-      }
-      if (!response.ok) {
-        showError('Kapitel konnten nicht geladen werden.')
-        setChapters([])
-        return
-      }
-      const data = await response.json()
-      const chapterList: Chapter[] = data.chapters
+      const chapterList = await loadAllPages<Chapter>(`/api/chapters?projectId=${encodeURIComponent(projectId)}&limit=200`, 'chapters', isCurrent)
+      if (!isCurrent()) return
       if (Array.isArray(chapterList)) {
         setChapters(chapterList)
-        if (chapterList.length > 0 && !selectedChapter) {
+        if (chapterList.length > 0 && !selectedChapterRef.current) {
           const full = await loadChapterContent(chapterList[0].id)
+          if (!isCurrent() || latestChapterRequestRef.current !== chapterList[0].id) return
           if (full) {
             // Mount the editor with the loaded text, never with the previous empty state.
             setEditorContent(extractContent(full.content))
@@ -108,27 +108,52 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
         setChapters([])
       }
     } catch (error) {
+      if (!isCurrent()) return
+      if (error instanceof ListLoadError && error.status === 401) router.push('/login')
       console.error('Error loading chapters:', error)
       showError('Kapitel konnten nicht geladen werden.')
       setChapters([])
     } finally {
-      setChaptersLoaded(true)
+      if (isCurrent()) setChaptersLoaded(true)
     }
   }
 
   useEffect(() => {
+    // Invalidate every request from the previous project, even A -> B -> A.
+    projectGenerationRef.current++
+    const outgoing = selectedChapterRef.current
+    if (outgoing && pendingDraftRef.current?.chapterId !== outgoing.id &&
+        editorContentRef.current !== extractContent(outgoing.content)) {
+      // Preserve edits even when switching before the local debounce fires.
+      void saveDraft(outgoing.id, editorContentRef.current).catch(() => {
+        showError('Der lokale Entwurf des vorherigen Kapitels konnte nicht gesichert werden.')
+      })
+    }
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
+    if (localDraftTimer.current) clearTimeout(localDraftTimer.current)
+    latestChapterRequestRef.current = null
+    loadedIntoEditorChapterIdRef.current = null
+    selectedChapterRef.current = null
+    pendingDraftRef.current = null
+    chaptersRef.current = []
+    editorContentRef.current = ''
+    setChapters([])
+    setSelectedChapter(null)
+    setEditorContent('')
+    setPendingDraft(null)
+    setAutoSaveStatus('idle')
+    setIsSaving(false)
     if (selectedProject) {
       setChaptersLoaded(false)
       loadChapters(selectedProject.id)
     } else {
-      setChapters([])
       setChaptersLoaded(false)
-      setSelectedChapter(null)
-      setEditorContent('')
-      setPendingDraft(null)
-      loadedIntoEditorChapterIdRef.current = null
     }
-  }, [selectedProject])
+    return () => {
+      projectGenerationRef.current++
+      latestChapterRequestRef.current = null
+    }
+  }, [selectedProject?.id])
 
   useEffect(() => {
     if (selectedChapter && selectedChapter.id !== loadedIntoEditorChapterIdRef.current) {
@@ -149,6 +174,7 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
 
   const createChapter = async () => {
     if (!selectedProject) return
+    const generation = projectGenerationRef.current
     try {
       const response = await fetch('/api/chapters', {
         method: 'POST',
@@ -163,6 +189,7 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
         return
       }
       const newChapter = await response.json()
+      if (generation !== projectGenerationRef.current) return
       setChapters([...chapters, newChapter])
       setSelectedChapter(newChapter)
     } catch (error) {
@@ -175,8 +202,9 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
   const saveChapter = useCallback(async (chapterOverride?: Chapter, contentOverride?: string) => {
     const chapter = chapterOverride ?? selectedChapterRef.current
     const content = contentOverride ?? editorContentRef.current
-    if (!chapter) return
+    if (!chapter || pendingDraftRef.current?.chapterId === chapter.id) return
 
+    const generation = projectGenerationRef.current
     setIsSaving(true)
     try {
       const textContent = stripHtml(content)
@@ -190,7 +218,10 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
         showError('Kapitel konnte nicht gespeichert werden.')
         return
       }
-      await deleteDraft(chapter.id).catch(() => {})
+      if (pendingDraftRef.current?.chapterId !== chapter.id) {
+        await deleteDraft(chapter.id, content).catch(() => {})
+      }
+      if (generation !== projectGenerationRef.current) return
       setChapters(prev => prev.map(ch =>
         ch.id === chapter.id ? { ...ch, title: chapter.title, content, wordCount } : ch
       ))
@@ -198,18 +229,20 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
         setSelectedChapter(prev => prev?.id === chapter.id ? { ...prev, content, wordCount } : prev)
       }
       setAutoSaveStatus('saved')
-      setTimeout(() => setAutoSaveStatus('idle'), 2000)
+      setTimeout(() => {
+        if (generation === projectGenerationRef.current) setAutoSaveStatus('idle')
+      }, 2000)
     } catch (error) {
       console.error('Error saving chapter:', error)
       showError('Kapitel konnte nicht gespeichert werden.')
     } finally {
-      setIsSaving(false)
+      if (generation === projectGenerationRef.current) setIsSaving(false)
     }
   }, [])
 
-  // Autosave: debounce 2s after last change
+  // Autosave: wait for an explicit recovery decision before saving server content.
   useEffect(() => {
-    if (!selectedChapter) return
+    if (!selectedChapter || pendingDraft?.chapterId === selectedChapter.id) return
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
     setAutoSaveStatus('idle')
     autoSaveTimer.current = setTimeout(() => {
@@ -219,7 +252,7 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
     return () => {
       if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
     }
-  }, [editorContent, selectedChapter?.id])
+  }, [editorContent, selectedChapter?.id, pendingDraft])
 
   // Local-first fallback: always-active IndexedDB backup, independent of server-save outcome
   useEffect(() => {
@@ -240,8 +273,10 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
   const deleteChapter = (chapterId: string) => {
     requestConfirm('Kapitel löschen', 'Möchtest du dieses Kapitel wirklich löschen?', async () => {
       onConfirmed()
+      const generation = projectGenerationRef.current
       try {
         const response = await fetch(`/api/chapters/${chapterId}`, { method: 'DELETE' })
+        if (generation !== projectGenerationRef.current) return
         if (!response.ok) {
           showError('Kapitel konnte nicht gelöscht werden.')
           return
@@ -278,13 +313,16 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
 
   // Save the outgoing chapter (bypassing the autosave debounce) before switching to another one
   const switchChapter = async (chapter: Chapter) => {
+    if (chapter.projectId !== selectedProject?.id) return
+    const generation = projectGenerationRef.current
     if (selectedChapterRef.current && selectedChapterRef.current.id !== chapter.id) {
       if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
       const currentContent = editorContentRef.current
       await saveChapter(selectedChapterRef.current, currentContent)
     }
+    if (generation !== projectGenerationRef.current) return
     const full = await loadChapterContent(chapter.id)
-    if (latestChapterRequestRef.current !== chapter.id) return
+    if (generation !== projectGenerationRef.current || latestChapterRequestRef.current !== chapter.id) return
     if (!full) {
       showError('Kapitel konnte nicht geladen werden. Das bisherige Kapitel bleibt geöffnet.')
       return

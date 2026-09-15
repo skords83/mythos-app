@@ -50,7 +50,8 @@ export async function GET(request: NextRequest) {
     }
 
     const project = await prisma.project.findFirst({
-      where: { id: projectId, user: { familyId: context.familyId } }
+      where: { id: projectId, user: { familyId: context.familyId } },
+      select: { userId: true },
     })
 
     if (!project) {
@@ -109,7 +110,7 @@ export async function GET(request: NextRequest) {
         take: MAX_RESULTS_PER_TYPE,
         select: { id: true, name: true, description: true }
       }),
-      prisma.note.findMany({
+      project.userId === context.userId ? prisma.note.findMany({
         where: {
           chapter: { projectId },
           OR: [
@@ -119,7 +120,7 @@ export async function GET(request: NextRequest) {
         },
         take: MAX_RESULTS_PER_TYPE,
         select: { id: true, title: true, content: true, chapterId: true }
-      }),
+      }) : Promise.resolve([]),
       // Chapter.content is a Json column holding the editor's HTML string.
       // Prisma's JSON filters (`string_contains`) have no `mode: 'insensitive'`
       // option on Postgres, so a plain Prisma where-clause can't replicate the
@@ -127,7 +128,7 @@ export async function GET(request: NextRequest) {
       // that gap and, unlike the previous full-project findMany, lets Postgres
       // do the filtering + limiting instead of shipping every chapter's full
       // content to the app server on every keystroke.
-      prisma.$queryRaw<{ id: string; title: string; content: unknown }[]>(
+      project.userId === context.userId ? prisma.$queryRaw<{ id: string; title: string; content: unknown }[]>(
         Prisma.sql`
           SELECT id, title, content
           FROM "Chapter"
@@ -138,7 +139,7 @@ export async function GET(request: NextRequest) {
             )
           LIMIT ${MAX_RESULTS_PER_TYPE}
         `
-      ),
+      ) : Promise.resolve([]),
       prisma.item.findMany({
         where: {
           projectId,

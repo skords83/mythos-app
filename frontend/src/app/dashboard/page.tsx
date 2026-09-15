@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Loader2
 } from 'lucide-react'
+import { loadAllPages, ListLoadError } from '@/lib/loadAllPages'
 import { useRouter } from 'next/navigation'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Toast } from '../components/Toast'
@@ -227,18 +228,10 @@ export default function DashboardPage() {
 
   const loadProjects = async () => {
     try {
-      const response = await fetch('/api/projects')
-      if (response.status === 401) {
-        router.push('/login')
-        return
-      }
-      if (!response.ok) {
-        setErrorToast('Projekte konnten nicht geladen werden.')
-        return
-      }
-      const data = await response.json()
-      setProjects(data.projects)
+      const projects = await loadAllPages<Project>('/api/projects?limit=100', 'projects')
+      setProjects(projects)
     } catch (error) {
+      if (error instanceof ListLoadError && error.status === 401) router.push('/login')
       console.error('Error loading projects:', error)
       setErrorToast('Projekte konnten nicht geladen werden.')
     } finally {

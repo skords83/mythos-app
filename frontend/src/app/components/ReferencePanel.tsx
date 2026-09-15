@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import { Chapter, Character, Place } from './types'
 import { SURFACE, SURFACE_ALT, RADIUS, BORDER, HAIRLINE, TEXT_PRIMARY, TEXT_MUTED, ACCENT_TEXT, HOVER_SURFACE, ACTIVE_SURFACE, DIVIDER } from '@/lib/theme'
+import { extractContent } from '../hooks/useChapters'
 import { MonoLabel } from './MonoLabel'
 
 type ReferenceMode = 'chapter' | 'character' | 'place'
@@ -50,9 +51,38 @@ export function ReferencePanel({ chapters, characters, places, currentChapterId,
     setSelectedId(nextOptions[0]?.id ?? '')
   }
 
-  const selectedChapter = mode === 'chapter' ? otherChapters.find((c) => c.id === selectedId) : null
-  const selectedCharacter = mode === 'character' ? characters.find((c) => c.id === selectedId) : null
-  const selectedPlace = mode === 'place' ? places.find((p) => p.id === selectedId) : null
+  const effectiveId = options.some(option => option.id === selectedId) ? selectedId : options[0]?.id ?? ''
+  const selectedChapter = mode === 'chapter' ? otherChapters.find((c) => c.id === effectiveId) : null
+  const selectedCharacter = mode === 'character' ? characters.find((c) => c.id === effectiveId) : null
+  const selectedPlace = mode === 'place' ? places.find((p) => p.id === effectiveId) : null
+
+  const [chapterResult, setChapterResult] = useState<{ id: string; html?: string; error?: string } | null>(null)
+  const [retry, setRetry] = useState(0)
+  const chapterId = selectedChapter?.id
+  useEffect(() => {
+    if (!chapterId) return
+    let cancelled = false
+    const controller = new AbortController()
+    setChapterResult(null)
+    const load = async () => {
+      try {
+        const response = await fetch(`/api/chapters/${encodeURIComponent(chapterId)}`, {
+          cache: 'no-store', signal: controller.signal,
+        })
+        if (!response.ok) throw new Error('Kapitel konnte nicht geladen werden.')
+        const chapter = await response.json()
+        if (!chapter || chapter.id !== chapterId || !Object.prototype.hasOwnProperty.call(chapter, 'content')) {
+          throw new Error('Kapitelinhalt fehlt.')
+        }
+        if (!cancelled) setChapterResult({ id: chapterId, html: extractContent(chapter.content) })
+      } catch {
+        if (!cancelled) setChapterResult({ id: chapterId, error: 'Kapitel konnte nicht geladen werden.' })
+      }
+    }
+    void load()
+    return () => { cancelled = true; controller.abort() }
+  }, [chapterId, retry])
+  const loadedChapter = chapterResult?.id === chapterId ? chapterResult : null
 
   return (
     <div className={`w-[380px] shrink-0 ${BORDER} ${RADIUS} ${SURFACE} overflow-hidden sticky top-6 max-h-[calc(100vh-6rem)] flex flex-col`}>
@@ -74,7 +104,8 @@ export function ReferencePanel({ chapters, characters, places, currentChapterId,
 
       <div className={`px-3 py-2 border-b ${HAIRLINE}`}>
         <select
-          value={selectedId}
+          value={effectiveId}
+          aria-label="Referenz auswählen"
           onChange={(e) => setSelectedId(e.target.value)}
           className={`w-full text-sm bg-transparent ${TEXT_PRIMARY} border-none outline-none`}
         >
@@ -89,10 +120,14 @@ export function ReferencePanel({ chapters, characters, places, currentChapterId,
 
       <div className="p-4 overflow-y-auto space-y-3">
         {mode === 'chapter' && selectedChapter && (
-          <div
+          !loadedChapter ? <p role="status" className={`text-sm ${TEXT_MUTED}`}>Kapitel wird geladen…</p> :
+          loadedChapter.error ? <div role="alert" className={`text-sm ${TEXT_MUTED}`}>
+            <p>{loadedChapter.error}</p>
+            <button onClick={() => setRetry(value => value + 1)} className={`mt-2 ${ACCENT_TEXT}`}>Erneut versuchen</button>
+          </div> : loadedChapter.html ? <div
             className="prose prose-sm dark:prose-invert max-w-none"
-            dangerouslySetInnerHTML={{ __html: selectedChapter.content || '' }}
-          />
+            dangerouslySetInnerHTML={{ __html: loadedChapter.html }}
+          /> : <p className={`text-sm ${TEXT_MUTED}`}>Dieses Kapitel enthält noch keinen Text.</p>
         )}
         {mode === 'chapter' && !selectedChapter && (
           <p className={`text-sm ${TEXT_MUTED}`}>Kein weiteres Kapitel vorhanden.</p>

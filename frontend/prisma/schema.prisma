@@ -442,3 +442,10 @@ model Relation {
   @@index([familyId, sourceType, sourceId])
   @@index([familyId, targetType, targetId])
 }
+
+// Trusted ownership recorded at upload time. Existing references are backfilled
+// once by migration; attaching a URL later does not grant ownership.
+model Upload {
+  filename String @id
+  ownerIds String[]
+}

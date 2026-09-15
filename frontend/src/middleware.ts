@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export function middleware(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith('/uploads/')) {
+    const url = request.nextUrl.clone()
+    url.pathname = request.nextUrl.pathname.replace('/uploads/', '/api/upload/')
+    const response = NextResponse.rewrite(url)
+    response.headers.set('Cache-Control', 'private, no-store')
+    return response
+  }
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
   const isDev = process.env.NODE_ENV === 'development'
 

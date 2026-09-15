@@ -4,6 +4,7 @@ import { join } from 'path'
 import { randomUUID } from 'crypto'
 import { getUserFromRequest } from '@/lib/auth'
 import { checkRateLimit } from '@/lib/rateLimit'
+import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 
 // Falls back to a local folder outside Docker so `npm run dev` works
@@ -55,9 +56,10 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes)
     await mkdir(UPLOAD_DIR, { recursive: true })
     await writeFile(join(UPLOAD_DIR, filename), buffer)
+    await prisma.upload.create({ data: { filename, ownerIds: [userId] } })
     return NextResponse.json({ url: `/api/upload/${filename}` })
   } catch (error) {
     logger.error(error, { route: 'POST /api/upload', userId })
-    return NextResponse.json({ error: 'Upload fehlgeschlagen', details: String(error) }, { status: 500 })
+    return NextResponse.json({ error: 'Upload fehlgeschlagen' }, { status: 500 })
   }
 }

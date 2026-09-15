@@ -36,7 +36,14 @@ export async function getDraft(chapterId: string): Promise<ChapterDraft | undefi
   return db.get(STORE_NAME, chapterId)
 }
 
-export async function deleteDraft(chapterId: string): Promise<void> {
+export async function deleteDraft(chapterId: string, savedContent?: string): Promise<void> {
   const db = await getDb()
-  await db.delete(STORE_NAME, chapterId)
+  // Keep comparison and deletion atomic: a slow save response must not delete
+  // text written to IndexedDB while that request was in flight.
+  const tx = db.transaction(STORE_NAME, 'readwrite')
+  const draft: ChapterDraft | undefined = await tx.store.get(chapterId)
+  if (savedContent === undefined || draft?.content === savedContent) {
+    await tx.store.delete(chapterId)
+  }
+  await tx.done
 }

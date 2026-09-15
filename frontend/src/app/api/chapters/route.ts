@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const [chapters, total] = await Promise.all([
       prisma.chapter.findMany({
         where: { projectId },
-        orderBy: { order: 'asc' },
+        orderBy: [{ order: 'asc' }, { id: 'asc' }],
         skip: (page - 1) * limit,
         take: limit,
         select: {
