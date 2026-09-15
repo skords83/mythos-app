@@ -655,6 +655,7 @@ export default function Page() {
         onClose={() => setShowExportModal(false)}
         project={selectedProject}
         chapters={chapters}
+        editorContent={editorContent}
         selectedChapter={selectedChapter}
       />
       <StatsModal

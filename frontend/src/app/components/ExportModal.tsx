@@ -6,6 +6,8 @@ import { Chapter, Project } from './types'
 import { extractContent } from '../hooks/useChapters'
 import { parseHtmlToBlocks, blocksToMarkdown, blocksToRtf, buildDocxBlob } from '@/lib/exportConvert'
 import { OVERLAY, MODAL_PANEL, ACCENT, RADIUS, BUTTON_SECONDARY, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED } from '@/lib/theme'
+import { buildEpubArchive } from '@/lib/exportEpub'
+import { loadProjectExportContent } from '@/lib/exportContent'
 import { MastheadDivider } from './MastheadDivider'
 
 interface ExportModalProps {
@@ -13,6 +15,7 @@ interface ExportModalProps {
   onClose: () => void
   project: Project | null
   chapters: Chapter[]
+  editorContent?: string
   selectedChapter?: Chapter | null
 }
 
@@ -43,7 +46,7 @@ function downloadTextFile(filename: string, mimeType: string, text: string) {
   downloadBlob(filename, new Blob([text], { type: mimeType }))
 }
 
-export function ExportModal({ isOpen, onClose, project, chapters, selectedChapter }: ExportModalProps) {
+export function ExportModal({ isOpen, onClose, project, chapters, selectedChapter, editorContent }: ExportModalProps) {
   const [exportType, setExportType] = useState<'project' | 'chapter'>(selectedChapter ? 'chapter' : 'project')
   const [format, setFormat] = useState<ExportFormat>('pdf')
   const [isExporting, setIsExporting] = useState(false)
@@ -74,137 +77,27 @@ export function ExportModal({ isOpen, onClose, project, chapters, selectedChapte
   }
 
   const exportEpub = async (title: string, content: string) => {
-    const { default: JSZip } = await import('jszip')
-    const zip = new JSZip()
-
-    // Cover-Bild aus dem Projekt
-    let coverImageData: { type: string, data: string } | null = null
-    if (project!.coverImage) {
-      const match = project!.coverImage.match(/data:image\/([^;]+);base64,(.+)/)
-      if (match) {
-        coverImageData = { type: match[1] || 'png', data: match[2] }
-      }
-    }
-
-    // Base64-Bilder extrahieren und durch Platzhalter ersetzen
-    const imageRegex = /<img[^>]+src="data:image\/([^;]+);base64,([^"]+)"[^>]*>/g
-    const images: { id: string, type: string, data: string }[] = []
-    let imgCounter = 0
-
-    let processedContent = content.replace(imageRegex, (match, type, data) => {
-      const id = `img${imgCounter++}`
-      images.push({ id, type: type || 'png', data })
-      return `[BILD: ${id}]`
-    })
-
-    // Bild-Platzhalter durch ePub-Bildreferenzen ersetzen
-    images.forEach(img => {
-      processedContent = processedContent.replace(`[BILD: ${img.id}]`,
-        `<img src="images/${img.id}.${img.type}" alt="Bild" style="max-width: 100%;"/>`)
-    })
-
-    zip.file('mimetype', 'application/epub+zip')
-    zip.file('META-INF/container.xml', `<?xml version="1.0"?>
-<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
-  <rootfiles>
-    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
-  </rootfiles>
-</container>`)
-
-    const bookId = `book-${Date.now()}`
-
-    const contentOpf = `<?xml version="1.0" encoding="UTF-8"?>
-<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="BookId" version="2.0">
-  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
-    <dc:title>${title}</dc:title>
-    <dc:language>de</dc:language>
-    <dc:identifier id="BookId">${bookId}</dc:identifier>
-  </metadata>
-  <manifest>
-    <item id="content" href="content.xhtml" media-type="application/xhtml+xml"/>
-    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
-    ${images.map(img => `<item id="${img.id}" href="images/${img.id}.${img.type}" media-type="image/${img.type}"/>`).join('\n    ')}
-    ${coverImageData ? `<item id="cover-image" href="cover.${coverImageData.type}" media-type="image/${coverImageData.type}"/>` : ''}
-  </manifest>
-  <spine toc="ncx">
-    <itemref idref="content"/>
-  </spine>
-</package>`
-
-    const tocNcx = `<?xml version="1.0" encoding="UTF-8"?>
-<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
-  <head>
-    <meta name="dtb:uid" content="${bookId}"/>
-    <meta name="dtb:depth" content="1"/>
-    <meta name="dtb:totalPageCount" content="0"/>
-    <meta name="dtb:maxPageNumber" content="0"/>
-  </head>
-  <docTitle><text>${title}</text></docTitle>
-  <navMap>
-    <navPoint id="navpoint-1" playOrder="1">
-      <navLabel><text>${title}</text></navLabel>
-      <content src="content.xhtml"/>
-    </navPoint>
-  </navMap>
-</ncx>`
-
-    const coverHtml = coverImageData ? `<div style="text-align: center; margin: 20px 0;"><img src="cover.${coverImageData.type}" alt="Cover" style="max-width: 200px;"/></div>` : ''
-
-    const contentXhtml = `<?xml version="1.0" encoding="UTF-8"?>
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head><title>${title}</title></head>
-<body>
-<h1>${title}</h1>
-${coverHtml}
-${processedContent}
-</body>
-</html>`
-
-    // Cover-Bild hinzufügen
-    if (coverImageData) {
-      const binary = atob(coverImageData.data)
-      const array = new Uint8Array(binary.length)
-      for (let i = 0; i < binary.length; i++) {
-        array[i] = binary.charCodeAt(i)
-      }
-      zip.file(`OEBPS/cover.${coverImageData.type}`, array)
-    }
-
-    // Bilder hinzufügen
-    images.forEach(img => {
-      const binary = atob(img.data)
-      const array = new Uint8Array(binary.length)
-      for (let i = 0; i < binary.length; i++) {
-        array[i] = binary.charCodeAt(i)
-      }
-      zip.file(`OEBPS/images/${img.id}.${img.type}`, array)
-    })
-
-    zip.file('OEBPS/content.opf', contentOpf)
-    zip.file('OEBPS/toc.ncx', tocNcx)
-    zip.file('OEBPS/content.xhtml', contentXhtml)
-
-    const blob = await zip.generateAsync({ type: 'blob' })
-    downloadBlob(`${sanitizeFilename(title)}.epub`, blob)
+    const zip = await buildEpubArchive(title, content, project!.coverImage)
+    downloadBlob(`${sanitizeFilename(title)}.epub`, await zip.generateAsync({ type: 'blob', mimeType: 'application/epub+zip' }))
   }
 
-  const gatherContent = (): { title: string; html: string } => {
-    if (exportType === 'chapter' && selectedChapter) {
-      return { title: selectedChapter.title, html: extractContent(selectedChapter.content) }
+  const gatherContent = async (): Promise<{ title: string; html: string }> => {
+    const currentChapter = selectedChapter ? {
+      id: selectedChapter.id,
+      title: selectedChapter.title,
+      content: editorContent ?? extractContent(selectedChapter.content),
+    } : undefined
+    if (exportType === 'chapter' && currentChapter) {
+      return { title: currentChapter.title, html: currentChapter.content }
     }
-    // Ganzes Projekt - alle Kapitel zusammenfassen
-    const sortedChapters = [...chapters].sort((a, b) => a.id.localeCompare(b.id))
-    const html = sortedChapters
-      .map(ch => `<h2>${ch.title}</h2><p>${extractContent(ch.content)}</p>`)
-      .join('<br/><br/>')
-    return { title: project!.title, html }
+    return { title: project!.title, html: await loadProjectExportContent(project!.id, currentChapter) }
   }
 
   const handleExport = async () => {
     setIsExporting(true)
     setExportError(null)
     try {
-      const { title, html } = gatherContent()
+      const { title, html } = await gatherContent()
 
       if (format === 'pdf') {
         const coverImg = project!.coverImage ? `<img src="${project!.coverImage}" style="max-width: 300px; float: right; margin-left: 20px;"/>` : ''
@@ -224,7 +117,7 @@ ${processedContent}
       }
     } catch (error) {
       console.error('Export error:', error)
-      setExportError('Export fehlgeschlagen. Bitte versuche es erneut.')
+      setExportError(error instanceof Error ? error.message : 'Export fehlgeschlagen. Bitte versuche es erneut.')
     } finally {
       setIsExporting(false)
     }
