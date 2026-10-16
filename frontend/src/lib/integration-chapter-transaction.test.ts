@@ -45,6 +45,7 @@ test('saves previous chapter version in the same transaction', async () => {
   expect(result).toEqual({ status: 200, chapterId: 'chapter-1', backupId: 'backup-1' })
   expect(tx.chapter.updateMany).toHaveBeenCalledWith(expect.objectContaining({
     where: { id: 'chapter-1', projectId: 'project-1', updatedAt: new Date(payload.expectedUpdatedAt) },
+    data: expect.objectContaining({ wordCount: 1 }),
   }))
   expect(tx.chapterVersion.create).toHaveBeenCalledWith(expect.objectContaining({
     data: expect.objectContaining({ chapterId: 'chapter-1', wordCount: 12, content: oldChapter.content }),
