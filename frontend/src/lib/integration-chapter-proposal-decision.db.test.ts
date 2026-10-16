@@ -33,7 +33,7 @@ suite('real PostgreSQL proposal approval (isolated local DB)', () => {
     chapterId = chapter.id
     await prisma.oAuthClient.create({ data: { id: clientId, name: 'Approval test', redirectUris: ['http://localhost/callback'] } })
     await prisma.oAuthAccessToken.create({
-      data: { clientId, userId, tokenHash: hashCredential(token), scope: 'mythos:write', expiresAt: new Date('2099-01-01') },
+      data: { clientId, userId, tokenHash: hashCredential(token), scope: 'mythos:read mythos:write', expiresAt: new Date('2099-01-01') },
     })
   })
 
