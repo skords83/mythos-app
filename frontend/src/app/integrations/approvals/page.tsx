@@ -13,12 +13,18 @@ type Proposal = {
   chapter: {
     id: string
     title: string
-    content: TiptapNode
+    content: TiptapNode | string | null
     project: { id: string; title: string }
   }
 }
 
-function plainText(node: TiptapNode | null | undefined): string {
+function plainText(node: TiptapNode | string | null | undefined): string {
+  if (typeof node === 'string') {
+    if (typeof document === 'undefined') return node.replace(/<[^>]*>/g, ' ')
+    const element = document.createElement('div')
+    element.innerHTML = node
+    return element.innerText || element.textContent || ''
+  }
   if (!node || typeof node !== 'object') return ''
   if (node.type === 'text') return node.text ?? ''
   const children = Array.isArray(node.content) ? node.content : []
