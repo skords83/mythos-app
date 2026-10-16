@@ -1,6 +1,6 @@
 /** @jest-environment node */
 import { NextRequest } from 'next/server'
-import { POST } from './route'
+import { GET, POST } from './route'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
 
@@ -29,7 +29,7 @@ beforeEach(() => {
   jest.clearAllMocks()
   ;(getUserFromRequest as jest.Mock).mockResolvedValue('user-1')
   ;(db.oAuthClient.findUnique as jest.Mock).mockResolvedValue({
-    id: 'chatgpt', redirectUris: ['https://client.example/callback'],
+    id: 'chatgpt', name: 'ChatGPT', redirectUris: ['https://client.example/callback'],
   })
   ;(db.oAuthAuthorizationCode.create as jest.Mock).mockResolvedValue({ id: 'code-1' })
 })
@@ -62,4 +62,28 @@ test('rejects unregistered redirect URI', async () => {
 test('rejects non-read-only scope and non-S256 challenge', async () => {
   expect((await POST(req({ ...data, scope: 'mythos:write' }))).status).toBe(400)
   expect((await POST(req({ ...data, code_challenge_method: 'plain' }))).status).toBe(400)
+})
+
+test('GET returns the registered client name without issuing credentials', async () => {
+  const url = new URL('https://mythos.example/api/oauth/authorize')
+  Object.entries(data).forEach(([key, value]) => {
+    if (key !== 'consent') url.searchParams.set(key, String(value))
+  })
+  const response = await GET(new NextRequest(url))
+  expect(response.status).toBe(200)
+  expect(await response.json()).toEqual({
+    client_id: 'chatgpt', client_name: 'ChatGPT', scope: 'mythos:read', redirect_uri: 'https://client.example/callback',
+  })
+  expect(db.oAuthAuthorizationCode.create).not.toHaveBeenCalled()
+})
+
+test('GET rejects an unregistered redirect URI', async () => {
+  const url = new URL('https://mythos.example/api/oauth/authorize')
+  Object.entries(data).forEach(([key, value]) => {
+    if (key !== 'consent') url.searchParams.set(key, String(value))
+  })
+  url.searchParams.set('redirect_uri', 'https://evil.example/callback')
+  const response = await GET(new NextRequest(url))
+  expect(response.status).toBe(400)
+  expect(db.oAuthAuthorizationCode.create).not.toHaveBeenCalled()
 })

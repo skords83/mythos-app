@@ -46,3 +46,43 @@ export async function POST(request: NextRequest) {
   destination.searchParams.set('state', state)
   return json({ redirect_to: destination.toString() })
 }
+
+/**
+ * Returns the registered client name for an OAuth consent request.
+ * Does not issue credentials or grant access.
+ */
+export async function GET(request: NextRequest) {
+  const params = request.nextUrl.searchParams
+  const clientId = params.get('client_id')
+  const redirectUri = params.get('redirect_uri')
+  const challenge = params.get('code_challenge')
+  const state = params.get('state')
+
+  if (
+    !clientId || clientId.length > 256 ||
+    !redirectUri || redirectUri.length > 2048 ||
+    params.get('response_type') !== 'code' ||
+    params.get('scope') !== 'mythos:read' ||
+    params.get('code_challenge_method') !== 'S256' ||
+    !isValidPkceChallenge(challenge) ||
+    !state || state.length < 8 || state.length > 1024
+  ) {
+    return json({ error: 'invalid_request' }, 400)
+  }
+
+  const client = await prisma.oAuthClient.findUnique({
+    where: { id: clientId },
+    select: { id: true, name: true, redirectUris: true },
+  })
+
+  if (!client || !matchesRegisteredRedirectUri(redirectUri, client.redirectUris)) {
+    return json({ error: 'invalid_client_or_redirect_uri' }, 400)
+  }
+
+  return json({
+    client_id: client.id,
+    client_name: client.name,
+    redirect_uri: redirectUri,
+    scope: 'mythos:read',
+  })
+}
