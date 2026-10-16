@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
   const id = params.get('id')
   const parseBoundedInt = (raw: string | null, fallback: number, max: number): number | null => {
     if (raw === null) return fallback
-    if (!/^[1-9]\\d{0,5}$/.test(raw)) return null
+    if (!/^[1-9]\d{0,5}$/.test(raw)) return null
     const value = Number(raw)
     return value <= max ? value : null
   }
