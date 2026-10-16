@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createHash, timingSafeEqual } from 'crypto'
+import { resolveReadOnlyUser } from '@/lib/integration-auth'
 import { prisma } from '@/lib/prisma'
 import { visibilityWhere } from '@/lib/visibility'
 
@@ -7,24 +7,12 @@ import { visibilityWhere } from '@/lib/visibility'
 // MCP endpoint. A production remote MCP connector still needs OAuth and transport.
 export const dynamic = 'force-dynamic'
 
-function authorized(request: NextRequest): boolean {
-  const configured = process.env.MYTHOS_INTEGRATION_READ_TOKEN
-  const userId = process.env.MYTHOS_INTEGRATION_USER_ID
-  if (!configured || configured.length < 32 || !userId) return false
-  const header = request.headers.get('authorization') || ''
-  if (!header.startsWith('Bearer ')) return false
-  const supplied = header.slice(7)
-  const a = createHash('sha256').update(supplied).digest()
-  const b = createHash('sha256').update(configured).digest()
-  return timingSafeEqual(a, b)
-}
-
 const error = (message: string, status: number) => NextResponse.json({ error: message }, { status, headers: { 'Cache-Control': 'no-store' } })
 const ok = (value: unknown) => NextResponse.json(value, { headers: { 'Cache-Control': 'no-store' } })
 
 export async function GET(request: NextRequest) {
-  if (!authorized(request)) return error('Nicht autorisiert', 401)
-  const userId = process.env.MYTHOS_INTEGRATION_USER_ID!
+  const userId = await resolveReadOnlyUser(request.headers.get('authorization'))
+  if (!userId) return error('Nicht autorisiert', 401)
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, familyId: true } })
   if (!user) return error('Nicht autorisiert', 401)
 
