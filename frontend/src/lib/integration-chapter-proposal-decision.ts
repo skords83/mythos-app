@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
-import { canApplyChapterProposal } from '@/lib/integration-chapter-proposal'
+import { canApplyChapterProposal, validateChapterProposal } from '@/lib/integration-chapter-proposal'
 import { countTiptapWords } from '@/lib/integration-word-count'
 
 type DecisionResult =
@@ -51,7 +51,7 @@ export async function decideChapterProposal(
       proposal.status, proposal.expiresAt, current.updatedAt, proposal.expectedUpdatedAt,
     )) return { status: 409, error: 'Chapter changed since proposal' } as const
 
-    const claimed = await tx.chapterProposal.updateMany({
+    const checked = validateChapterProposal({\n      projectId: 'validated-project', chapterId: proposal.chapterId,\n      expectedUpdatedAt: proposal.expectedUpdatedAt.toISOString(),\n      title: proposal.title, content: proposal.content,\n    })\n    if (!checked.ok) return { status: 409, error: 'Stored proposal is invalid' } as const\n\n    const claimed = await tx.chapterProposal.updateMany({
       where: { id: proposalId, authorId: userId, status: 'PENDING' },
       data: { status: 'APPLIED', appliedAt: new Date() },
     })
@@ -60,8 +60,8 @@ export async function decideChapterProposal(
       where: { id: proposal.chapterId, updatedAt: proposal.expectedUpdatedAt },
       data: {
         title: proposal.title,
-        content: proposal.content as Prisma.InputJsonValue,
-        wordCount: countTiptapWords(proposal.content),
+        content: checked.value.content as Prisma.InputJsonValue,
+        wordCount: countTiptapWords(checked.value.content),
       },
     })
     if (changed.count !== 1) throw new Error('Concurrent chapter update; transaction rolled back')
