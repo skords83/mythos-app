@@ -51,7 +51,16 @@ export async function decideChapterProposal(
       proposal.status, proposal.expiresAt, current.updatedAt, proposal.expectedUpdatedAt,
     )) return { status: 409, error: 'Chapter changed since proposal' } as const
 
-    const checked = validateChapterProposal({\n      projectId: 'validated-project', chapterId: proposal.chapterId,\n      expectedUpdatedAt: proposal.expectedUpdatedAt.toISOString(),\n      title: proposal.title, content: proposal.content,\n    })\n    if (!checked.ok) return { status: 409, error: 'Stored proposal is invalid' } as const\n\n    const claimed = await tx.chapterProposal.updateMany({
+    const checked = validateChapterProposal({
+      projectId: 'validated-project',
+      chapterId: proposal.chapterId,
+      expectedUpdatedAt: proposal.expectedUpdatedAt.toISOString(),
+      title: proposal.title,
+      content: proposal.content,
+    })
+    if (!checked.ok) return { status: 409, error: 'Stored proposal is invalid' } as const
+
+    const claimed = await tx.chapterProposal.updateMany({
       where: { id: proposalId, authorId: userId, status: 'PENDING' },
       data: { status: 'APPLIED', appliedAt: new Date() },
     })
