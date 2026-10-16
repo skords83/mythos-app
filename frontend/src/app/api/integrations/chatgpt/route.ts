@@ -32,10 +32,19 @@ export async function GET(request: NextRequest) {
   const action = params.get('action')
   const projectId = params.get('projectId')
   const id = params.get('id')
-  const limit = Math.min(100, Math.max(1, Number(params.get('limit')) || 50))
-  const page = Math.max(1, Number(params.get('page')) || 1)
+  const parseBoundedInt = (raw: string | null, fallback: number, max: number): number | null => {
+    if (raw === null) return fallback
+    if (!/^[1-9]\\d{0,5}$/.test(raw)) return null
+    const value = Number(raw)
+    return value <= max ? value : null
+  }
+  const limit = parseBoundedInt(params.get('limit'), 50, 100)
+  const page = parseBoundedInt(params.get('page'), 1, 10000)
+  if (limit === null || page === null) return error('Ungültige Seitennummer oder Seitengröße', 400)
   const pagination = { take: limit, skip: (page - 1) * limit }
   const viewer = { userId }
+  if (projectId && projectId.length > 128) return error('Ungültige Projekt-ID', 400)
+  if (id && id.length > 128) return error('Ungültige ID', 400)
 
   try {
     if (action === 'projects') {
