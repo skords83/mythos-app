@@ -1,61 +1,189 @@
-type Node = { type?: unknown; text?: unknown; content?: unknown; marks?: unknown }
 
-function escapeHtml(value: string): string {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+type Node = {
+  type?: unknown
+  text?: unknown
+  content?: unknown
+  marks?: unknown
+  attrs?: unknown
 }
 
-/** Converts a deliberately restricted Tiptap subset to the editor's HTML storage format.
- * Unsupported nodes or marks reject the entire proposal rather than silently losing content.
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+/**
+ * Converts a restricted Tiptap subset to HTML.
+ * Unsupported structures reject the entire proposal.
  */
 export function proposalToChapterHtml(value: unknown): string | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+
   const doc = value as Node
   if (doc.type !== 'doc' || !Array.isArray(doc.content)) return null
 
   function renderInline(value: unknown): string | null {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return null
     const node = value as Node
-    if (node.type === 'hardBreak' && node.marks === undefined && node.content === undefined) return '<br>'
-    if (node.type !== 'text' || typeof node.text !== 'string' || node.content !== undefined) return null
+
+    if (node.type === 'hardBreak' && node.marks === undefined && node.content === undefined) {
+      return '<br>'
+    }
+
+    if (node.type !== 'text' || typeof node.text !== 'string' || node.content !== undefined) {
+      return null
+    }
+
     let html = escapeHtml(node.text)
+
     if (node.marks !== undefined) {
       if (!Array.isArray(node.marks)) return null
+
       for (const mark of node.marks) {
         if (!mark || typeof mark !== 'object' || Array.isArray(mark)) return null
-        const kind = (mark as { type?: unknown }).type
-        const tag = kind === 'bold' ? 'strong' : kind === 'italic' ? 'em' : kind === 'strike' ? 's' : kind === 'code' ? 'code' : null
-        if (!tag || Object.keys(mark).some(k => k !== 'type')) return null
-        html = '<' + tag + '>' + html + '</' + tag + '>'
+
+        const kind = (mark as Node).type
+        const tag =
+          kind === 'bold' ? 'strong' :
+          kind === 'italic' ? 'em' :
+          kind === 'strike' ? 's' :
+          kind === 'code' ? 'code' : null
+
+        if (!tag || Object.keys(mark).some(key => key !== 'type')) return null
+
+        html = `<${tag}>${html}</${tag}>`
       }
     }
+
     return html
   }
 
-  const blocks: string[] = []
-  for (const item of doc.content) {
-    if (!item || typeof item !== 'object' || Array.isArray(item)) return null
-    const block = item as Node
-if (block.marks !== undefined) return null
+  function renderBlock(value: unknown, depth = 0): string | null {
+    if (depth > 20) return null
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null
 
-let tag = 'p'
-if (block.type === 'heading') {
-  const attrs = (block as Node & { attrs?: unknown }).attrs
-  if (!attrs || typeof attrs !== 'object' || Array.isArray(attrs)) return null
-  const headingAttrs = attrs as Record<string, unknown>
-  if (Object.keys(headingAttrs).length !== 1) return null
-  if (headingAttrs.level !== 1 && headingAttrs.level !== 2) return null
-  tag = 'h' + headingAttrs.level
-} else if (block.type !== 'paragraph') {
-  return null
-}
-    if (block.content !== undefined && !Array.isArray(block.content)) return null
-    const pieces: string[] = []
-    for (const inline of (block.content ?? []) as unknown[]) {
-      const rendered = renderInline(inline)
-      if (rendered === null) return null
-      pieces.push(rendered)
+    const node = value as Node
+    if (node.marks !== undefined) return null
+    if (node.content !== undefined && !Array.isArray(node.content)) return null
+
+    const children = (node.content ?? []) as unknown[]
+
+    if (node.type === 'paragraph' || node.type === 'heading') {
+      let tag = 'p'
+
+      if (node.type === 'heading') {
+        if (!node.attrs || typeof node.attrs !== 'object' || Array.isArray(node.attrs)) return null
+        const attrs = node.attrs as Record<string, unknown>
+
+        if (Object.keys(attrs).length !== 1) return null
+        if (attrs.level !== 1 && attrs.level !== 2) return null
+
+        tag = `h${attrs.level}`
+      } else if (node.attrs !== undefined) {
+        return null
+      }
+
+      const parts: string[] = []
+
+      for (const child of children) {
+        const rendered = renderInline(child)
+        if (rendered === null) return null
+        parts.push(rendered)
+      }
+
+      return `<${tag}>${parts.join('')}</${tag}>`
     }
-blocks.push('<' + tag + '>' + pieces.join('') + '</' + tag + '>')
+
+    if (node.type === 'blockquote') {
+      if (node.attrs !== undefined) return null
+
+      const parts: string[] = []
+      for (const child of children) {
+        const rendered = renderBlock(child, depth + 1)
+        if (rendered === null) return null
+        parts.push(rendered)
+      }
+
+      return `<blockquote>${parts.join('')}</blockquote>`
+    }
+
+if (node.type === 'bulletList' || node.type === 'orderedList') {
+  if (children.length === 0) return null
+
+  let tag = 'ul'
+  let attribute = ''
+      if (node.type === 'orderedList') {
+        tag = 'ol'
+
+        if (node.attrs !== undefined) {
+          if (!node.attrs || typeof node.attrs !== 'object' || Array.isArray(node.attrs)) return null
+
+          const attrs = node.attrs as Record<string, unknown>
+          if (Object.keys(attrs).some(key => key !== 'start')) return null
+
+          if (attrs.start !== undefined) {
+            if (!Number.isSafeInteger(attrs.start) || (attrs.start as number) < 1) return null
+            if (attrs.start !== 1) attribute = ` start="${attrs.start}"`
+          }
+        }
+      } else if (node.attrs !== undefined) {
+        return null
+      }
+
+      const parts: string[] = []
+
+      for (const child of children) {
+        if (!child || typeof child !== 'object' || Array.isArray(child)) return null
+        if ((child as Node).type !== 'listItem') return null
+
+        const rendered = renderBlock(child, depth + 1)
+        if (rendered === null) return null
+        parts.push(rendered)
+      }
+
+      return `<${tag}${attribute}>${parts.join('')}</${tag}>`
+    }
+
+    if (node.type === 'listItem') {
+      if (node.attrs !== undefined) return null
+      if (children.length === 0 || (children[0] as Node | null)?.type !== 'paragraph') return null
+
+      const parts: string[] = []
+
+      for (const child of children) {
+        if (!child || typeof child !== 'object' || Array.isArray(child)) return null
+
+        const kind = (child as Node).type
+        if (kind !== 'paragraph' && kind !== 'bulletList' && kind !== 'orderedList') return null
+
+        const rendered = renderBlock(child, depth + 1)
+        if (rendered === null) return null
+        parts.push(rendered)
+      }
+
+      return `<li>${parts.join('')}</li>`
+    }
+
+    return null
   }
+
+  const blocks: string[] = []
+
+  for (const child of doc.content) {
+    if (!child || typeof child !== 'object' || Array.isArray(child)) return null
+
+    const type = (child as Node).type
+    if (type === 'listItem') return null
+
+    const rendered = renderBlock(child)
+    if (rendered === null) return null
+
+    blocks.push(rendered)
+  }
+
   return blocks.join('')
 }
