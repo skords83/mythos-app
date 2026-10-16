@@ -58,3 +58,16 @@ test('rejects JSON-RPC batch requests explicitly', async () => {
   const response = await POST(request([{ jsonrpc: '2.0', id: 1, method: 'ping' }]))
   expect((await response.json()).error.code).toBe(-32600)
 })
+
+test('negotiates supported MCP protocol version', async () => {
+  const response = await POST(request({ jsonrpc: '2.0', id: 6, method: 'initialize', params: {
+    protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'test', version: '1.0' },
+  } }))
+  const json = await response.json()
+  expect(json.result.protocolVersion).toBe('2025-03-26')
+  expect(json.result.capabilities.tools).toEqual({})
+})
+test('rejects missing MCP protocol version on initialize', async () => {
+  const response = await POST(request({ jsonrpc: '2.0', id: 7, method: 'initialize', params: {} }))
+  expect((await response.json()).error.code).toBe(-32602)
+})
