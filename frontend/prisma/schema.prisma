@@ -92,6 +92,8 @@ model User {
   chapterVersions ChapterVersion[]
   settings   UserSettings?
   ideas      Idea[]
+  oauthAuthorizationCodes OAuthAuthorizationCode[]
+  oauthAccessTokens OAuthAccessToken[]
 }
 
 // Z7: generic per-user preference store. Fields are additive as future
@@ -478,4 +480,50 @@ model GrowthSnapshot {
   wordCount Int
   chapters Json
   @@unique([projectId, date])
+}
+
+
+// OAuth 2.1 groundwork for an explicitly approved, revocable read-only connection.
+// Never store authorization codes or access tokens in plaintext.
+model OAuthClient {
+  id           String   @id
+  name         String
+  redirectUris String[]
+  createdAt    DateTime @default(now())
+  codes        OAuthAuthorizationCode[]
+  tokens       OAuthAccessToken[]
+}
+
+model OAuthAuthorizationCode {
+  id              String   @id @default(cuid())
+  codeHash        String   @unique
+  clientId        String
+  client          OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  redirectUri     String
+  codeChallenge   String
+  scope           String   @default("mythos:read")
+  expiresAt       DateTime
+  consumedAt      DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([expiresAt])
+  @@index([userId])
+}
+
+model OAuthAccessToken {
+  id           String   @id @default(cuid())
+  tokenHash    String   @unique
+  clientId     String
+  client       OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scope        String   @default("mythos:read")
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime @default(now())
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
 }
