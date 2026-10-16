@@ -1,4 +1,5 @@
 /** @jest-environment node */
+jest.mock('@/lib/rateLimit', () => ({ checkRateLimit: jest.fn().mockResolvedValue(null), getClientIp: () => 'test' }))
 import { NextRequest } from 'next/server'
 import { GET, POST } from './route'
 import { prisma } from '@/lib/prisma'
@@ -18,6 +19,7 @@ const data = {
   client_id: 'chatgpt', redirect_uri: 'https://client.example/callback',
   code_challenge: challenge, code_challenge_method: 'S256',
   response_type: 'code', scope: 'mythos:read', state: 'some-state-123',
+  resource: 'https://mythos.example/api/integrations/mcp',
   consent: true,
 }
 const req = (body: object = data, origin = 'https://mythos.example') =>
@@ -26,6 +28,7 @@ const req = (body: object = data, origin = 'https://mythos.example') =>
     body: JSON.stringify(body),
   })
 beforeEach(() => {
+  process.env.MYTHOS_OAUTH_ISSUER = 'https://mythos.example'
   jest.clearAllMocks()
   ;(getUserFromRequest as jest.Mock).mockResolvedValue('user-1')
   ;(db.oAuthClient.findUnique as jest.Mock).mockResolvedValue({
@@ -72,7 +75,7 @@ test('GET returns the registered client name without issuing credentials', async
   const response = await GET(new NextRequest(url))
   expect(response.status).toBe(200)
   expect(await response.json()).toEqual({
-    client_id: 'chatgpt', client_name: 'ChatGPT', scope: 'mythos:read', redirect_uri: 'https://client.example/callback',
+    issuer: 'https://mythos.example', client_id: 'chatgpt', client_name: 'ChatGPT', scope: 'mythos:read', redirect_uri: 'https://client.example/callback',
   })
   expect(db.oAuthAuthorizationCode.create).not.toHaveBeenCalled()
 })
@@ -86,4 +89,18 @@ test('GET rejects an unregistered redirect URI', async () => {
   const response = await GET(new NextRequest(url))
   expect(response.status).toBe(400)
   expect(db.oAuthAuthorizationCode.create).not.toHaveBeenCalled()
+})
+
+test.each([null, [], 'text', 42])('rejects a non-object consent body %p', async body => {
+  expect((await POST(req(body as never))).status).toBe(400)
+  expect(db.oAuthAuthorizationCode.create).not.toHaveBeenCalled()
+})
+test('requires the exact MCP resource', async () => {
+  expect((await POST(req({ ...data, resource: 'https://other.example/mcp' }))).status).toBe(400)
+  expect((await POST(req({ ...data, resource: undefined }))).status).toBe(400)
+})
+test('rejects duplicate authorization parameters', async () => {
+  const params = new URLSearchParams(Object.entries(data).map(([key, value]) => [key, String(value)]))
+  params.append('resource', data.resource)
+  expect((await GET(new NextRequest('https://mythos.example/api/oauth/authorize?' + params))).status).toBe(400)
 })

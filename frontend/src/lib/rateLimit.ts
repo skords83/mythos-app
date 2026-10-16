@@ -7,7 +7,9 @@ function getClient(): Redis {
   if (!client) {
     client = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
       maxRetriesPerRequest: 1,
-      enableOfflineQueue: false,
+      enableOfflineQueue: true,
+      commandTimeout: 2000,
+      connectTimeout: 2000,
     })
     client.on('error', (err) => console.error('Redis error:', err))
   }
@@ -23,6 +25,7 @@ export function getClientIp(request: NextRequest): string {
 export interface RateLimitOptions {
   limit: number
   windowMs: number
+  failClosed?: boolean
 }
 
 // Atomic fixed-window rate limiter backed by Redis, shared across all
@@ -40,7 +43,7 @@ return { count, ttl }
 export async function checkRateLimit(
   identifier: string,
   scope: string,
-  { limit, windowMs }: RateLimitOptions
+  { limit, windowMs, failClosed = false }: RateLimitOptions
 ): Promise<NextResponse | null> {
   const key = `ratelimit:${scope}:${identifier}`
 
@@ -55,7 +58,8 @@ export async function checkRateLimit(
     )) as [number, number]
     ;[count, ttl] = result
   } catch (err) {
-    // Fail open: if Redis is unreachable, don't block legitimate traffic.
+    if (failClosed) return NextResponse.json({ error: 'temporarily_unavailable' }, { status: 503, headers: { 'Cache-Control': 'no-store', 'Retry-After': '5' } })
+    // Existing application routes retain their fail-open policy.
     console.error('Rate limit check failed, allowing request:', err)
     return null
   }

@@ -506,6 +506,7 @@ model OAuthAuthorizationCode {
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   redirectUri     String
   codeChallenge   String
+  resource        String?
   scope           String   @default("mythos:read")
   expiresAt       DateTime
   consumedAt      DateTime?
@@ -518,6 +519,7 @@ model OAuthAuthorizationCode {
 model OAuthAccessToken {
   id           String   @id @default(cuid())
   tokenHash    String   @unique
+  resource     String?
   clientId     String
   client       OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
   userId       String

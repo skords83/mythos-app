@@ -8,7 +8,8 @@
     "start": "next start -H 0.0.0.0 -p 4000",
     "lint": "next lint",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "test:mcp": "node scripts/test-mcp-http.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.17.0",
@@ -33,6 +34,7 @@
     "tippy.js": "^6.3.7"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "@tailwindcss/typography": "^0.5.20",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

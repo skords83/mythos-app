@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-type ClientInfo = { client_id: string; client_name: string; scope: string; redirect_uri: string }
+type ClientInfo = { issuer: string; client_id: string; client_name: string; scope: string; redirect_uri: string }
 
 export function OAuthAuthorizeContent() {
   const router = useRouter()
@@ -43,6 +43,7 @@ export function OAuthAuthorizeContent() {
     const state = searchParams.get("state")
     if (!state) return
     const destination = new URL(client.redirect_uri)
+    destination.searchParams.set("iss", client.issuer)
     destination.searchParams.set("error", "access_denied")
     destination.searchParams.set("state", state)
     window.location.assign(destination.toString())

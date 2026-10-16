@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 
 /** Resolves a read-only bearer token to its actual Mythos user. */
 export async function resolveReadOnlyUser(authorization: string | null): Promise<string | null> {
-  if (!authorization?.startsWith('Bearer ')) return null
+  if (!authorization || !/^Bearer /i.test(authorization)) return null
   const supplied = authorization.slice(7)
   if (!supplied || supplied.length > 512) return null
 

@@ -1,0 +1,20 @@
+# Entirely separate from docker-compose.yml and production. Loopback ports only.
+name: mythos-mcp-test
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: mythos_test
+      POSTGRES_DB: mythos_integration_test
+      POSTGRES_PASSWORD: ${MYTHOS_TEST_DB_PASSWORD:?Set a fresh local test password}
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - mythos-mcp-test-postgres:/var/lib/postgresql
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "127.0.0.1:56379:6379"
+volumes:
+  mythos-mcp-test-postgres:
