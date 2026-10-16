@@ -13,7 +13,11 @@ export async function POST(
 ) {
   const userId = await getUserFromRequest(request)
   if (!userId) return json({ error: 'Nicht autorisiert' }, 401)
-  if (request.headers.get('origin') !== new URL(request.url).origin) {
+  const origin = request.headers.get('origin')
+  const host = request.headers.get('host')
+  const expectedOrigin = host ? `${request.nextUrl.protocol}//${host}` : null
+
+  if (origin === null || expectedOrigin === null || origin !== expectedOrigin) {
     return json({ error: 'Unzulässige Herkunft' }, 403)
   }
   if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) {
