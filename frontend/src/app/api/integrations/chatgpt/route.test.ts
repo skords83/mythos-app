@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 jest.mock('@/lib/prisma', () => ({
   prisma: {
     user: { findUnique: jest.fn() },
+    oAuthAccessToken: { findUnique: jest.fn() },
     project: { findMany: jest.fn(), findFirst: jest.fn() },
     chapter: { findMany: jest.fn(), findFirst: jest.fn() },
     character: { findMany: jest.fn() },
@@ -25,6 +26,7 @@ const req = (query: string, authorization = 'Bearer ' + token) =>
 
 beforeEach(() => {
   jest.clearAllMocks()
+  ;(prisma.oAuthAccessToken.findUnique as jest.Mock).mockResolvedValue(null)
   process.env.MYTHOS_INTEGRATION_READ_TOKEN = token
   process.env.MYTHOS_INTEGRATION_USER_ID = 'user-1'
   ;(db.user.findUnique as jest.Mock).mockResolvedValue({ id: 'user-1', familyId: 'family-1' })
