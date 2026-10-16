@@ -7,7 +7,7 @@ export function parseMythosScopes(raw: unknown): MythosScope[] | null {
   if (typeof raw !== 'string' || !raw.trim()) return null
   const parts = raw.split(' ')
   if (parts.some((part) => !part || (part !== MYTHOS_READ_SCOPE && part !== MYTHOS_WRITE_SCOPE))) return null
-  const unique = [...new Set(parts)] as MythosScope[]
+  const unique = Array.from(new Set(parts)) as MythosScope[]
   // Editing requires reading the current revision for conflict detection.
   if (unique.includes(MYTHOS_WRITE_SCOPE) && !unique.includes(MYTHOS_READ_SCOPE)) return null
   return unique.sort()
