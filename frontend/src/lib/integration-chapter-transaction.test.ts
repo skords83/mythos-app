@@ -34,7 +34,7 @@ function mockTransaction(overrides: Record<string, unknown> = {}) {
     chapterVersion: { create: jest.fn().mockResolvedValue({ id: 'backup-1' }) },
     ...overrides,
   }
-  ;(prisma.$transaction as jest.Mock).mockImplementation((callback: (tx: typeof tx) => unknown) => callback(tx))
+  ;(prisma.$transaction as jest.Mock).mockImplementation((callback: (transaction: typeof tx) => unknown) => callback(tx))
   return tx
 }
 beforeEach(() => jest.clearAllMocks())
