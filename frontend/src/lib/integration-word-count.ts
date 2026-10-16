@@ -9,5 +9,5 @@ export function countTiptapWords(doc: { type: 'doc'; content: unknown[] }): numb
   }
   walk(doc)
   const text = chunks.join(' ').trim()
-  return text ? text.split(/\s+/u).length : 0
+  return text ? text.split(/\s+/).length : 0
 }
