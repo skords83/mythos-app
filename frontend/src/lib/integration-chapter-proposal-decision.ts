@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { canApplyChapterProposal, validateChapterProposal } from '@/lib/integration-chapter-proposal'
 import { countTiptapWords } from '@/lib/integration-word-count'
 import { proposalToChapterHtml } from '@/lib/integration-proposal-html'
+import { hasProtectedChapterContent } from '@/lib/integration-protected-content'
 
 type DecisionResult =
   | { status: 200; proposalId: string; backupId?: string; decision: 'APPLIED' | 'REJECTED' }
@@ -60,6 +61,10 @@ export async function decideChapterProposal(
       content: proposal.content,
     })
     if (!checked.ok) return { status: 409, error: 'Stored proposal is invalid' } as const
+
+    if (hasProtectedChapterContent(current.content)) {
+      return { status: 409, error: 'Chapter contains protected mentions or comments' } as const
+    }
 
     const html = proposalToChapterHtml(checked.value.content)
     if (html === null) return { status: 409, error: 'Unsupported proposal formatting' } as const
