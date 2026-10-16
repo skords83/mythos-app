@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { canApplyChapterProposal, validateChapterProposal } from '@/lib/integration-chapter-proposal'
 import { countTiptapWords } from '@/lib/integration-word-count'
+import { proposalToChapterHtml } from '@/lib/integration-proposal-html'
 
 type DecisionResult =
   | { status: 200; proposalId: string; backupId?: string; decision: 'APPLIED' | 'REJECTED' }
@@ -60,6 +61,9 @@ export async function decideChapterProposal(
     })
     if (!checked.ok) return { status: 409, error: 'Stored proposal is invalid' } as const
 
+    const html = proposalToChapterHtml(checked.value.content)
+    if (html === null) return { status: 409, error: 'Unsupported proposal formatting' } as const
+
     const claimed = await tx.chapterProposal.updateMany({
       where: { id: proposalId, authorId: userId, status: 'PENDING' },
       data: { status: 'APPLIED', appliedAt: new Date() },
@@ -69,7 +73,7 @@ export async function decideChapterProposal(
       where: { id: proposal.chapterId, updatedAt: proposal.expectedUpdatedAt },
       data: {
         title: proposal.title,
-        content: checked.value.content as Prisma.InputJsonValue,
+        content: html,
         wordCount: countTiptapWords(checked.value.content),
       },
     })
