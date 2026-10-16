@@ -52,6 +52,7 @@ Der App-Container führt beim Start automatisch `prisma migrate deploy` aus (sie
 |---|---|
 | `DATABASE_URL` | PostgreSQL-Verbindungsstring |
 | `JWT_SECRET` | Secret zum Signieren der Auth-Cookies |
+| `MYTHOS_OAUTH_ISSUER` | Kanonischer HTTPS-Ursprung für OAuth/MCP; Standardwert `https://mythos.skords.de` |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | DB-Zugangsdaten (nur `docker-compose.yml`) |
 | `UPLOAD_DIR` | Zielverzeichnis für hochgeladene Bilder |
 | `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | Optional — leer lassen deaktiviert Sentry, mit DSN eines Sentry-Projekts (sentry.io) befüllen aktiviert Error-Tracking |
