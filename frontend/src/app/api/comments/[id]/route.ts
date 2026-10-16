@@ -4,7 +4,8 @@ import { getAuthContext } from '@/lib/auth'
 import { logger } from '@/lib/logger'
 import { isValidVisibility } from '@/lib/visibility'
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     const context = await getAuthContext(request)
@@ -13,7 +14,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
     userId = context.userId
 
-    const comment = await prisma.comment.findFirst({ where: { id: params.id, familyId: context.familyId } })
+    const comment = await prisma.comment.findFirst({ where: { id: resolvedParams.id, familyId: context.familyId } })
     if (!comment) {
       return NextResponse.json({ error: 'Kommentar nicht gefunden' }, { status: 404 })
     }
@@ -36,7 +37,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (resolved !== undefined) updateData.resolved = resolved
 
     const updated = await prisma.comment.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: updateData,
       include: { author: { select: { name: true } } },
     })
@@ -47,7 +48,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     const context = await getAuthContext(request)
@@ -56,7 +58,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
     userId = context.userId
 
-    const comment = await prisma.comment.findFirst({ where: { id: params.id, familyId: context.familyId } })
+    const comment = await prisma.comment.findFirst({ where: { id: resolvedParams.id, familyId: context.familyId } })
     if (!comment) {
       return NextResponse.json({ error: 'Kommentar nicht gefunden' }, { status: 404 })
     }
@@ -64,7 +66,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
     }
 
-    await prisma.comment.delete({ where: { id: params.id } })
+    await prisma.comment.delete({ where: { id: resolvedParams.id } })
     return NextResponse.json({ success: true })
   } catch (error) {
     logger.error(error, { route: 'DELETE /api/comments/[id]', userId })

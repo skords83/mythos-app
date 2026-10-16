@@ -8,8 +8,9 @@ import { deleteRelationsForEntity } from '@/lib/relations'
 // PUT /api/scenes/[id] - Szene aktualisieren (nur Autor)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     const context = await getAuthContext(request)
@@ -19,7 +20,7 @@ export async function PUT(
     userId = context.userId
 
     const scene = await prisma.scene.findFirst({
-      where: { id: params.id, familyId: context.familyId },
+      where: { id: resolvedParams.id, familyId: context.familyId },
     })
     if (!scene) {
       return NextResponse.json({ error: 'Szene nicht gefunden' }, { status: 404 })
@@ -43,7 +44,7 @@ export async function PUT(
     if (order !== undefined) updateData.order = order
     if (visibility !== undefined) updateData.visibility = visibility
 
-    const updated = await prisma.scene.update({ where: { id: params.id }, data: updateData })
+    const updated = await prisma.scene.update({ where: { id: resolvedParams.id }, data: updateData })
     return NextResponse.json(updated)
   } catch (error) {
     logger.error(error, { route: 'PUT /api/scenes/[id]', userId })
@@ -54,8 +55,9 @@ export async function PUT(
 // DELETE /api/scenes/[id] - Szene löschen (Autor oder Familien-OWNER)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     const context = await getAuthContext(request)
@@ -65,7 +67,7 @@ export async function DELETE(
     userId = context.userId
 
     const scene = await prisma.scene.findFirst({
-      where: { id: params.id, familyId: context.familyId },
+      where: { id: resolvedParams.id, familyId: context.familyId },
     })
     if (!scene) {
       return NextResponse.json({ error: 'Szene nicht gefunden' }, { status: 404 })
@@ -74,8 +76,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
     }
 
-    await deleteRelationsForEntity(prisma, 'SCENE', params.id)
-    await prisma.scene.delete({ where: { id: params.id } })
+    await deleteRelationsForEntity(prisma, 'SCENE', resolvedParams.id)
+    await prisma.scene.delete({ where: { id: resolvedParams.id } })
     return NextResponse.json({ success: true })
   } catch (error) {
     logger.error(error, { route: 'DELETE /api/scenes/[id]', userId })

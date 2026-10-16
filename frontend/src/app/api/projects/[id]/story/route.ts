@@ -5,17 +5,18 @@ import { visibilityWhere } from '@/lib/visibility'
 import { manuscriptText, discoverNames, mentionLabels } from '@/lib/storyTools'
 import { logger } from '@/lib/logger'
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params
   try {
     const context = await getAuthContext(request)
     if (!context) return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
-    const project = await prisma.project.findFirst({ where: { id: params.id, userId: context.userId } })
+    const project = await prisma.project.findFirst({ where: { id: resolvedParams.id, userId: context.userId } })
     if (!project) return NextResponse.json({ error: 'Projekt nicht gefunden' }, { status: 404 })
-    const where = { projectId: params.id, OR: visibilityWhere(context) }
+    const where = { projectId: resolvedParams.id, OR: visibilityWhere(context) }
     const [chapters, characters, places, items, scenes, events] = await Promise.all([
-      prisma.chapter.findMany({ where: { projectId: params.id }, orderBy: { order: 'asc' } }),
+      prisma.chapter.findMany({ where: { projectId: resolvedParams.id }, orderBy: { order: 'asc' } }),
       prisma.character.findMany({ where }), prisma.place.findMany({ where }), prisma.item.findMany({ where }),
-      prisma.scene.findMany({ where: { chapter: { projectId: params.id }, OR: visibilityWhere(context) }, orderBy: { order: 'asc' } }),
+      prisma.scene.findMany({ where: { chapter: { projectId: resolvedParams.id }, OR: visibilityWhere(context) }, orderBy: { order: 'asc' } }),
       prisma.timelineEvent.findMany({ where, orderBy: { order: 'asc' } }),
     ])
     const entities = [...characters.map(e => ({...e,kind:'CHARACTER'})),...places.map(e => ({...e,kind:'PLACE'})),...items.map(e => ({...e,kind:'ITEM'}))]

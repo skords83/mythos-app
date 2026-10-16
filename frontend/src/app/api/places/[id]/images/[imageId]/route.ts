@@ -6,8 +6,9 @@ import { logger } from '@/lib/logger'
 // DELETE /api/places/[id]/images/[imageId] - Bild entfernen (nur Autor)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; imageId: string } }
+  { params }: { params: Promise<{ id: string; imageId: string }> }
 ) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     const context = await getAuthContext(request)
@@ -17,7 +18,7 @@ export async function DELETE(
     userId = context.userId
 
     const image = await prisma.placeImage.findFirst({
-      where: { id: params.imageId, placeId: params.id, familyId: context.familyId },
+      where: { id: resolvedParams.imageId, placeId: resolvedParams.id, familyId: context.familyId },
     })
     if (!image) {
       return NextResponse.json({ error: 'Bild nicht gefunden' }, { status: 404 })
@@ -26,7 +27,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
     }
 
-    await prisma.placeImage.delete({ where: { id: params.imageId } })
+    await prisma.placeImage.delete({ where: { id: resolvedParams.imageId } })
     return NextResponse.json({ success: true })
   } catch (error) {
     logger.error(error, { route: 'DELETE /api/places/[id]/images/[imageId]', userId })

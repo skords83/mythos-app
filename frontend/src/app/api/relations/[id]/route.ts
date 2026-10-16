@@ -6,8 +6,9 @@ import { logger } from '@/lib/logger'
 // PUT /api/relations/[id] - Relation aktualisieren (relationType/label, nur Autor)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     const context = await getAuthContext(request)
@@ -17,7 +18,7 @@ export async function PUT(
     userId = context.userId
 
     const relation = await prisma.relation.findFirst({
-      where: { id: params.id, familyId: context.familyId },
+      where: { id: resolvedParams.id, familyId: context.familyId },
     })
     if (!relation) {
       return NextResponse.json({ error: 'Relation nicht gefunden' }, { status: 404 })
@@ -33,7 +34,7 @@ export async function PUT(
     if (relationType !== undefined) updateData.relationType = relationType
     if (label !== undefined) updateData.label = label
 
-    const updated = await prisma.relation.update({ where: { id: params.id }, data: updateData })
+    const updated = await prisma.relation.update({ where: { id: resolvedParams.id }, data: updateData })
     return NextResponse.json(updated)
   } catch (error) {
     logger.error(error, { route: 'PUT /api/relations/[id]', userId })
@@ -44,8 +45,9 @@ export async function PUT(
 // DELETE /api/relations/[id] - Relation löschen (Autor oder Familien-OWNER)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     const context = await getAuthContext(request)
@@ -55,7 +57,7 @@ export async function DELETE(
     userId = context.userId
 
     const relation = await prisma.relation.findFirst({
-      where: { id: params.id, familyId: context.familyId },
+      where: { id: resolvedParams.id, familyId: context.familyId },
     })
     if (!relation) {
       return NextResponse.json({ error: 'Relation nicht gefunden' }, { status: 404 })
@@ -64,7 +66,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
     }
 
-    await prisma.relation.delete({ where: { id: params.id } })
+    await prisma.relation.delete({ where: { id: resolvedParams.id } })
     return NextResponse.json({ success: true })
   } catch (error) {
     logger.error(error, { route: 'DELETE /api/relations/[id]', userId })

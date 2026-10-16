@@ -8,8 +8,9 @@ import { deleteRelationsForEntity } from '@/lib/relations'
 // PUT /api/lore-entries/[id] - Lore-Eintrag aktualisieren (nur Autor)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     const context = await getAuthContext(request)
@@ -19,7 +20,7 @@ export async function PUT(
     userId = context.userId
 
     const loreEntry = await prisma.loreEntry.findFirst({
-      where: { id: params.id, familyId: context.familyId },
+      where: { id: resolvedParams.id, familyId: context.familyId },
     })
     if (!loreEntry) {
       return NextResponse.json({ error: 'Lore-Eintrag nicht gefunden' }, { status: 404 })
@@ -41,7 +42,7 @@ export async function PUT(
     if (category !== undefined) updateData.category = category
     if (visibility !== undefined) updateData.visibility = visibility
 
-    const updated = await prisma.loreEntry.update({ where: { id: params.id }, data: updateData })
+    const updated = await prisma.loreEntry.update({ where: { id: resolvedParams.id }, data: updateData })
     return NextResponse.json(updated)
   } catch (error) {
     logger.error(error, { route: 'PUT /api/lore-entries/[id]', userId })
@@ -52,8 +53,9 @@ export async function PUT(
 // DELETE /api/lore-entries/[id] - Lore-Eintrag löschen (Autor oder Familien-OWNER)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     const context = await getAuthContext(request)
@@ -63,7 +65,7 @@ export async function DELETE(
     userId = context.userId
 
     const loreEntry = await prisma.loreEntry.findFirst({
-      where: { id: params.id, familyId: context.familyId },
+      where: { id: resolvedParams.id, familyId: context.familyId },
     })
     if (!loreEntry) {
       return NextResponse.json({ error: 'Lore-Eintrag nicht gefunden' }, { status: 404 })
@@ -72,8 +74,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
     }
 
-    await deleteRelationsForEntity(prisma, 'LORE_ENTRY', params.id)
-    await prisma.loreEntry.delete({ where: { id: params.id } })
+    await deleteRelationsForEntity(prisma, 'LORE_ENTRY', resolvedParams.id)
+    await prisma.loreEntry.delete({ where: { id: resolvedParams.id } })
     return NextResponse.json({ success: true })
   } catch (error) {
     logger.error(error, { route: 'DELETE /api/lore-entries/[id]', userId })

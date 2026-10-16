@@ -38,7 +38,7 @@ describe('PUT /api/ideas/[id]', () => {
       method: 'PUT',
       body: JSON.stringify({ visibility: 'PUBLIC' }),
     })
-    const response = await PUT(request, { params: { id: 'idea-1' } })
+    const response = await PUT(request, { params: Promise.resolve({ id: 'idea-1' }) })
     expect(response.status).toBe(400)
     expect(mockedPrisma.idea.update).not.toHaveBeenCalled()
   })
@@ -50,7 +50,7 @@ describe('PUT /api/ideas/[id]', () => {
       method: 'PUT',
       body: JSON.stringify({ title: 'Neuer Titel' }),
     })
-    const response = await PUT(request, { params: { id: 'idea-1' } })
+    const response = await PUT(request, { params: Promise.resolve({ id: 'idea-1' }) })
     expect(response.status).toBe(403)
   })
 })
@@ -61,7 +61,7 @@ describe('DELETE /api/ideas/[id]', () => {
     mockedPrisma.idea.delete.mockResolvedValue({ id: 'idea-1' })
 
     const request = authedRequest('http://localhost/api/ideas/idea-1', { method: 'DELETE' })
-    const response = await DELETE(request, { params: { id: 'idea-1' } })
+    const response = await DELETE(request, { params: Promise.resolve({ id: 'idea-1' }) })
 
     expect(response.status).toBe(200)
     expect(mockedPrisma.idea.delete).toHaveBeenCalledWith({ where: { id: 'idea-1' } })
@@ -71,7 +71,7 @@ describe('DELETE /api/ideas/[id]', () => {
     mockedPrisma.idea.findFirst.mockResolvedValueOnce({ id: 'idea-1', authorId: 'other-user' })
 
     const request = authedRequest('http://localhost/api/ideas/idea-1', { method: 'DELETE' })
-    const response = await DELETE(request, { params: { id: 'idea-1' } })
+    const response = await DELETE(request, { params: Promise.resolve({ id: 'idea-1' }) })
 
     expect(response.status).toBe(403)
     expect(mockedPrisma.idea.delete).not.toHaveBeenCalled()
@@ -81,7 +81,7 @@ describe('DELETE /api/ideas/[id]', () => {
     mockedPrisma.idea.findFirst.mockResolvedValueOnce(null)
 
     const request = authedRequest('http://localhost/api/ideas/missing', { method: 'DELETE' })
-    const response = await DELETE(request, { params: { id: 'missing' } })
+    const response = await DELETE(request, { params: Promise.resolve({ id: 'missing' }) })
 
     expect(response.status).toBe(404)
   })

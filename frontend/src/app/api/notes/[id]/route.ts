@@ -6,8 +6,9 @@ import { logger } from '@/lib/logger'
 // PUT /api/notes/[id] - Notiz aktualisieren
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     userId = await getUserFromRequest(request)
@@ -18,7 +19,7 @@ export async function PUT(
     // Verify note belongs to user's project
     const note = await prisma.note.findFirst({
       where: { 
-        id: params.id,
+        id: resolvedParams.id,
         chapter: { project: { userId } }
       }
     })
@@ -35,7 +36,7 @@ export async function PUT(
     if (content !== undefined) updateData.content = content
 
     const updated = await prisma.note.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: updateData
     })
 
@@ -49,8 +50,9 @@ export async function PUT(
 // DELETE /api/notes/[id] - Notiz löschen
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     userId = await getUserFromRequest(request)
@@ -61,7 +63,7 @@ export async function DELETE(
     // Verify note belongs to user's project
     const note = await prisma.note.findFirst({
       where: { 
-        id: params.id,
+        id: resolvedParams.id,
         chapter: { project: { userId } }
       }
     })
@@ -71,7 +73,7 @@ export async function DELETE(
     }
 
     await prisma.note.delete({
-      where: { id: params.id }
+      where: { id: resolvedParams.id }
     })
 
     return NextResponse.json({ success: true })

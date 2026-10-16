@@ -1,4 +1,4 @@
-# Mythos OAuth / MCP — Stand 16.10.2026
+# Mythos OAuth / MCP — Stand 17.10.2026
 
 Lokale OAuth-/MCP-Integration implementiert und mit echter PostgreSQL-Datenbank, HTTP und dem offiziellen MCP-TypeScript-Client geprüft. **Noch keine bestätigte Verbindung aus ChatGPT, keine Produktionsfreigabe.** Auf `feature/chatgpt-mcp-readonly` entwickelt; Produktionsinstallation und Git-Stashes unverändert.
 
@@ -20,20 +20,26 @@ Lokale OAuth-/MCP-Integration implementiert und mit echter PostgreSQL-Datenbank,
 
 Siehe [lokale Einrichtung und Testbefehle](chatgpt-mcp-local-testing.md). Der HTTP-Test umfasst echte Anmeldung, Discovery, Zustimmung, PKCE, parallele Code-Einlösung, Token-Ausstellung, SDK-Initialisierung/Tool-Liste/Tool-Aufruf, alle sieben Werkzeuge, Projekt-/Kapitelgrenzen, PRIVATE/FAMILY-Sichtbarkeit, fehlende/ungültige/abgelaufene/widerrufene Tokens, Ressourcenbindung und Scope-Prüfung. Fixtures werden ausschließlich in der isolierten Datenbank erzeugt und gezielt entfernt.
 
-526 Unit-Tests in 84 Suites bestanden; TypeScript (`tsc --noEmit --incremental false`), Next.js-Produktionsbuild und `git diff --check` erfolgreich. Der HTTP-Test wurde zusätzlich gegen den gebauten lokalen Server ausgeführt. Die drei älteren opt-in Datenbank-Suites für **schreibende** Kapitelvorschläge gehören nicht zur MCP-Leseintegration und werden im Standardtestlauf übersprungen.
+526 Unit-Tests in 84 Suites bestanden; TypeScript (`tsc --noEmit --incremental false`), Next.js-15.5.28-Produktionsbuild und `git diff --check` erfolgreich. 61 HTTP-/OAuth-/MCP-Prüfungen liefen gegen den gebauten Server. Chromium bestätigte Login, Projekt-/Kapitelnavigation, Editor und PDF-Download ohne CSP-Verstöße oder JavaScript-Fehler. Der erzeugte PDF-Download ist eine gültige A4-Datei; der Inhaltstest fand Titel und Kapitelüberschrift, aber keinen Kapiteltext, daher ist der PDF-Textinhalt noch nicht vollständig verifiziert. Die drei älteren opt-in Datenbank-Suites für **schreibende** Kapitelvorschläge gehören nicht zur MCP-Leseintegration und werden im Standardtestlauf übersprungen.
 
 ## Offene Freigabepunkte
 
 1. Tatsächlicher Verbindungs- und Lesetest in ChatGPT über einen gesonderten HTTPS-Testendpunkt, mit ausschließlich synthetischen Daten. Lokaler SDK-Erfolg ist kein Nachweis einer ChatGPT-Verbindung.
-2. Vor öffentlicher Freigabe Abhängigkeiten aktualisieren und erneut prüfen: `npm audit --omit=dev` meldete am 16.10.2026 **42 Befunde (3 kritisch, 8 hoch, 31 mittel)**, u. a. Next.js und html2pdf.js/jsPDF. Keine pauschale Framework-/Export-Migration innerhalb dieses MCP-Schritts vorgenommen.
-3. Öffentlichen Testbetrieb durch HTTPS und Rate-Limits für OAuth und MCP absichern. Die Anwendung begrenzt OAuth/MCP bereits über Redis; zusätzlich müssen öffentliche Proxys Client-IP-Header selbst setzen, da vom Client gelieferte Forwarded-Header keine vertrauenswürdige Identität sind. Keine Tokens, Codes, Cookie-/Authorization-Header oder vollständigen OAuth-Querystrings in Proxy-/Access-Logs aufnehmen.
+2. `npm audit --omit=dev` meldete am 17.10.2026 **28 mittlere Befunde, keine kritischen oder hohen**. Next.js wurde auf 15.5.28, React auf 19.3.1 und html2pdf.js auf 0.14.0 aktualisiert; PostCSS wird per Override auf 8.5.30 gehoben. Veraltete synchrone Route-Parameter wurden auf Promises umgestellt. Die Befunde stammen überwiegend aus Tiptap 2. Das upstream veröffentlichte Advisory GHSA-cp6q-959q-f8rh (dort als hoch eingestuft) betrifft ungeprüfte dynamische Attribute in `mergeAttributes`; die statischen Mythos-Schemas und der schreibgeschützte MCP-Endpunkt exponieren diesen Eingabepfad nicht. Tiptap 3 ist ein separates Editor-Migrationsrisiko.
+3. Für tatsächliche ChatGPT-Prüfung eine separate HTTPS-Testadresse bereitstellen. Die Anwendung begrenzt OAuth/MCP über Redis; der HTTPS-Proxy muss Client-IP-Header selbst setzen und sensible Header/Querystrings aus Logs ausschließen. Keine Tokens, Codes, Cookie-/Authorization-Header oder vollständigen OAuth-Querystrings in Proxy-/Access-Logs aufnehmen.
 4. Keine Refresh-Tokens: nach einer Stunde erneut autorisieren. Sehr große Einzelkapitel werden als Tool-Fehler abgewiesen; Chunk-Lesen ist noch nicht implementiert. Listen mit kleinerem `limit` erneut abfragen.
 5. Migration `20261016180000_oauth_resource_binding` ist vorbereitet, aber **nicht auf Produktion angewandt**. Alte MCP-Verbindungen müssen nach Ressourcenbindung neu autorisiert werden.
 6. Jede spätere Produktivübernahme benötigt eine separate Freigabe.
+
+## Zusätzlich gefundener CSP-Fehler
+
+Die strikte Nonce-CSP blockierte das statisch erzeugte Login-HTML. Das App-Layout rendert nun dynamisch und übernimmt den Request-Nonce auch für das inline Theme-Skript. Das folgt der [Next.js-CSP-Dokumentation](https://nextjs.org/docs/app/guides/content-security-policy), die für Nonces dynamische Seiten voraussetzt. Browserprüfung läuft nach dem Build.
 
 ## Quellen
 
 - [OpenAI: Authentication](https://developers.openai.com/plugins/build/auth)
 - [OpenAI: Custom MCP server](https://developers.openai.com/api/docs/guides/custom-mcp-server)
 - [MCP Streamable HTTP](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports)
+- [Next.js CSP mit Nonces](https://nextjs.org/docs/app/guides/content-security-policy)
+- [Tiptap-Advisory GHSA-cp6q-959q-f8rh](https://github.com/ueberdosis/tiptap/security/advisories/GHSA-cp6q-959q-f8rh)
 - [MCP Authorization](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization)

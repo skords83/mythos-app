@@ -8,12 +8,13 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || join(process.cwd(), 'public', 'uplo
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { filename: string } }
+  { params }: { params: Promise<{ filename: string }> }
 ) {
+  const resolvedParams = await params
   try {
     const context = await getAuthContext(request)
     if (!context) return new NextResponse('Unauthorized', { status: 401, headers: { 'Cache-Control': 'private, no-store' } })
-    const filename = params.filename
+    const filename = resolvedParams.filename
     if (!/^[0-9a-fA-F-]{36}\.(png|jpe?g|gif|webp)$/.test(filename) || !await canReadUpload(filename, context)) {
       return new NextResponse('Not found', { status: 404, headers: { 'Cache-Control': 'private, no-store' } })
     }

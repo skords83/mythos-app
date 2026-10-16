@@ -40,7 +40,7 @@ describe('PUT /api/scenes/[id]', () => {
       method: 'PUT',
       body: JSON.stringify({ visibility: 'PUBLIC' }),
     })
-    const response = await PUT(request, { params: { id: 'scene-1' } })
+    const response = await PUT(request, { params: Promise.resolve({ id: 'scene-1' }) })
     expect(response.status).toBe(400)
     expect(mockedPrisma.scene.update).not.toHaveBeenCalled()
   })
@@ -52,7 +52,7 @@ describe('PUT /api/scenes/[id]', () => {
       method: 'PUT',
       body: JSON.stringify({ name: 'Neuer Name' }),
     })
-    const response = await PUT(request, { params: { id: 'scene-1' } })
+    const response = await PUT(request, { params: Promise.resolve({ id: 'scene-1' }) })
     expect(response.status).toBe(403)
   })
 
@@ -64,7 +64,7 @@ describe('PUT /api/scenes/[id]', () => {
       method: 'PUT',
       body: JSON.stringify({ order: 3 }),
     })
-    const response = await PUT(request, { params: { id: 'scene-1' } })
+    const response = await PUT(request, { params: Promise.resolve({ id: 'scene-1' }) })
     expect(response.status).toBe(200)
     expect(mockedPrisma.scene.update).toHaveBeenCalledWith({
       where: { id: 'scene-1' },
@@ -80,7 +80,7 @@ describe('DELETE /api/scenes/[id]', () => {
     mockedPrisma.scene.delete.mockResolvedValue({ id: 'scene-1' })
 
     const request = authedRequest('http://localhost/api/scenes/scene-1', { method: 'DELETE' })
-    const response = await DELETE(request, { params: { id: 'scene-1' } })
+    const response = await DELETE(request, { params: Promise.resolve({ id: 'scene-1' }) })
 
     expect(response.status).toBe(200)
     expect(mockedPrisma.relation.deleteMany).toHaveBeenCalledWith({
@@ -93,7 +93,7 @@ describe('DELETE /api/scenes/[id]', () => {
     mockedPrisma.scene.findFirst.mockResolvedValueOnce({ id: 'scene-1', authorId: 'other-user' })
 
     const request = authedRequest('http://localhost/api/scenes/scene-1', { method: 'DELETE' })
-    const response = await DELETE(request, { params: { id: 'scene-1' } })
+    const response = await DELETE(request, { params: Promise.resolve({ id: 'scene-1' }) })
 
     expect(response.status).toBe(403)
     expect(mockedPrisma.relation.deleteMany).not.toHaveBeenCalled()
@@ -104,7 +104,7 @@ describe('DELETE /api/scenes/[id]', () => {
     mockedPrisma.scene.findFirst.mockResolvedValueOnce(null)
 
     const request = authedRequest('http://localhost/api/scenes/missing', { method: 'DELETE' })
-    const response = await DELETE(request, { params: { id: 'missing' } })
+    const response = await DELETE(request, { params: Promise.resolve({ id: 'missing' }) })
 
     expect(response.status).toBe(404)
     expect(mockedPrisma.relation.deleteMany).not.toHaveBeenCalled()

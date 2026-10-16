@@ -40,7 +40,7 @@ describe('PUT /api/lore-entries/[id]', () => {
       method: 'PUT',
       body: JSON.stringify({ visibility: 'PUBLIC' }),
     })
-    const response = await PUT(request, { params: { id: 'lore-1' } })
+    const response = await PUT(request, { params: Promise.resolve({ id: 'lore-1' }) })
     expect(response.status).toBe(400)
     expect(mockedPrisma.loreEntry.update).not.toHaveBeenCalled()
   })
@@ -52,7 +52,7 @@ describe('PUT /api/lore-entries/[id]', () => {
       method: 'PUT',
       body: JSON.stringify({ title: 'Neuer Titel' }),
     })
-    const response = await PUT(request, { params: { id: 'lore-1' } })
+    const response = await PUT(request, { params: Promise.resolve({ id: 'lore-1' }) })
     expect(response.status).toBe(403)
   })
 })
@@ -64,7 +64,7 @@ describe('DELETE /api/lore-entries/[id]', () => {
     mockedPrisma.loreEntry.delete.mockResolvedValue({ id: 'lore-1' })
 
     const request = authedRequest('http://localhost/api/lore-entries/lore-1', { method: 'DELETE' })
-    const response = await DELETE(request, { params: { id: 'lore-1' } })
+    const response = await DELETE(request, { params: Promise.resolve({ id: 'lore-1' }) })
 
     expect(response.status).toBe(200)
     expect(mockedPrisma.relation.deleteMany).toHaveBeenCalledWith({
@@ -77,7 +77,7 @@ describe('DELETE /api/lore-entries/[id]', () => {
     mockedPrisma.loreEntry.findFirst.mockResolvedValueOnce({ id: 'lore-1', authorId: 'other-user' })
 
     const request = authedRequest('http://localhost/api/lore-entries/lore-1', { method: 'DELETE' })
-    const response = await DELETE(request, { params: { id: 'lore-1' } })
+    const response = await DELETE(request, { params: Promise.resolve({ id: 'lore-1' }) })
 
     expect(response.status).toBe(403)
     expect(mockedPrisma.relation.deleteMany).not.toHaveBeenCalled()
@@ -88,7 +88,7 @@ describe('DELETE /api/lore-entries/[id]', () => {
     mockedPrisma.loreEntry.findFirst.mockResolvedValueOnce(null)
 
     const request = authedRequest('http://localhost/api/lore-entries/missing', { method: 'DELETE' })
-    const response = await DELETE(request, { params: { id: 'missing' } })
+    const response = await DELETE(request, { params: Promise.resolve({ id: 'missing' }) })
 
     expect(response.status).toBe(404)
     expect(mockedPrisma.relation.deleteMany).not.toHaveBeenCalled()

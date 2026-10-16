@@ -37,7 +37,7 @@ describe('PUT /api/factions/[id]', () => {
     mockedPrisma.faction.findFirst.mockResolvedValue(null)
     const response = await PUT(
       authedRequest('http://localhost/api/factions/f1', { method: 'PUT', body: JSON.stringify({ name: 'x' }) }),
-      { params: { id: 'f1' } }
+      { params: Promise.resolve({ id: 'f1' }) }
     )
     expect(response.status).toBe(404)
   })
@@ -46,7 +46,7 @@ describe('PUT /api/factions/[id]', () => {
     mockedPrisma.faction.findFirst.mockResolvedValue({ id: 'f1', authorId: 'someone-else' })
     const response = await PUT(
       authedRequest('http://localhost/api/factions/f1', { method: 'PUT', body: JSON.stringify({ name: 'x' }) }),
-      { params: { id: 'f1' } }
+      { params: Promise.resolve({ id: 'f1' }) }
     )
     expect(response.status).toBe(403)
   })
@@ -59,7 +59,7 @@ describe('PUT /api/factions/[id]', () => {
         method: 'PUT',
         body: JSON.stringify({ name: 'Neuer Name', goal: 'Macht ergreifen' }),
       }),
-      { params: { id: 'f1' } }
+      { params: Promise.resolve({ id: 'f1' }) }
     )
     expect(response.status).toBe(200)
     expect(mockedPrisma.faction.update).toHaveBeenCalledWith({
@@ -75,7 +75,7 @@ describe('PUT /api/factions/[id]', () => {
         method: 'PUT',
         body: JSON.stringify({ visibility: 'PUBLIC' }),
       }),
-      { params: { id: 'f1' } }
+      { params: Promise.resolve({ id: 'f1' }) }
     )
     expect(response.status).toBe(400)
   })
@@ -85,7 +85,7 @@ describe('DELETE /api/factions/[id]', () => {
   it('returns 403 when the caller is neither author nor OWNER', async () => {
     mockedPrisma.faction.findFirst.mockResolvedValue({ id: 'f1', authorId: 'someone-else' })
     const response = await DELETE(authedRequest('http://localhost/api/factions/f1', { method: 'DELETE' }), {
-      params: { id: 'f1' },
+      params: Promise.resolve({ id: 'f1' }),
     })
     expect(response.status).toBe(403)
   })
@@ -95,7 +95,7 @@ describe('DELETE /api/factions/[id]', () => {
     mockedPrisma.faction.delete.mockResolvedValue({ id: 'f1' })
     const response = await DELETE(
       authedRequest('http://localhost/api/factions/f1', { method: 'DELETE' }, 'OWNER'),
-      { params: { id: 'f1' } }
+      { params: Promise.resolve({ id: 'f1' }) }
     )
     expect(response.status).toBe(200)
     expect(mockedPrisma.faction.delete).toHaveBeenCalledWith({ where: { id: 'f1' } })
@@ -104,7 +104,7 @@ describe('DELETE /api/factions/[id]', () => {
   it('cleans up dangling Relation rows for the faction before deleting it', async () => {
     mockedPrisma.faction.findFirst.mockResolvedValue({ id: 'f1', authorId: 'user-1' })
     mockedPrisma.faction.delete.mockResolvedValue({ id: 'f1' })
-    await DELETE(authedRequest('http://localhost/api/factions/f1', { method: 'DELETE' }), { params: { id: 'f1' } })
+    await DELETE(authedRequest('http://localhost/api/factions/f1', { method: 'DELETE' }), { params: Promise.resolve({ id: 'f1' }) })
     expect(mockedPrisma.relation.deleteMany).toHaveBeenCalledWith({
       where: {
         OR: [

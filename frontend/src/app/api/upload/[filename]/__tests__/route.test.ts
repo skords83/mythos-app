@@ -23,40 +23,40 @@ beforeEach(() => {
   jest.mocked(readFile).mockResolvedValue(Buffer.from('image-data'))
 })
 it('rejects anonymous readers before reading a file', async () => {
-  expect((await GET(request(), { params: { filename } })).status).toBe(401)
+  expect((await GET(request(), { params: Promise.resolve({ filename }) })).status).toBe(401)
   expect(readFile).not.toHaveBeenCalled()
   expect(db.upload.findUnique).not.toHaveBeenCalled()
 })
 it('serves the owner with no shared or persistent cache', async () => {
-  const response = await GET(request('owner'), { params: { filename } })
+  const response = await GET(request('owner'), { params: Promise.resolve({ filename }) })
   expect(response.status).toBe(200)
   expect(response.headers.get('Cache-Control')).toBe('private, no-store')
   expect(await response.text()).toBe('image-data')
 })
 it('rejects another logged-in user when there is no authorized share', async () => {
-  expect((await GET(request('stranger'), { params: { filename } })).status).toBe(404)
+  expect((await GET(request('stranger'), { params: Promise.resolve({ filename }) })).status).toBe(404)
   expect(readFile).not.toHaveBeenCalled()
 })
 it('does not grant ownership from a guessed or copied URL', async () => {
   db.upload.findUnique.mockResolvedValue(null)
-  expect((await GET(request('owner'), { params: { filename } })).status).toBe(404)
+  expect((await GET(request('owner'), { params: Promise.resolve({ filename }) })).status).toBe(404)
   expect(readFile).not.toHaveBeenCalled()
 })
 it.each(['character', 'placeImage', 'chapterVersion'])('permits an authorized %s share', async model => {
   db[model].findFirst.mockResolvedValue({ id: 'shared' })
-  expect((await GET(request('reader'), { params: { filename } })).status).toBe(200)
+  expect((await GET(request('reader'), { params: Promise.resolve({ filename }) })).status).toBe(200)
   expect(db[model].findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({
     familyId: 'family', authorId: { in: ['owner'] },
   }) }))
 })
 it('checks the parent place visibility for shared images', async () => {
-  await GET(request('reader'), { params: { filename } })
+  await GET(request('reader'), { params: Promise.resolve({ filename }) })
   expect(db.placeImage.findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({
     place: { familyId: 'family', OR: [{ visibility: 'FAMILY' }, { authorId: 'reader' }] },
   }) }))
 })
 it('rejects path traversal without reading files', async () => {
-  expect((await GET(request('owner'), { params: { filename: '../secret.png' } })).status).toBe(404)
+  expect((await GET(request('owner'), { params: Promise.resolve({ filename: '../secret.png' }) })).status).toBe(404)
   expect(readFile).not.toHaveBeenCalled()
 })
 it('routes legacy public upload URLs through the same authorization', () => {

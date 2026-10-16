@@ -43,7 +43,7 @@ describe('PUT /api/places/[id]', () => {
       method: 'PUT',
       body: JSON.stringify({ parentId: 'place-parent' }),
     })
-    const response = await PUT(request, { params: { id: 'place-1' } })
+    const response = await PUT(request, { params: Promise.resolve({ id: 'place-1' }) })
     expect(response.status).toBe(200)
     expect(mockedPrisma.place.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 'place-1' }, data: expect.objectContaining({ parentId: 'place-parent' }) })
@@ -57,7 +57,7 @@ describe('PUT /api/places/[id]', () => {
       method: 'PUT',
       body: JSON.stringify({ parentId: 'place-1' }),
     })
-    const response = await PUT(request, { params: { id: 'place-1' } })
+    const response = await PUT(request, { params: Promise.resolve({ id: 'place-1' }) })
     expect(response.status).toBe(400)
     expect(mockedPrisma.place.update).not.toHaveBeenCalled()
   })
@@ -71,7 +71,7 @@ describe('PUT /api/places/[id]', () => {
       method: 'PUT',
       body: JSON.stringify({ parentId: 'missing-place' }),
     })
-    const response = await PUT(request, { params: { id: 'place-1' } })
+    const response = await PUT(request, { params: Promise.resolve({ id: 'place-1' }) })
     expect(response.status).toBe(404)
     expect(mockedPrisma.place.update).not.toHaveBeenCalled()
   })
@@ -87,7 +87,7 @@ describe('PUT /api/places/[id]', () => {
       method: 'PUT',
       body: JSON.stringify({ parentId: 'place-2' }),
     })
-    const response = await PUT(request, { params: { id: 'place-1' } })
+    const response = await PUT(request, { params: Promise.resolve({ id: 'place-1' }) })
     expect(response.status).toBe(400)
     expect(mockedPrisma.place.update).not.toHaveBeenCalled()
   })
@@ -101,7 +101,7 @@ describe('PUT /api/places/[id]', () => {
       method: 'PUT',
       body: JSON.stringify({ visibility: 'FAMILY' }),
     })
-    const response = await PUT(request, { params: { id: 'place-1' } })
+    const response = await PUT(request, { params: Promise.resolve({ id: 'place-1' }) })
     expect(response.status).toBe(400)
     expect(mockedPrisma.place.update).not.toHaveBeenCalled()
   })
@@ -115,7 +115,7 @@ describe('PUT /api/places/[id]', () => {
       method: 'PUT',
       body: JSON.stringify({ parentId: 'place-parent' }),
     })
-    const response = await PUT(request, { params: { id: 'place-1' } })
+    const response = await PUT(request, { params: Promise.resolve({ id: 'place-1' }) })
     expect(response.status).toBe(400)
     expect(mockedPrisma.place.update).not.toHaveBeenCalled()
   })
@@ -136,7 +136,7 @@ describe('PUT /api/places/[id]', () => {
       method: 'PUT',
       body: JSON.stringify({ visibility: 'PRIVATE' }),
     })
-    const response = await PUT(request, { params: { id: 'place-1' } })
+    const response = await PUT(request, { params: Promise.resolve({ id: 'place-1' }) })
     expect(response.status).toBe(200)
     expect(mockedPrisma.place.updateMany).toHaveBeenCalledWith({
       where: { id: { in: ['place-child'] } },
@@ -152,7 +152,7 @@ describe('DELETE /api/places/[id]', () => {
     mockedPrisma.place.delete.mockResolvedValue({ id: 'place-1' })
 
     const request = authedRequest('http://localhost/api/places/place-1', { method: 'DELETE' })
-    const response = await DELETE(request, { params: { id: 'place-1' } })
+    const response = await DELETE(request, { params: Promise.resolve({ id: 'place-1' }) })
 
     expect(response.status).toBe(200)
     expect(mockedPrisma.relation.deleteMany).toHaveBeenCalledWith({
@@ -165,7 +165,7 @@ describe('DELETE /api/places/[id]', () => {
     mockedPrisma.place.findFirst.mockResolvedValueOnce({ id: 'place-1', authorId: 'other-user' })
 
     const request = authedRequest('http://localhost/api/places/place-1', { method: 'DELETE' })
-    const response = await DELETE(request, { params: { id: 'place-1' } })
+    const response = await DELETE(request, { params: Promise.resolve({ id: 'place-1' }) })
 
     expect(response.status).toBe(403)
     expect(mockedPrisma.relation.deleteMany).not.toHaveBeenCalled()

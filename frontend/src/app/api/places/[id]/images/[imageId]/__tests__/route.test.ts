@@ -33,7 +33,7 @@ beforeEach(() => {
 describe('DELETE /api/places/[id]/images/[imageId]', () => {
   it('returns 401 without an auth cookie', async () => {
     const response = await DELETE(new NextRequest('http://localhost/api/places/place-1/images/img-1', { method: 'DELETE' }), {
-      params: { id: 'place-1', imageId: 'img-1' },
+      params: Promise.resolve({ id: 'place-1', imageId: 'img-1' }),
     })
     expect(response.status).toBe(401)
   })
@@ -41,14 +41,14 @@ describe('DELETE /api/places/[id]/images/[imageId]', () => {
   it('returns 404 when the image does not exist', async () => {
     mockedPrisma.placeImage.findFirst.mockResolvedValue(null)
     const request = authedRequest('http://localhost/api/places/place-1/images/img-1', { method: 'DELETE' })
-    const response = await DELETE(request, { params: { id: 'place-1', imageId: 'img-1' } })
+    const response = await DELETE(request, { params: Promise.resolve({ id: 'place-1', imageId: 'img-1' }) })
     expect(response.status).toBe(404)
   })
 
   it('returns 403 when the caller is not the author', async () => {
     mockedPrisma.placeImage.findFirst.mockResolvedValue({ id: 'img-1', authorId: 'someone-else' })
     const request = authedRequest('http://localhost/api/places/place-1/images/img-1', { method: 'DELETE' })
-    const response = await DELETE(request, { params: { id: 'place-1', imageId: 'img-1' } })
+    const response = await DELETE(request, { params: Promise.resolve({ id: 'place-1', imageId: 'img-1' }) })
     expect(response.status).toBe(403)
     expect(mockedPrisma.placeImage.delete).not.toHaveBeenCalled()
   })
@@ -57,7 +57,7 @@ describe('DELETE /api/places/[id]/images/[imageId]', () => {
     mockedPrisma.placeImage.findFirst.mockResolvedValue({ id: 'img-1', authorId: 'user-1' })
     mockedPrisma.placeImage.delete.mockResolvedValue({ id: 'img-1' })
     const request = authedRequest('http://localhost/api/places/place-1/images/img-1', { method: 'DELETE' })
-    const response = await DELETE(request, { params: { id: 'place-1', imageId: 'img-1' } })
+    const response = await DELETE(request, { params: Promise.resolve({ id: 'place-1', imageId: 'img-1' }) })
     expect(response.status).toBe(200)
     expect(mockedPrisma.placeImage.delete).toHaveBeenCalledWith({ where: { id: 'img-1' } })
   })

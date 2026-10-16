@@ -8,8 +8,9 @@ import { deleteRelationsForEntity } from '@/lib/relations'
 // PUT /api/factions/[id] - Fraktion aktualisieren (nur Autor)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     const context = await getAuthContext(request)
@@ -19,7 +20,7 @@ export async function PUT(
     userId = context.userId
 
     const faction = await prisma.faction.findFirst({
-      where: { id: params.id, familyId: context.familyId },
+      where: { id: resolvedParams.id, familyId: context.familyId },
     })
     if (!faction) {
       return NextResponse.json({ error: 'Fraktion nicht gefunden' }, { status: 404 })
@@ -41,7 +42,7 @@ export async function PUT(
     if (goal !== undefined) updateData.goal = goal
     if (visibility !== undefined) updateData.visibility = visibility
 
-    const updated = await prisma.faction.update({ where: { id: params.id }, data: updateData })
+    const updated = await prisma.faction.update({ where: { id: resolvedParams.id }, data: updateData })
     return NextResponse.json(updated)
   } catch (error) {
     logger.error(error, { route: 'PUT /api/factions/[id]', userId })
@@ -52,8 +53,9 @@ export async function PUT(
 // DELETE /api/factions/[id] - Fraktion löschen (Autor oder Familien-OWNER)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     const context = await getAuthContext(request)
@@ -63,7 +65,7 @@ export async function DELETE(
     userId = context.userId
 
     const faction = await prisma.faction.findFirst({
-      where: { id: params.id, familyId: context.familyId },
+      where: { id: resolvedParams.id, familyId: context.familyId },
     })
     if (!faction) {
       return NextResponse.json({ error: 'Fraktion nicht gefunden' }, { status: 404 })
@@ -72,8 +74,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
     }
 
-    await deleteRelationsForEntity(prisma, 'FACTION', params.id)
-    await prisma.faction.delete({ where: { id: params.id } })
+    await deleteRelationsForEntity(prisma, 'FACTION', resolvedParams.id)
+    await prisma.faction.delete({ where: { id: resolvedParams.id } })
     return NextResponse.json({ success: true })
   } catch (error) {
     logger.error(error, { route: 'DELETE /api/factions/[id]', userId })

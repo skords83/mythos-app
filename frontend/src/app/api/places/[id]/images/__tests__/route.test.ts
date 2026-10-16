@@ -35,7 +35,7 @@ beforeEach(() => {
 describe('POST /api/places/[id]/images', () => {
   it('returns 401 without an auth cookie', async () => {
     const response = await POST(new NextRequest('http://localhost/api/places/place-1/images', { method: 'POST' }), {
-      params: { id: 'place-1' },
+      params: Promise.resolve({ id: 'place-1' }),
     })
     expect(response.status).toBe(401)
   })
@@ -46,7 +46,7 @@ describe('POST /api/places/[id]/images', () => {
       method: 'POST',
       body: JSON.stringify({ url: '/api/upload/x.png' }),
     })
-    const response = await POST(request, { params: { id: 'place-1' } })
+    const response = await POST(request, { params: Promise.resolve({ id: 'place-1' }) })
     expect(response.status).toBe(404)
   })
 
@@ -56,7 +56,7 @@ describe('POST /api/places/[id]/images', () => {
       method: 'POST',
       body: JSON.stringify({ url: '/api/upload/x.png' }),
     })
-    const response = await POST(request, { params: { id: 'place-1' } })
+    const response = await POST(request, { params: Promise.resolve({ id: 'place-1' }) })
     expect(response.status).toBe(403)
     expect(mockedPrisma.placeImage.create).not.toHaveBeenCalled()
   })
@@ -67,7 +67,7 @@ describe('POST /api/places/[id]/images', () => {
       method: 'POST',
       body: JSON.stringify({}),
     })
-    const response = await POST(request, { params: { id: 'place-1' } })
+    const response = await POST(request, { params: Promise.resolve({ id: 'place-1' }) })
     expect(response.status).toBe(400)
     expect(mockedPrisma.placeImage.create).not.toHaveBeenCalled()
   })
@@ -79,7 +79,7 @@ describe('POST /api/places/[id]/images', () => {
       method: 'POST',
       body: JSON.stringify({ url: '/api/upload/x.png' }),
     })
-    const response = await POST(request, { params: { id: 'place-1' } })
+    const response = await POST(request, { params: Promise.resolve({ id: 'place-1' }) })
     expect(response.status).toBe(201)
     expect(mockedPrisma.placeImage.create).toHaveBeenCalledWith(
       expect.objectContaining({

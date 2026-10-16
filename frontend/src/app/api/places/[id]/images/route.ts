@@ -6,8 +6,9 @@ import { logger } from '@/lib/logger'
 // POST /api/places/[id]/images - Bild zu einem Ort hinzufügen (nur Autor)
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     const context = await getAuthContext(request)
@@ -17,7 +18,7 @@ export async function POST(
     userId = context.userId
 
     const place = await prisma.place.findFirst({
-      where: { id: params.id, familyId: context.familyId },
+      where: { id: resolvedParams.id, familyId: context.familyId },
     })
     if (!place) {
       return NextResponse.json({ error: 'Ort nicht gefunden' }, { status: 404 })
@@ -34,7 +35,7 @@ export async function POST(
 
     const image = await prisma.placeImage.create({
       data: {
-        placeId: params.id,
+        placeId: resolvedParams.id,
         familyId: context.familyId,
         authorId: context.userId,
         url,

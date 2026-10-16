@@ -37,7 +37,7 @@ describe('PUT /api/timeline-events/[id]', () => {
     mockedPrisma.timelineEvent.findFirst.mockResolvedValue(null)
     const response = await PUT(
       authedRequest('http://localhost/api/timeline-events/e1', { method: 'PUT', body: JSON.stringify({ title: 'x' }) }),
-      { params: { id: 'e1' } }
+      { params: Promise.resolve({ id: 'e1' }) }
     )
     expect(response.status).toBe(404)
   })
@@ -46,7 +46,7 @@ describe('PUT /api/timeline-events/[id]', () => {
     mockedPrisma.timelineEvent.findFirst.mockResolvedValue({ id: 'e1', authorId: 'someone-else' })
     const response = await PUT(
       authedRequest('http://localhost/api/timeline-events/e1', { method: 'PUT', body: JSON.stringify({ title: 'x' }) }),
-      { params: { id: 'e1' } }
+      { params: Promise.resolve({ id: 'e1' }) }
     )
     expect(response.status).toBe(403)
   })
@@ -59,7 +59,7 @@ describe('PUT /api/timeline-events/[id]', () => {
         method: 'PUT',
         body: JSON.stringify({ title: 'Neuer Titel', type: 'LORE' }),
       }),
-      { params: { id: 'e1' } }
+      { params: Promise.resolve({ id: 'e1' }) }
     )
     expect(response.status).toBe(200)
     expect(mockedPrisma.timelineEvent.update).toHaveBeenCalledWith({
@@ -75,7 +75,7 @@ describe('PUT /api/timeline-events/[id]', () => {
         method: 'PUT',
         body: JSON.stringify({ visibility: 'PUBLIC' }),
       }),
-      { params: { id: 'e1' } }
+      { params: Promise.resolve({ id: 'e1' }) }
     )
     expect(response.status).toBe(400)
   })
@@ -87,7 +87,7 @@ describe('PUT /api/timeline-events/[id]', () => {
         method: 'PUT',
         body: JSON.stringify({ type: 'MYTH' }),
       }),
-      { params: { id: 'e1' } }
+      { params: Promise.resolve({ id: 'e1' }) }
     )
     expect(response.status).toBe(400)
   })
@@ -97,7 +97,7 @@ describe('DELETE /api/timeline-events/[id]', () => {
   it('returns 403 when the caller is neither author nor OWNER', async () => {
     mockedPrisma.timelineEvent.findFirst.mockResolvedValue({ id: 'e1', authorId: 'someone-else' })
     const response = await DELETE(authedRequest('http://localhost/api/timeline-events/e1', { method: 'DELETE' }), {
-      params: { id: 'e1' },
+      params: Promise.resolve({ id: 'e1' }),
     })
     expect(response.status).toBe(403)
   })
@@ -107,7 +107,7 @@ describe('DELETE /api/timeline-events/[id]', () => {
     mockedPrisma.timelineEvent.delete.mockResolvedValue({ id: 'e1' })
     const response = await DELETE(
       authedRequest('http://localhost/api/timeline-events/e1', { method: 'DELETE' }, 'OWNER'),
-      { params: { id: 'e1' } }
+      { params: Promise.resolve({ id: 'e1' }) }
     )
     expect(response.status).toBe(200)
     expect(mockedPrisma.timelineEvent.delete).toHaveBeenCalledWith({ where: { id: 'e1' } })
@@ -116,7 +116,7 @@ describe('DELETE /api/timeline-events/[id]', () => {
   it('cleans up dangling Relation rows for the event before deleting it', async () => {
     mockedPrisma.timelineEvent.findFirst.mockResolvedValue({ id: 'e1', authorId: 'user-1' })
     mockedPrisma.timelineEvent.delete.mockResolvedValue({ id: 'e1' })
-    await DELETE(authedRequest('http://localhost/api/timeline-events/e1', { method: 'DELETE' }), { params: { id: 'e1' } })
+    await DELETE(authedRequest('http://localhost/api/timeline-events/e1', { method: 'DELETE' }), { params: Promise.resolve({ id: 'e1' }) })
     expect(mockedPrisma.relation.deleteMany).toHaveBeenCalledWith({
       where: {
         OR: [

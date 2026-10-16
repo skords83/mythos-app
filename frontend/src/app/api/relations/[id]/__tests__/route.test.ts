@@ -37,7 +37,7 @@ describe('PUT /api/relations/[id]', () => {
       method: 'PUT',
       body: JSON.stringify({ label: 'Vater von' }),
     })
-    const response = await PUT(request, { params: { id: 'rel-1' } })
+    const response = await PUT(request, { params: Promise.resolve({ id: 'rel-1' }) })
     expect(response.status).toBe(404)
   })
 
@@ -47,7 +47,7 @@ describe('PUT /api/relations/[id]', () => {
       method: 'PUT',
       body: JSON.stringify({ label: 'Vater von' }),
     })
-    const response = await PUT(request, { params: { id: 'rel-1' } })
+    const response = await PUT(request, { params: Promise.resolve({ id: 'rel-1' }) })
     expect(response.status).toBe(403)
   })
 
@@ -59,7 +59,7 @@ describe('PUT /api/relations/[id]', () => {
       method: 'PUT',
       body: JSON.stringify({ relationType: 'PARENT_OF', label: 'Vater von' }),
     })
-    const response = await PUT(request, { params: { id: 'rel-1' } })
+    const response = await PUT(request, { params: Promise.resolve({ id: 'rel-1' }) })
 
     expect(response.status).toBe(200)
     expect(mockedPrisma.relation.update).toHaveBeenCalledWith({
@@ -73,7 +73,7 @@ describe('DELETE /api/relations/[id]', () => {
   it('returns 404 when the relation does not exist in this family', async () => {
     mockedPrisma.relation.findFirst.mockResolvedValueOnce(null)
     const response = await DELETE(authedRequest('http://localhost/api/relations/rel-1', { method: 'DELETE' }), {
-      params: { id: 'rel-1' },
+      params: Promise.resolve({ id: 'rel-1' }),
     })
     expect(response.status).toBe(404)
   })
@@ -81,7 +81,7 @@ describe('DELETE /api/relations/[id]', () => {
   it('returns 403 when the caller is neither author nor OWNER', async () => {
     mockedPrisma.relation.findFirst.mockResolvedValueOnce({ id: 'rel-1', authorId: 'other-user' })
     const response = await DELETE(authedRequest('http://localhost/api/relations/rel-1', { method: 'DELETE' }), {
-      params: { id: 'rel-1' },
+      params: Promise.resolve({ id: 'rel-1' }),
     })
     expect(response.status).toBe(403)
     expect(mockedPrisma.relation.delete).not.toHaveBeenCalled()
@@ -93,7 +93,7 @@ describe('DELETE /api/relations/[id]', () => {
 
     const response = await DELETE(
       authedRequest('http://localhost/api/relations/rel-1', { method: 'DELETE' }, 'OWNER'),
-      { params: { id: 'rel-1' } }
+      { params: Promise.resolve({ id: 'rel-1' }) }
     )
 
     expect(response.status).toBe(200)

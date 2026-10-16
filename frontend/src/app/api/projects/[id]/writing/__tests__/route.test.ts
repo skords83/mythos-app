@@ -7,7 +7,7 @@ jest.mock('@/lib/auth',()=>({getUserFromRequest:jest.fn()}))
 jest.mock('@/lib/logger',()=>({logger:{error:jest.fn()}}))
 jest.mock('@/lib/prisma',()=>({prisma:{project:{findFirst:jest.fn()},$transaction:jest.fn(),writingSession:{findUnique:jest.fn(),upsert:jest.fn()},chapter:{findMany:jest.fn()},growthSnapshot:{upsert:jest.fn()}}}))
 const db=prisma as any
-const params={params:{id:'project'}}
+const params={params:Promise.resolve({id:'project'})}
 const request=(body:unknown)=>new NextRequest('http://localhost',{method:'POST',body:JSON.stringify(body)})
 beforeEach(()=>{jest.clearAllMocks();(getUserFromRequest as jest.Mock).mockResolvedValue('user');db.project.findFirst.mockResolvedValue({id:'project'});db.$transaction.mockImplementation((fn:any)=>fn(db));db.writingSession.findUnique.mockResolvedValue(null);db.chapter.findMany.mockResolvedValue([{id:'chapter',title:'Kapitel',wordCount:123}])})
 it('does not read or write another user’s project',async()=>{

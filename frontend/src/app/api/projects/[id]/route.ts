@@ -6,8 +6,9 @@ import { logger } from '@/lib/logger'
 // GET /api/projects/[id] - Einzelnes Projekt abrufen
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     userId = await getUserFromRequest(request)
@@ -16,7 +17,7 @@ export async function GET(
     }
 
     const project = await prisma.project.findFirst({
-      where: { id: params.id, userId },
+      where: { id: resolvedParams.id, userId },
       include: {
         _count: {
           select: { chapters: true, characters: true }
@@ -38,8 +39,9 @@ export async function GET(
 // PUT /api/projects/[id] - Projekt aktualisieren
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     userId = await getUserFromRequest(request)
@@ -49,7 +51,7 @@ export async function PUT(
 
     // Check ownership
     const existing = await prisma.project.findFirst({
-      where: { id: params.id, userId }
+      where: { id: resolvedParams.id, userId }
     })
 
     if (!existing) {
@@ -70,7 +72,7 @@ const body = await request.json()
   if (wordCountBaselineDate !== undefined) updateData.wordCountBaselineDate = wordCountBaselineDate
 
     const project = await prisma.project.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: updateData
     })
 
@@ -84,8 +86,9 @@ const body = await request.json()
 // DELETE /api/projects/[id] - Projekt löschen
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     userId = await getUserFromRequest(request)
@@ -95,7 +98,7 @@ export async function DELETE(
 
     // Check ownership
     const existing = await prisma.project.findFirst({
-      where: { id: params.id, userId }
+      where: { id: resolvedParams.id, userId }
     })
 
     if (!existing) {
@@ -103,7 +106,7 @@ export async function DELETE(
     }
 
     await prisma.project.delete({
-      where: { id: params.id }
+      where: { id: resolvedParams.id }
     })
 
     return NextResponse.json({ success: true })

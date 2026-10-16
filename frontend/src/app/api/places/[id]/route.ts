@@ -14,8 +14,9 @@ import { deleteRelationsForEntity } from '@/lib/relations'
 // GET /api/places/[id] - Einzelnen Ort abrufen
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     const context = await getAuthContext(request)
@@ -26,7 +27,7 @@ export async function GET(
 
     const place = await prisma.place.findFirst({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         familyId: context.familyId,
         OR: visibilityWhere(context),
       },
@@ -46,8 +47,9 @@ export async function GET(
 // PUT /api/places/[id] - Ort aktualisieren (nur Autor)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     const context = await getAuthContext(request)
@@ -57,7 +59,7 @@ export async function PUT(
     userId = context.userId
 
     const place = await prisma.place.findFirst({
-      where: { id: params.id, familyId: context.familyId },
+      where: { id: resolvedParams.id, familyId: context.familyId },
     })
     if (!place) {
       return NextResponse.json({ error: 'Ort nicht gefunden' }, { status: 404 })
@@ -79,7 +81,7 @@ export async function PUT(
     let parentForVisibilityCheck: { visibility: typeof place.visibility } | null = null
 
     if (parentId !== undefined && parentId !== null) {
-      if (parentId === params.id) {
+      if (parentId === resolvedParams.id) {
         return NextResponse.json({ error: 'Ein Ort kann nicht sein eigener übergeordneter Ort sein' }, { status: 400 })
       }
       const parent = await prisma.place.findFirst({
@@ -91,7 +93,7 @@ export async function PUT(
 
       let ancestor: { id: string; parentId: string | null } | null = parent
       while (ancestor) {
-        if (ancestor.id === params.id) {
+        if (ancestor.id === resolvedParams.id) {
           return NextResponse.json({ error: 'Diese Zuordnung würde einen Kreis in der Orts-Hierarchie erzeugen' }, { status: 400 })
         }
         ancestor = ancestor.parentId
@@ -127,13 +129,13 @@ export async function PUT(
     if (parentId !== undefined) updateData.parentId = parentId
 
     const updated = await prisma.place.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: updateData,
       include: { images: { orderBy: { createdAt: 'asc' } } },
     })
 
     if (place.visibility === 'FAMILY' && nextVisibility === 'PRIVATE') {
-      await cascadePrivateToPlaceDescendants(prisma, params.id, context.familyId)
+      await cascadePrivateToPlaceDescendants(prisma, resolvedParams.id, context.familyId)
     }
 
     return NextResponse.json(updated)
@@ -146,8 +148,9 @@ export async function PUT(
 // DELETE /api/places/[id] - Ort löschen (Autor oder Familien-OWNER)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     const context = await getAuthContext(request)
@@ -157,7 +160,7 @@ export async function DELETE(
     userId = context.userId
 
     const place = await prisma.place.findFirst({
-      where: { id: params.id, familyId: context.familyId },
+      where: { id: resolvedParams.id, familyId: context.familyId },
     })
     if (!place) {
       return NextResponse.json({ error: 'Ort nicht gefunden' }, { status: 404 })
@@ -166,8 +169,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
     }
 
-    await deleteRelationsForEntity(prisma, 'PLACE', params.id)
-    await prisma.place.delete({ where: { id: params.id } })
+    await deleteRelationsForEntity(prisma, 'PLACE', resolvedParams.id)
+    await prisma.place.delete({ where: { id: resolvedParams.id } })
     return NextResponse.json({ success: true })
   } catch (error) {
     logger.error(error, { route: 'DELETE /api/places/[id]', userId })

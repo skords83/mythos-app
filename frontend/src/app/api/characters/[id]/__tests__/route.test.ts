@@ -40,7 +40,7 @@ describe('PUT /api/characters/[id]', () => {
       method: 'PUT',
       body: JSON.stringify({ visibility: 'PUBLIC' }),
     })
-    const response = await PUT(request, { params: { id: 'char-1' } })
+    const response = await PUT(request, { params: Promise.resolve({ id: 'char-1' }) })
     expect(response.status).toBe(400)
     expect(mockedPrisma.character.update).not.toHaveBeenCalled()
   })
@@ -52,7 +52,7 @@ describe('PUT /api/characters/[id]', () => {
       method: 'PUT',
       body: JSON.stringify({ name: 'Neuer Name' }),
     })
-    const response = await PUT(request, { params: { id: 'char-1' } })
+    const response = await PUT(request, { params: Promise.resolve({ id: 'char-1' }) })
     expect(response.status).toBe(403)
   })
 
@@ -63,7 +63,7 @@ describe('PUT /api/characters/[id]', () => {
       method: 'PUT',
       body: JSON.stringify({ role: 'SIDEKICK' }),
     })
-    const response = await PUT(request, { params: { id: 'char-1' } })
+    const response = await PUT(request, { params: Promise.resolve({ id: 'char-1' }) })
     expect(response.status).toBe(400)
     expect(mockedPrisma.character.update).not.toHaveBeenCalled()
   })
@@ -76,7 +76,7 @@ describe('PUT /api/characters/[id]', () => {
       method: 'PUT',
       body: JSON.stringify({ role: 'MENTOR' }),
     })
-    const response = await PUT(request, { params: { id: 'char-1' } })
+    const response = await PUT(request, { params: Promise.resolve({ id: 'char-1' }) })
     expect(response.status).toBe(200)
     expect(mockedPrisma.character.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ role: 'MENTOR' }) })
@@ -91,7 +91,7 @@ describe('DELETE /api/characters/[id]', () => {
     mockedPrisma.character.delete.mockResolvedValue({ id: 'char-1' })
 
     const request = authedRequest('http://localhost/api/characters/char-1', { method: 'DELETE' })
-    const response = await DELETE(request, { params: { id: 'char-1' } })
+    const response = await DELETE(request, { params: Promise.resolve({ id: 'char-1' }) })
 
     expect(response.status).toBe(200)
     expect(mockedPrisma.relation.deleteMany).toHaveBeenCalledWith({
@@ -104,7 +104,7 @@ describe('DELETE /api/characters/[id]', () => {
     mockedPrisma.character.findFirst.mockResolvedValueOnce({ id: 'char-1', authorId: 'other-user' })
 
     const request = authedRequest('http://localhost/api/characters/char-1', { method: 'DELETE' })
-    const response = await DELETE(request, { params: { id: 'char-1' } })
+    const response = await DELETE(request, { params: Promise.resolve({ id: 'char-1' }) })
 
     expect(response.status).toBe(403)
     expect(mockedPrisma.relation.deleteMany).not.toHaveBeenCalled()
@@ -115,7 +115,7 @@ describe('DELETE /api/characters/[id]', () => {
     mockedPrisma.character.findFirst.mockResolvedValueOnce(null)
 
     const request = authedRequest('http://localhost/api/characters/missing', { method: 'DELETE' })
-    const response = await DELETE(request, { params: { id: 'missing' } })
+    const response = await DELETE(request, { params: Promise.resolve({ id: 'missing' }) })
 
     expect(response.status).toBe(404)
     expect(mockedPrisma.relation.deleteMany).not.toHaveBeenCalled()

@@ -9,8 +9,9 @@ const json = (data: unknown, status = 200) =>
 /** Explicit decision by a logged-in Mythos user, never by an OAuth bearer. */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const resolvedParams = await params
   const userId = await getUserFromRequest(request)
   if (!userId) return json({ error: 'Nicht autorisiert' }, 401)
   const origin = request.headers.get('origin')
@@ -34,6 +35,6 @@ export async function POST(
   if (decision !== 'approve' && decision !== 'reject') {
     return json({ error: 'Ungültige Entscheidung' }, 400)
   }
-  const result = await decideChapterProposal(userId, params.id, decision)
+  const result = await decideChapterProposal(userId, resolvedParams.id, decision)
   return json(result.status === 200 ? result : { error: result.error }, result.status)
 }

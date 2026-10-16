@@ -6,8 +6,9 @@ import { logger } from '@/lib/logger'
 // GET /api/chapters/[id] - Einzelnes Kapitel abrufen
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     userId = await getUserFromRequest(request)
@@ -17,7 +18,7 @@ export async function GET(
 
     const chapter = await prisma.chapter.findFirst({
       where: { 
-        id: params.id,
+        id: resolvedParams.id,
         project: { userId }
       },
       include: {
@@ -39,8 +40,9 @@ export async function GET(
 // PUT /api/chapters/[id] - Kapitel aktualisieren
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     userId = await getUserFromRequest(request)
@@ -51,7 +53,7 @@ export async function PUT(
     // Verify ownership
     const chapter = await prisma.chapter.findFirst({
       where: { 
-        id: params.id,
+        id: resolvedParams.id,
         project: { userId }
       }
     })
@@ -69,7 +71,7 @@ export async function PUT(
     if (wordCount !== undefined) updateData.wordCount = wordCount
 
     const updated = await prisma.chapter.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: updateData
     })
 
@@ -83,8 +85,9 @@ export async function PUT(
 // DELETE /api/chapters/[id] - Kapitel löschen
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   let userId: string | null = null
   try {
     userId = await getUserFromRequest(request)
@@ -95,7 +98,7 @@ export async function DELETE(
     // Verify ownership
     const chapter = await prisma.chapter.findFirst({
       where: { 
-        id: params.id,
+        id: resolvedParams.id,
         project: { userId }
       }
     })
@@ -105,7 +108,7 @@ export async function DELETE(
     }
 
     await prisma.chapter.delete({
-      where: { id: params.id }
+      where: { id: resolvedParams.id }
     })
 
     return NextResponse.json({ success: true })
