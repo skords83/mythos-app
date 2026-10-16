@@ -35,7 +35,19 @@ export function proposalToChapterHtml(value: unknown): string | null {
   for (const item of doc.content) {
     if (!item || typeof item !== 'object' || Array.isArray(item)) return null
     const block = item as Node
-    if (block.type !== 'paragraph' || (block.marks !== undefined)) return null
+if (block.marks !== undefined) return null
+
+let tag = 'p'
+if (block.type === 'heading') {
+  const attrs = (block as Node & { attrs?: unknown }).attrs
+  if (!attrs || typeof attrs !== 'object' || Array.isArray(attrs)) return null
+  const headingAttrs = attrs as Record<string, unknown>
+  if (Object.keys(headingAttrs).length !== 1) return null
+  if (headingAttrs.level !== 1 && headingAttrs.level !== 2) return null
+  tag = 'h' + headingAttrs.level
+} else if (block.type !== 'paragraph') {
+  return null
+}
     if (block.content !== undefined && !Array.isArray(block.content)) return null
     const pieces: string[] = []
     for (const inline of (block.content ?? []) as unknown[]) {
@@ -43,7 +55,7 @@ export function proposalToChapterHtml(value: unknown): string | null {
       if (rendered === null) return null
       pieces.push(rendered)
     }
-    blocks.push('<p>' + pieces.join('') + '</p>')
+blocks.push('<' + tag + '>' + pieces.join('') + '</' + tag + '>')
   }
   return blocks.join('')
 }
