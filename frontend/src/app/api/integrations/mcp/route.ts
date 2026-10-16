@@ -42,8 +42,15 @@ export async function POST(request: NextRequest) {
   const auth = await readIntegration(new NextRequest(probe, { headers: { authorization: request.headers.get('authorization') || '' } }))
   if (auth.status !== 200) return new NextResponse(null, { status: 401, headers: { 'Cache-Control': 'no-store' } })
 
+  const declaredSize = Number(request.headers.get('content-length') || 0)
+  if (declaredSize > 16384) return new NextResponse(null, { status: 413 })
   let msg: any
-  try { msg = await request.json() } catch { return fail(null, -32700, 'Invalid JSON') }
+  try {
+    const raw = await request.text()
+    if (raw.length > 16384) return new NextResponse(null, { status: 413 })
+    msg = JSON.parse(raw)
+  } catch { return fail(null, -32700, 'Invalid JSON') }
+  if (Array.isArray(msg)) return fail(null, -32600, 'Batch requests not supported')
   if (!msg || msg.jsonrpc !== '2.0' || typeof msg.method !== 'string') return fail(msg?.id ?? null, -32600, 'Invalid request')
   if (msg.method === 'notifications/initialized') return new NextResponse(null, { status: 202 })
   if (!Object.prototype.hasOwnProperty.call(msg, 'id')) return fail(null, -32600, 'Request id required')
@@ -80,5 +87,5 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
-  return NextResponse.json({ name: 'mythos-readonly', status: 'experimental', protocolVersion: VERSION }, { headers: { 'Cache-Control': 'no-store' } })
+  return new NextResponse(null, { status: 405, headers: { Allow: 'POST', 'Cache-Control': 'no-store' } })
 }
