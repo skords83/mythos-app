@@ -42,6 +42,8 @@ export async function POST(request: NextRequest) {
   const auth = await readIntegration(new NextRequest(probe, { headers: { authorization: request.headers.get('authorization') || '' } }))
   if (auth.status !== 200) return new NextResponse(null, { status: 401, headers: { 'Cache-Control': 'no-store' } })
 
+  const contentType = request.headers.get('content-type') || ''
+  if (!contentType.toLowerCase().startsWith('application/json')) return new NextResponse(null, { status: 415 })
   const declaredSize = Number(request.headers.get('content-length') || 0)
   if (declaredSize > 16384) return new NextResponse(null, { status: 413 })
   let msg: any
@@ -52,13 +54,17 @@ export async function POST(request: NextRequest) {
   } catch { return fail(null, -32700, 'Invalid JSON') }
   if (Array.isArray(msg)) return fail(null, -32600, 'Batch requests not supported')
   if (!msg || msg.jsonrpc !== '2.0' || typeof msg.method !== 'string') return fail(msg?.id ?? null, -32600, 'Invalid request')
-  if (msg.method === 'notifications/initialized') return new NextResponse(null, { status: 202 })
+  if (msg.method === 'notifications/initialized') return new NextResponse(null, { status: 202, headers: { 'Cache-Control': 'no-store' } })
   if (!Object.prototype.hasOwnProperty.call(msg, 'id')) return fail(null, -32600, 'Request id required')
-  if (msg.method === 'initialize') return rpc(msg.id, {
-    protocolVersion: VERSION,
+  if (msg.method === 'initialize') {
+    const requestedVersion = msg.params?.protocolVersion
+    if (typeof requestedVersion !== 'string') return fail(msg.id, -32602, 'protocolVersion required')
+    return rpc(msg.id, {
+    protocolVersion: requestedVersion === VERSION ? requestedVersion : VERSION,
     capabilities: { tools: {} },
     serverInfo: { name: 'mythos-readonly', version: '0.1.0' },
   })
+  }
   if (msg.method === 'ping') return rpc(msg.id, {})
   if (msg.method === 'tools/list') return rpc(msg.id, { tools })
   if (msg.method !== 'tools/call') return fail(msg.id, -32601, 'Method not found')
