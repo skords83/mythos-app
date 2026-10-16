@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { hashCredential } from '@/lib/oauth-credentials'
 import { hasMythosScope } from '@/lib/integration-permissions'
 import { validateChapterReplacement } from '@/lib/integration-chapter-write'
+import { countTiptapWords } from '@/lib/integration-word-count'
 
 type ReplaceResult =
   | { status: 200; chapterId: string; backupId: string }
@@ -60,6 +61,7 @@ export async function replaceChapterWithBackup(
       data: {
         title: parsed.value.title,
         content: parsed.value.content as Prisma.InputJsonValue,
+        wordCount: countTiptapWords(parsed.value.content),
       },
     })
     if (changed.count !== 1) return { status: 409, error: 'Chapter changed since last read' } as const
