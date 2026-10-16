@@ -1,12 +1,13 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { Suspense, useState } from 'react'
 import { Book, Eye, EyeOff, LogIn, UserPlus, Loader2 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { safeLoginReturn } from '@/lib/safe-login-return'
 import { HairlineButton } from '../components/HairlineButton'
 import { MODAL_PANEL, INPUT, ACCENT_TEXT, RADIUS, HAIRLINE, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, SURFACE } from '@/lib/theme'
 
-export default function LoginPage() {
+function LoginPageContent() {
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,7 +42,7 @@ export default function LoginPage() {
       }
 
       // Success - redirect to dashboard
-      router.push('/dashboard')
+      router.replace(safeLoginReturn(searchParams.get('returnTo')))
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -180,5 +182,13 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageContent />
+    </Suspense>
   )
 }
