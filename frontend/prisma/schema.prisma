@@ -65,6 +65,7 @@ model Family {
   loreEntries LoreEntry[]
   comments   Comment[]
   chapterVersions ChapterVersion[]
+  chapterProposals ChapterProposal[]
   ideas      Idea[]
 }
 
@@ -94,6 +95,7 @@ model User {
   ideas      Idea[]
   oauthAuthorizationCodes OAuthAuthorizationCode[]
   oauthAccessTokens OAuthAccessToken[]
+  chapterProposals ChapterProposal[]
 }
 
 // Z7: generic per-user preference store. Fields are additive as future
@@ -168,6 +170,7 @@ model Chapter {
   scenes    Scene[]
   comments  Comment[]
   versions  ChapterVersion[]
+  proposals ChapterProposal[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -525,5 +528,36 @@ model OAuthAccessToken {
   createdAt    DateTime @default(now())
 
   @@index([userId, revokedAt])
+  @@index([expiresAt])
+}
+
+enum ChapterProposalStatus {
+  PENDING
+  APPLIED
+  REJECTED
+  EXPIRED
+}
+
+// A proposal is untrusted draft content. Only an authenticated Mythos
+// session may approve it; the submitting integration cannot self-approve.
+model ChapterProposal {
+  id                String                @id @default(cuid())
+  chapterId         String
+  chapter           Chapter               @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  authorId          String
+  author            User                  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  familyId          String
+  family            Family                @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  title             String
+  content           Json
+  expectedUpdatedAt DateTime
+  status            ChapterProposalStatus @default(PENDING)
+  expiresAt         DateTime
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  appliedAt         DateTime?
+
+  @@index([authorId, status, createdAt])
+  @@index([chapterId, status])
   @@index([expiresAt])
 }
