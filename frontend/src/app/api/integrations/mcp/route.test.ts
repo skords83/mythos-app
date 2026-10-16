@@ -49,3 +49,12 @@ test('rejects malformed page argument', async () => {
   } }))
   expect((await response.json()).error.code).toBe(-32602)
 })
+
+test('rejects oversized JSON-RPC request bodies', async () => {
+  const response = await POST(request({ jsonrpc: '2.0', id: 5, method: 'ping', padding: 'x'.repeat(20000) }))
+  expect(response.status).toBe(413)
+})
+test('rejects JSON-RPC batch requests explicitly', async () => {
+  const response = await POST(request([{ jsonrpc: '2.0', id: 1, method: 'ping' }]))
+  expect((await response.json()).error.code).toBe(-32600)
+})
