@@ -63,16 +63,29 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { title, content, wordCount } = body
+    const { title, content, wordCount, expectedUpdatedAt } = body
 
     const updateData: any = {}
     if (title !== undefined) updateData.title = title
     if (content !== undefined) updateData.content = content
     if (wordCount !== undefined) updateData.wordCount = wordCount
 
+    if (expectedUpdatedAt !== undefined) {
+      if (typeof expectedUpdatedAt !== 'string' || !Number.isFinite(Date.parse(expectedUpdatedAt))) {
+        return NextResponse.json({ error: 'Ungültiger Versionsstand' }, { status: 400 })
+      }
+      const updated = await prisma.$transaction(async tx => {
+        const result = await tx.chapter.updateMany({
+          where: { id: resolvedParams.id, project: { userId: userId! }, updatedAt: new Date(expectedUpdatedAt) },
+          data: updateData,
+        })
+        return result.count ? tx.chapter.findUnique({ where: { id: resolvedParams.id } }) : null
+      })
+      if (!updated) return NextResponse.json({ error: 'Kapitel wurde zwischenzeitlich geändert. Dein Text bleibt lokal erhalten. Bitte neu laden.' }, { status: 409 })
+      return NextResponse.json(updated)
+    }
     const updated = await prisma.chapter.update({
-      where: { id: resolvedParams.id },
-      data: updateData
+      where: { id: resolvedParams.id }, data: updateData,
     })
 
     return NextResponse.json(updated)

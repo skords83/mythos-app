@@ -1,3 +1,4 @@
+import { recognizeNames, mentionAttributes } from '@/lib/nameRecognition'
 import { Extension } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
@@ -23,14 +24,9 @@ export interface PassiveDetectionDataRef {
   current: { candidates: PassiveEntityCandidate[] }
 }
 
-const MIN_NAME_LENGTH = 3
 // Caps the per-scan decoration count so a long chapter with many entities can't
 // turn every keystroke into an expensive full-document regex sweep.
 const MAX_DECORATIONS = 40
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
 
 interface PassiveMatch {
   from: number
@@ -43,26 +39,16 @@ function findMatches(
   candidates: PassiveEntityCandidate[],
   dismissed: Set<string>
 ): PassiveMatch[] {
-  const usable = candidates.filter(
-    (c) => c.name.trim().length >= MIN_NAME_LENGTH && !dismissed.has(`${c.kind}:${c.id}`) &&
-      !candidates.some(other => other.name.toLocaleLowerCase() === c.name.toLocaleLowerCase() && (other.id !== c.id || other.kind !== c.kind))
-  )
-  if (usable.length === 0) return []
-
   const matches: PassiveMatch[] = []
   doc.descendants((node, pos) => {
     if (matches.length >= MAX_DECORATIONS) return false
-    // Mention nodes are atoms with no text children, so plain descendants()
-    // traversal never walks into already-linked text — nothing to exclude explicitly.
     if (!node.isText || !node.text) return
-    const text = node.text
-    for (const candidate of [...usable].sort((a,b) => b.name.length-a.name.length)) {
+    for (const hit of recognizeNames(node.text, candidates)) {
       if (matches.length >= MAX_DECORATIONS) break
-      const re = new RegExp(`(?<![\\p{L}\\p{N}_])${escapeRegExp(candidate.name)}(?![\\p{L}\\p{N}_])`, 'giu')
-      for (const match of Array.from(text.matchAll(re))) {
-        if (matches.length >= MAX_DECORATIONS) break
-        const from = pos + match.index!, to = from + match[0].length
-        if (!matches.some(m => from < m.to && to > m.from)) matches.push({ from, to, candidate })
+      if (hit.candidates.length !== 1) continue
+      const candidate = hit.candidates[0]
+      if (!dismissed.has(`${candidate.kind}:${candidate.id}`)) {
+        matches.push({ from: pos + hit.from, to: pos + hit.to, candidate })
       }
     }
   })
@@ -169,8 +155,8 @@ export const PassiveEntityDetection = Extension.create<PassiveEntityDetectionOpt
                 const { schema } = view.state
                 const node =
                   candidate.kind === 'CHARACTER'
-                    ? schema.nodes.characterMention.create({ characterId: candidate.id, label: target.textContent || candidate.name })
-                    : schema.nodes.entityMention.create({ kind: candidate.kind, entityId: candidate.id, label: target.textContent || candidate.name })
+                    ? schema.nodes.characterMention.create(mentionAttributes(candidate, target.textContent || candidate.name), null, view.state.doc.resolve(from).marks())
+                    : schema.nodes.entityMention.create(mentionAttributes(candidate, target.textContent || candidate.name), null, view.state.doc.resolve(from).marks())
                 view.dispatch(view.state.tr.replaceWith(from, to, node))
                 return true
               }

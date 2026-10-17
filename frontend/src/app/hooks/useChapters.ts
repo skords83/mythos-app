@@ -40,6 +40,10 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
   // Tracks the chapterId of the most recently started loadChapterContent call, so a
   // slow-resolving fetch/getDraft chain for a chapter the user has since switched away
   // from cannot clobber pendingDraft for the chapter that's actually open.
+  const nameLinkingLock = useRef(false)
+  const saveQueue = useRef<Promise<boolean>>(Promise.resolve(true))
+  const revisions = useRef(new Map<string, string>())
+  const savedTitles = useRef(new Map<string, string>())
   const projectGenerationRef = useRef(0)
   const latestChapterRequestRef = useRef<string | null>(null)
   // Tracks which chapter's content was last pushed into the editor via setContent, so
@@ -64,6 +68,8 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
       const data = await response.json()
       // A metadata-only response must never become editable empty content.
       if (!data || data.id !== chapterId || !Object.prototype.hasOwnProperty.call(data, 'content')) return null
+      revisions.current.set(chapterId, data.updatedAt)
+      savedTitles.current.set(chapterId, data.title)
       let draft
       try {
         draft = await getDraft(chapterId)
@@ -199,10 +205,10 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
   }
 
   // saveChapter uses refs to always have fresh values (stale closure fix)
-  const saveChapter = useCallback(async (chapterOverride?: Chapter, contentOverride?: string) => {
+  const performSaveChapter = useCallback(async (chapterOverride?: Chapter, contentOverride?: string) => {
     const chapter = chapterOverride ?? selectedChapterRef.current
     const content = contentOverride ?? editorContentRef.current
-    if (!chapter || pendingDraftRef.current?.chapterId === chapter.id) return
+    if (!chapter || pendingDraftRef.current?.chapterId === chapter.id) return false
 
     const generation = projectGenerationRef.current
     setIsSaving(true)
@@ -212,33 +218,76 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
       const response = await fetch(`/api/chapters/${chapter.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: chapter.title, content, wordCount })
+        body: JSON.stringify({ title: chapter.title, content, wordCount, expectedUpdatedAt: revisions.current.get(chapter.id) ?? chapter.updatedAt })
       })
       if (!response.ok) {
-        showError('Kapitel konnte nicht gespeichert werden.')
-        return
+        showError(response.status === 409 ? 'Kapitel wurde zwischenzeitlich geändert. Dein Text bleibt lokal erhalten. Bitte neu laden.' : 'Kapitel konnte nicht gespeichert werden.')
+        return false
       }
+      const saved = await response.json()
+      revisions.current.set(chapter.id, saved.updatedAt)
+      savedTitles.current.set(chapter.id, saved.title)
       if (pendingDraftRef.current?.chapterId !== chapter.id) {
         await deleteDraft(chapter.id, content).catch(() => {})
       }
-      if (generation !== projectGenerationRef.current) return
+      if (generation !== projectGenerationRef.current) return false
       setChapters(prev => prev.map(ch =>
-        ch.id === chapter.id ? { ...ch, title: chapter.title, content, wordCount } : ch
+        ch.id === chapter.id ? { ...ch, title: chapter.title, content, wordCount, updatedAt: saved.updatedAt } : ch
       ))
-      if (!chapterOverride) {
-        setSelectedChapter(prev => prev?.id === chapter.id ? { ...prev, content, wordCount } : prev)
+      if (selectedChapterRef.current?.id === chapter.id) {
+        selectedChapterRef.current = { ...selectedChapterRef.current, content, wordCount, updatedAt: saved.updatedAt }
+        setSelectedChapter(prev => prev?.id === chapter.id ? { ...prev, content, wordCount, updatedAt: saved.updatedAt } : prev)
       }
       setAutoSaveStatus('saved')
       setTimeout(() => {
         if (generation === projectGenerationRef.current) setAutoSaveStatus('idle')
       }, 2000)
+      return true
     } catch (error) {
       console.error('Error saving chapter:', error)
       showError('Kapitel konnte nicht gespeichert werden.')
+      return false
     } finally {
       if (generation === projectGenerationRef.current) setIsSaving(false)
     }
   }, [])
+
+  const saveChapter = useCallback((chapterOverride?: Chapter, contentOverride?: string) => {
+    if (nameLinkingLock.current) return Promise.resolve()
+    const capturedChapter = chapterOverride ?? selectedChapterRef.current
+    const capturedContent = contentOverride ?? editorContentRef.current
+    const next = saveQueue.current.then(() => capturedChapter ? performSaveChapter(capturedChapter, capturedContent) : false)
+    saveQueue.current = next.then(Boolean, () => false)
+    return saveQueue.current.then(() => {})
+  }, [performSaveChapter])
+
+  const beginNameLinking = async () => {
+    nameLinkingLock.current = true
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
+    await saveQueue.current
+    const current = selectedChapterRef.current
+    if (current && !pendingDraftRef.current && editorContentRef.current === extractContent(current.content) && savedTitles.current.get(current.id) === current.title) return current
+    if (!await performSaveChapter()) {
+      nameLinkingLock.current = false
+      return null
+    }
+    return selectedChapterRef.current
+  }
+
+  const endNameLinking = (chapter?: Chapter) => {
+    if (chapter && selectedChapterRef.current?.id === chapter.id) {
+      const html = extractContent(chapter.content)
+      revisions.current.set(chapter.id, chapter.updatedAt)
+      savedTitles.current.set(chapter.id, chapter.title)
+      selectedChapterRef.current = chapter
+      editorContentRef.current = html
+      setSelectedChapter(chapter)
+      setChapters(prev => prev.map(c => c.id === chapter.id ? chapter : c))
+      setEditorContent(html)
+      editorSetContentRef.current?.(html)
+    }
+    nameLinkingLock.current = false
+  }
 
   // Autosave: wait for an explicit recovery decision before saving server content.
   useEffect(() => {
@@ -345,6 +394,8 @@ export function useChapters({ selectedProject, showError, requestConfirm, onConf
   }
 
   return {
+    beginNameLinking,
+    endNameLinking,
     chapters,
     setChapters,
     chaptersLoaded,

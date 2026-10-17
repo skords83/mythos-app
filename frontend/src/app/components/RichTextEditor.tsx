@@ -96,6 +96,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
       PassiveEntityDetection.configure({ dataRef: passiveDataRef }),
     ],
     content: content || '',
+    parseOptions: { preserveWhitespace: 'full' },
     onUpdate: ({ editor }) => {
       onChangeRef.current(editor.getHTML())
     },
@@ -125,10 +126,10 @@ export function RichTextEditor({ content, onChange, placeholder = 'Beginne zu sc
 
   useEffect(() => {
     if (!editor) return
-    editor.commands.setContent(content || '', false)
+    editor.commands.setContent(content || '', false, { preserveWhitespace: 'full' })
     if (onEditorReady) {
       onEditorReady((newContent: string) => {
-        editor.commands.setContent(newContent || '', false)
+        editor.commands.setContent(newContent || '', false, { preserveWhitespace: 'full' })
       })
     }
   }, [editor])

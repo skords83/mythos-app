@@ -118,6 +118,7 @@ export function useChapterVersions({ chapterId, showError, requestConfirm, onCon
 
   return {
     versions,
+    reloadVersions: () => chapterId ? loadVersions(chapterId) : Promise.resolve(),
     createVersion,
     saveVersionContent,
     renameVersion,

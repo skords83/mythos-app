@@ -306,7 +306,7 @@ describe('useChapters — never save unloaded chapter content', () => {
   function setup(secondResponse: object) {
     global.fetch = jest.fn((url: string, init?: RequestInit) => {
       if (url.includes('?')) return Promise.resolve({ ok: true, json: async () => ({ pagination: { totalPages: 1 }, chapters: [chapter, metadata] }) })
-      if (init?.method) return Promise.resolve({ ok: true })
+      if (init?.method) return Promise.resolve({ ok: true, json: async () => ({ ...chapter, id: url.split('/').pop() }) })
       return Promise.resolve(url.endsWith('/c1') ? { ok: true, json: async () => chapter } : secondResponse)
     }) as unknown as typeof fetch
     return renderHook(() => useChapters({ selectedProject: project, showError,
@@ -347,7 +347,7 @@ describe('useChapters — never save unloaded chapter content', () => {
     expect(result.current.editorContent).toBe(second.content)
     act(() => { jest.advanceTimersByTime(2500) })
     await flush()
-    expect(global.fetch).toHaveBeenCalledWith('/api/chapters/c2', expect.objectContaining({ method: 'PUT', body: JSON.stringify({ title: second.title, content: second.content, wordCount: 2 }) }))
+    expect(global.fetch).toHaveBeenCalledWith('/api/chapters/c2', expect.objectContaining({ method: 'PUT', body: JSON.stringify({ title: second.title, content: second.content, wordCount: 2, expectedUpdatedAt: second.updatedAt }) }))
   })
 
   it('leaves no editable chapter if loading after deletion fails, and permits retry', async () => {
@@ -453,7 +453,7 @@ describe('useChapters — preserve recovery drafts until a decision', () => {
     act(() => { jest.advanceTimersByTime(400) })
     await flush()
     expect(mockSaveDraft).toHaveBeenCalledWith('c1', '<p>Neuere Eingabe</p>')
-    await act(async () => { resolve({ ok: true }); await saving })
+    await act(async () => { resolve({ ok: true, json: async () => chapter }); await saving })
     expect(mockDeleteDraft).toHaveBeenCalledWith('c1', chapter.content)
     expect(result.current.editorContent).toBe('<p>Neuere Eingabe</p>')
   })
@@ -564,4 +564,35 @@ it('loads chapters beyond the 200 chapter page limit', async () => {
   expect(result.current.selectedChapter?.id).toBe('c0')
   expect(global.fetch).toHaveBeenNthCalledWith(2, '/api/chapters?projectId=p1&limit=200&page=2', { cache: 'no-store' })
   unmount()
+})
+
+describe('useChapters — bulk name linking coordination', () => {
+  beforeEach(() => { jest.useFakeTimers(); (getDraft as jest.Mock).mockResolvedValue(undefined); mockChapterFetch([chapter]) })
+  afterEach(() => jest.useRealTimers())
+  it('saves unsaved text with its revision before preview, pauses autosave, and adopts the applied revision', async () => {
+    const { result } = renderChaptersHook()
+    await flush()
+    act(() => result.current.setEditorContent('<p>Fabian ungespeichert</p>'))
+    let saved: Chapter | null = null
+    await act(async () => { saved = await result.current.beginNameLinking() })
+    expect(saved).toMatchObject({ content: '<p>Fabian ungespeichert</p>' })
+    const writes = () => (global.fetch as jest.Mock).mock.calls.filter(([, options]) => options?.method === 'PUT')
+    expect(JSON.parse(writes()[0][1].body)).toMatchObject({ content: '<p>Fabian ungespeichert</p>', expectedUpdatedAt: chapter.updatedAt })
+    act(() => jest.advanceTimersByTime(3000))
+    await act(async () => { await result.current.saveChapter() })
+    expect(writes()).toHaveLength(1)
+    const applied = { ...chapter, content: '<p>@Fabian ungespeichert</p>', updatedAt: '2026-02-01T00:00:00.000Z' }
+    act(() => result.current.endNameLinking(applied))
+    expect(result.current.editorContent).toBe(applied.content)
+    await act(async () => { await result.current.saveChapter() })
+    expect(JSON.parse(writes()[1][1].body).expectedUpdatedAt).toBe(applied.updatedAt)
+  })
+  it('refuses preview on save conflict and retains unsaved text', async () => {
+    const { result } = renderChaptersHook()
+    await flush()
+    act(() => result.current.setEditorContent('<p>Mein Text</p>'))
+    ;(global.fetch as jest.Mock).mockResolvedValueOnce({ ok: false, status: 409 })
+    await act(async () => { expect(await result.current.beginNameLinking()).toBeNull() })
+    expect(result.current.editorContent).toBe('<p>Mein Text</p>')
+  })
 })

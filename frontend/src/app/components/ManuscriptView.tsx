@@ -1,6 +1,7 @@
 'use client'
 
 import { MutableRefObject, useEffect, useRef, useState } from 'react'
+import { NameLinkingDialog } from './NameLinkingDialog'
 import { RichTextEditor, CommentEditorApi } from './RichTextEditor'
 import { manuscriptText } from '@/lib/storyTools'
 import { StoryExplorer } from './StoryExplorer'
@@ -21,6 +22,8 @@ import { stripHtml } from '@/lib/text'
 type SidePanel = 'none' | 'reference' | 'comments'
 
 interface ManuscriptViewProps {
+  beginNameLinking: () => Promise<Chapter | null>
+  endNameLinking: (chapter?: Chapter) => void
   onWritingActivity?: (before: string, after: string) => void
   onNavigateChapter?: (id: string) => void
   selectedChapter: Chapter | null
@@ -48,6 +51,8 @@ interface ManuscriptViewProps {
 }
 
 export function ManuscriptView({
+  beginNameLinking,
+  endNameLinking,
   selectedChapter,
   onNavigateChapter,
   onWritingActivity,
@@ -73,6 +78,7 @@ export function ManuscriptView({
   requestConfirm,
   onConfirmed,
 }: ManuscriptViewProps) {
+  const [nameLinkingOpen, setNameLinkingOpen] = useState(false)
   const [explorerSelection, setExplorerSelection] = useState<{id:string;kind:string}|null>(null)
   const [sidePanel, setSidePanel] = useState<SidePanel>('none')
   const splitScreenOpen = sidePanel !== 'none'
@@ -86,7 +92,7 @@ export function ManuscriptView({
 
   const commentEditorApiRef = useRef<CommentEditorApi | null>(null)
 
-  const { versions, createVersion, saveVersionContent, renameVersion, deleteVersion } = useChapterVersions({
+  const { versions, reloadVersions, createVersion, saveVersionContent, renameVersion, deleteVersion } = useChapterVersions({
     chapterId: selectedChapter?.id ?? null,
     showError,
     requestConfirm,
@@ -191,6 +197,11 @@ export function ManuscriptView({
               onRename={renameVersion}
               onDelete={handleDeleteVersion}
             />
+            <div className="my-3">
+              <button type="button" disabled={!!activeVersionId || !!pendingDraft} title={activeVersionId ? 'Bitte zuerst zum Original wechseln.' : undefined} className="text-sm underline disabled:opacity-50" onClick={() => setNameLinkingOpen(true)}>Erkannte Namen verknüpfen</button>
+              {activeVersionId && <span className="text-xs ml-2">Im Original verfügbar</span>}
+            </div>
+            {nameLinkingOpen && <NameLinkingDialog chapter={selectedChapter} begin={beginNameLinking} end={endNameLinking} onClose={() => { setNameLinkingOpen(false); void reloadVersions() }} />}
             <RichTextEditor
               content={activeVersionId ? activeVersionContent : editorContent}
               onChange={handleEditorChange}

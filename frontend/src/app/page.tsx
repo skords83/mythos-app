@@ -86,6 +86,8 @@ export default function Page() {
   const {
     chapters,
     chaptersLoaded,
+    beginNameLinking,
+    endNameLinking,
     selectedChapter,
     setSelectedChapter,
     editorContent,
@@ -437,6 +439,8 @@ export default function Page() {
         <div className="flex-1 overflow-auto">
           {activeTab === 'manuscript' && (
             <ManuscriptView
+              beginNameLinking={beginNameLinking}
+              endNameLinking={endNameLinking}
               onWritingActivity={trackWriting}
               onNavigateChapter={id => { const chapter = chapters.find(c => c.id === id); if (chapter) switchChapter(chapter) }}
               selectedChapter={selectedChapter}

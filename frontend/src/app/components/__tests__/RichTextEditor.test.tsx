@@ -40,3 +40,13 @@ it('loads current content when the editor becomes ready without resetting subseq
   unmount()
   editor.destroy()
 })
+
+it('preserves whitespace when applying externally linked content', () => {
+  const editor = new Editor({ extensions: [StarterKit], content: '' })
+  jest.mocked(useEditor).mockReturnValue(editor)
+  const ready = jest.fn()
+  const { unmount } = render(<RichTextEditor content="" onChange={jest.fn()} onEditorReady={ready} characters={[]} places={[]} items={[]} onMentionClick={jest.fn()} splitScreenActive={false} onToggleSplitScreen={jest.fn()} onCommentClick={jest.fn()} commentsPanelActive={false} onToggleCommentsPanel={jest.fn()} onAddComment={jest.fn()} />)
+  ready.mock.calls[0][0]('<p>  Fabian   bleibt  </p>')
+  expect(editor.state.doc.textContent).toBe('  Fabian   bleibt  ')
+  unmount(); editor.destroy()
+})
