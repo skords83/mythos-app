@@ -9,6 +9,9 @@ jest.mock('@/lib/prisma', () => ({
     oAuthAccessToken: { findUnique: jest.fn() },
     project: { findMany: jest.fn(), findFirst: jest.fn() },
     chapter: { findMany: jest.fn(), findFirst: jest.fn() },
+    item: { findMany: jest.fn() },
+    faction: { findMany: jest.fn() },
+    relation: { findMany: jest.fn() },
     character: { findMany: jest.fn() },
     place: { findMany: jest.fn() },
     timelineEvent: { findMany: jest.fn() },
@@ -78,4 +81,17 @@ test('does not retrieve chapters outside selected project', async () => {
   expect(db.chapter.findFirst).toHaveBeenCalledWith(expect.objectContaining({
     where: { id: 'chapter-1', projectId: 'project-1' },
   }))
+})
+
+test.each(['items', 'factions'])('reads all %s fields with visibility and pagination', async action => {
+  const model = action === 'items' ? prisma.item : prisma.faction
+  const entry = { id: 'e', familyId: 'family-1', authorId: 'user-1', visibility: 'PRIVATE', name: 'Name', description: 'Text', updatedAt: '2026-01-01T00:00:00.000Z', ...(action === 'items' ? { aliases: ['Alias'], origin: 'Origin', significance: 'Meaning' } : { goal: 'Goal' }) }
+  ;(model.findMany as jest.Mock).mockResolvedValue([entry])
+  ;(prisma.relation.findMany as jest.Mock).mockResolvedValue([])
+  const response = await GET(req(`action=${action}&projectId=project-1&page=2&limit=3`))
+  expect(await response.json()).toEqual([{ ...entry, relations: [] }])
+  expect(model.findMany).toHaveBeenCalledWith({ where: { projectId: 'project-1', OR: [{ visibility: 'FAMILY' }, { authorId: 'user-1' }] }, orderBy: { createdAt: 'asc' }, take: 3, skip: 3 })
+  ;(db.project.findFirst as jest.Mock).mockResolvedValueOnce(null)
+  expect((await GET(req(`action=${action}&projectId=foreign`))).status).toBe(404)
+  expect(model.findMany).toHaveBeenCalledTimes(1)
 })

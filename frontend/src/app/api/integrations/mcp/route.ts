@@ -11,7 +11,7 @@ import { GET as readIntegration } from '../chatgpt/route'
 export const dynamic = 'force-dynamic'
 const VERSION = '2025-11-25'
 const VERSIONS = ['2025-03-26', '2025-06-18', VERSION]
-const actions = ['projects', 'chapters', 'chapter', 'characters', 'places', 'timeline', 'lore'] as const
+const actions = ['projects', 'chapters', 'chapter', 'characters', 'places', 'timeline', 'lore', 'items', 'factions'] as const
 type Action = typeof actions[number]
 const tools = actions.map((action) => ({
   name: 'mythos_' + action,
@@ -25,6 +25,8 @@ const tools = actions.map((action) => ({
     characters: 'List visible characters for a project',
     places: 'List visible places for a project',
     timeline: 'List timeline events for a project',
+    items: 'List visible items with all content fields, IDs, updatedAt and visible relations for an owned project',
+    factions: 'List visible factions with all content fields, IDs, updatedAt and visible relations (including membership) for an owned project',
     lore: 'List lore entries for a project',
   } as Record<Action, string>)[action],
   inputSchema: {

@@ -1,3 +1,4 @@
+import { readMcpRelations } from '@/lib/mcp-relations'
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveReadOnlyUser } from '@/lib/integration-auth'
 import { prisma } from '@/lib/prisma'
@@ -63,6 +64,12 @@ export async function GET(request: NextRequest) {
       return chapter ? ok(chapter) : error('Kapitel nicht gefunden', 404)
     }
     const where = { projectId, OR: visibilityWhere(viewer) }
+    if (action === 'items' || action === 'factions') {
+      const entries = action === 'items'
+        ? await prisma.item.findMany({ where, orderBy: { createdAt: 'asc' }, ...pagination })
+        : await prisma.faction.findMany({ where, orderBy: { createdAt: 'asc' }, ...pagination })
+      return ok(await Promise.all(entries.map(async entry => ({ ...entry, relations: await readMcpRelations(prisma, action === 'items' ? 'ITEM' : 'FACTION', entry, userId) }))))
+    }
     if (action === 'characters') return ok(await prisma.character.findMany({ where, orderBy: { createdAt: 'asc' }, ...pagination }))
     if (action === 'places') return ok(await prisma.place.findMany({ where, orderBy: { createdAt: 'asc' }, ...pagination }))
     if (action === 'timeline') return ok(await prisma.timelineEvent.findMany({ where, orderBy: { order: 'asc' }, ...pagination }))

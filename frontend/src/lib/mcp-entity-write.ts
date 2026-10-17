@@ -1,3 +1,6 @@
+import { relationInputSchema, parseMcpRelations, prepareMcpRelations } from '@/lib/mcp-relations'
+import { isValidVisibility } from '@/lib/visibility'
+import { parseAliases } from '@/lib/storyTools'
 import { prisma } from '@/lib/prisma'
 import { hashCredential } from '@/lib/oauth-credentials'
 import { hasMythosScope } from '@/lib/integration-permissions'
@@ -7,18 +10,21 @@ const fields = {
   character: ['name', 'appearance', 'personality', 'backstory', 'motivation', 'flaw', 'secrets'],
   place: ['name', 'description', 'location', 'climate', 'importance', 'history', 'politics', 'sensoryDetails'],
   lore: ['title', 'content', 'category'],
+  item: ['name', 'description', 'origin', 'significance'],
+  faction: ['name', 'description', 'goal'],
 } as const
 type Entity = keyof typeof fields
 const entities = Object.keys(fields) as Entity[]
 const identifier = { type: 'string', minLength: 1, maxLength: 128 }
 const propertiesFor = (entity: Entity): Record<string, unknown> => ({
   ...Object.fromEntries(fields[entity].map(key => [key, { type: 'string', maxLength: key === 'name' || key === 'title' ? 300 : 20000, ...(key === 'name' || key === 'title' ? { minLength: 1 } : {}) }])),
-  ...(entity !== 'lore' ? { aliases: { type: 'array', maxItems: 30, items: { type: 'string', minLength: 1, maxLength: 100 } } } : {}),
+  ...(entity !== 'lore' && entity !== 'faction' ? { aliases: { type: 'array', maxItems: 30, items: { type: 'string', minLength: 1, maxLength: 100 } } } : {}),
+  ...(['item', 'faction'].includes(entity) ? { visibility: { enum: ['PRIVATE', 'FAMILY'] }, relations: relationInputSchema } : {}),
   ...(entity === 'character' ? { role: { enum: ['PROTAGONIST', 'ANTAGONIST', 'MENTOR', null] } } : {}),
 })
 export const entityWriteTools = entities.flatMap(entity => ['create', 'update'].map(operation => ({
   name: `mythos_${operation}_${entity}`,
-  description: `${operation === 'create' ? 'Create a private' : 'Update an authored'} ${entity} in an owned project. Saves immediately. ${operation === 'update' ? 'Read first and pass updatedAt as expectedUpdatedAt; omitted fields remain unchanged.' : 'Requires name (character/place) or title (lore).'} Lore content is plain text.`,
+  description: `${operation === 'create' ? 'Create an authored' : 'Update an authored'} ${entity} in an owned project. Saves immediately. ${operation === 'update' ? 'Read first and pass updatedAt as expectedUpdatedAt; omitted fields remain unchanged.' : 'Requires name, or title for lore. Visibility defaults to PRIVATE.'} Text fields are plain text; clear with an empty string, aliases with [].${entity === 'item' || entity === 'faction' ? ' Relations replaces only your visible links (empty array clears them); omitted relations remain unchanged. Incoming CHARACTER links to a FACTION represent membership (MEMBER_OF, LEADER_OF, FOUNDER_OF, FORMER_MEMBER_OF or custom relationType).' : ''}`,
   annotations: { readOnlyHint: false, destructiveHint: operation === 'update', idempotentHint: false, openWorldHint: false },
   securitySchemes: [{ type: 'oauth2', scopes: ['mythos:read', 'mythos:write'] }],
   _meta: { securitySchemes: [{ type: 'oauth2', scopes: ['mythos:read', 'mythos:write'] }] },
@@ -54,14 +60,21 @@ export async function writeMcpEntity(bearer: string | null, name: string, input:
     data[key] = value
   }
   if (args.aliases !== undefined) {
-    if (!Array.isArray(args.aliases) || args.aliases.length > 30 || args.aliases.some(value => typeof value !== 'string' || !value.trim() || value.length > 100)) return invalid
-    data.aliases = Array.from(new Set(args.aliases.map(value => value.trim())))
+    const aliases = parseAliases(args.aliases)
+    if (!aliases) return invalid
+    data.aliases = aliases
   }
   if (args.role !== undefined) {
     if (args.role !== null && !['PROTAGONIST', 'ANTAGONIST', 'MENTOR'].includes(args.role as string)) return invalid
     data.role = args.role as string | null
   }
-  if (!Object.keys(data).length) return invalid
+  if (args.visibility !== undefined) {
+    if (!isValidVisibility(args.visibility)) return invalid
+    data.visibility = args.visibility
+  }
+  const relations = parseMcpRelations(args.relations)
+  if (relations === null) return invalid
+  if (!Object.keys(data).length && relations === undefined) return invalid
   const match = bearer?.match(/^Bearer ([A-Za-z0-9._~-]{1,512})$/i)
   if (!match) return { status: 401, error: 'Unauthorized' }
   const token = await prisma.oAuthAccessToken.findUnique({ where: { tokenHash: hashCredential(match[1]) } })
@@ -71,25 +84,33 @@ export async function writeMcpEntity(bearer: string | null, name: string, input:
     const project = await tx.project.findFirst({ where: { id: args.projectId as string, userId: token.userId }, select: { user: { select: { familyId: true } } } })
     if (!project) return { status: 404, error: 'Project not found' }
     const scope = { projectId: args.projectId as string, authorId: token.userId, familyId: project.user.familyId }
+    const links = relations === undefined ? undefined : await prepareMcpRelations(tx, entity === 'item' ? 'ITEM' : 'FACTION', updating ? args.id as string : undefined, relations, scope)
+    if (links && 'error' in links) return links
     // The field allowlist above is shared with the advertised schema.
     if (!updating) {
-      const createData = { ...data, ...scope, visibility: 'PRIVATE' as const }
+      const createData = { ...data, ...scope, visibility: (data.visibility ?? 'PRIVATE') as 'PRIVATE' | 'FAMILY' }
       const result = entity === 'character'
         ? await tx.character.create({ data: createData as Parameters<typeof tx.character.create>[0]['data'], select: { id: true, updatedAt: true } })
         : entity === 'place'
           ? await tx.place.create({ data: createData as Parameters<typeof tx.place.create>[0]['data'], select: { id: true, updatedAt: true } })
+          : entity === 'item'
+            ? await tx.item.create({ data: createData as Parameters<typeof tx.item.create>[0]['data'], select: { id: true, updatedAt: true } })
+            : entity === 'faction'
+              ? await tx.faction.create({ data: createData as Parameters<typeof tx.faction.create>[0]['data'], select: { id: true, updatedAt: true } })
           : await tx.loreEntry.create({ data: createData as Parameters<typeof tx.loreEntry.create>[0]['data'], select: { id: true, updatedAt: true } })
+      if (links) await links.save(result.id)
       return { status: 201, ...result }
     }
     const where = { ...scope, id: args.id as string }
     const query = { where, select: { updatedAt: true } }
-    const current = entity === 'character' ? await tx.character.findFirst(query) : entity === 'place' ? await tx.place.findFirst(query) : await tx.loreEntry.findFirst(query)
+    const current = entity === 'character' ? await tx.character.findFirst(query) : entity === 'place' ? await tx.place.findFirst(query) : entity === 'item' ? await tx.item.findFirst(query) : entity === 'faction' ? await tx.faction.findFirst(query) : await tx.loreEntry.findFirst(query)
     if (!current) return { status: 404, error: 'Entry not found' }
     const expected = new Date(args.expectedUpdatedAt as string)
     const updatedAt = new Date(Math.max(Date.now(), current.updatedAt.getTime() + 1))
     const update = { where: { ...where, updatedAt: expected }, data: { ...data, updatedAt } }
-    const result = entity === 'character' ? await tx.character.updateMany(update) : entity === 'place' ? await tx.place.updateMany(update) : await tx.loreEntry.updateMany(update)
+    const result = entity === 'character' ? await tx.character.updateMany(update) : entity === 'place' ? await tx.place.updateMany(update) : entity === 'item' ? await tx.item.updateMany(update) : entity === 'faction' ? await tx.faction.updateMany(update) : await tx.loreEntry.updateMany(update)
     if (!result.count) return { status: 409, error: 'Entry changed since last read; read again before updating' }
+    if (links) await links.save(args.id as string)
     return { status: 200, id: args.id, updatedAt }
   })
 }

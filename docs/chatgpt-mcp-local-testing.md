@@ -116,3 +116,41 @@ Schreiben ist nur in eigenen Projekten möglich; bearbeitet werden nur eigene
 Einträge. Textfelder, Figurenrollen und Aliase werden validiert. Sichtbarkeit,
 Zuordnungen, Ortshierarchie und Bilder werden nicht durch diese Tools geändert.
 Löschen wird nicht angeboten. Kapitel verwenden weiterhin den Freigabeprozess.
+
+### Items und Fraktionen über MCP
+
+`mythos_items` und `mythos_factions` lesen sichtbare Einträge eines eigenen
+Projekts mit allen Modellfeldern, IDs, `updatedAt` und sichtbaren `relations`.
+Pagination: `projectId`, `page` (Standard 1, maximal 10000), `limit`
+(Standard 50, maximal 100). Wie die bisherigen Listen liefern sie ein Array.
+
+`mythos_create_item` / `mythos_update_item`: `name`, `description`, `origin`,
+`significance`, `aliases`, `visibility`, `relations`.
+`mythos_create_faction` / `mythos_update_faction`: `name`, `description`, `goal`,
+`visibility`, `relations`. Keine neuen Datenmodelle oder Datenbankmigrationen.
+
+Anlegen erfordert `projectId` und `name`; Sichtbarkeit ist standardmäßig PRIVATE.
+Updates erfordern zusätzlich `id` und `expectedUpdatedAt` aus dem letzten Lesen.
+Ausgelassene Felder bleiben unverändert; Texte werden mit `""`, Aliase mit `[]`
+geleert. Name darf nicht leer sein. Es gelten die bestehenden MCP-Textgrenzen
+(300 Zeichen für Namen, 20000 für Inhalt) und die gemeinsame Aliasvalidierung.
+Sichtbarkeit kann explizit PRIVATE oder FAMILY sein.
+
+`relations` nutzt die bestehende Relation-Tabelle: pro Link `entityType`,
+`entityId`, `direction` (`incoming`/`outgoing`), `relationType`, optional `label`.
+Bei Fraktionen sind eingehende CHARACTER-Links Mitgliedschaften, z. B. MEMBER_OF,
+LEADER_OF, FOUNDER_OF oder FORMER_MEMBER_OF; eigene Bezeichnungen sind möglich.
+Es gelten dieselbe Familiengrenze und die Sichtbarkeitsprüfung beider Endpunkte.
+Selbstverknüpfungen und unpassende reservierte Timeline-Typen werden abgelehnt.
+Die übergebene Liste ersetzt nur eigene sichtbare Links; fremde/unsichtbare
+Links bleiben bestehen. `[]` entfernt eigene sichtbare Links, Weglassen bewahrt
+alle Links. Relationsänderungen und Entitätsupdate erfolgen in einer Transaktion;
+ein Versionskonflikt verändert weder Felder noch Links. Änderungen über die
+separate Web-Relations-API ändern weiterhin nur die Revision der Relation.
+
+Alle vier Schreibwerkzeuge speichern unmittelbar, benötigen `mythos:read
+mythos:write` und beschränken sich auf selbst verfasste Einträge in eigenen
+Projekten. Erfolgsantworten enthalten `id` und `updatedAt`. Bestehende Scopes
+bleiben unverändert. Zum Einsatz muss die neue Serverversion deployt werden;
+eine neue OAuth-Autorisierung ist nur für bisher reine Lese-Grants notwendig.
+Clients müssen ihre Werkzeugliste aktualisieren.

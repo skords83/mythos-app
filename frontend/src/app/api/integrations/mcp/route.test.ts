@@ -40,13 +40,13 @@ test('rejects unknown tools without invoking data access', async () => {
   expect((await response.json()).error.code).toBe(-32602)
   expect(read).not.toHaveBeenCalled()
 })
-test('passes project-scoped requests to the read-only data layer', async () => {
+test.each(['characters', 'items', 'factions'])('passes project-scoped %s requests to the read-only data layer', async action => {
   const response = await POST(request({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: {
-    name: 'mythos_characters', arguments: { projectId: 'project-1', limit: 10 },
+    name: `mythos_${action}`, arguments: { projectId: 'project-1', limit: 10 },
   } }))
   expect((await response.json()).result.isError).toBe(false)
   const called = read.mock.calls[0][0] as NextRequest
-  expect(called.nextUrl.searchParams.get('action')).toBe('characters')
+  expect(called.nextUrl.searchParams.get('action')).toBe(action)
   expect(called.nextUrl.searchParams.get('projectId')).toBe('project-1')
 })
 test('rejects malformed page argument', async () => {
