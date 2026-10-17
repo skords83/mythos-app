@@ -49,6 +49,7 @@ enum IdeaStatus {
 }
 
 model Family {
+  sourceEvidence SourceEvidence[]
   id         String      @id @default(cuid())
   name       String
   createdAt  DateTime    @default(now())
@@ -70,6 +71,7 @@ model Family {
 }
 
 model User {
+  sourceEvidence SourceEvidence[]
   id         String      @id @default(cuid())
   email      String      @unique
   name       String?
@@ -158,6 +160,7 @@ model DailyWordCount {
 }
 
 model Chapter {
+  sourceEvidence SourceEvidence[]
   timelineEvents TimelineEvent[]
   id        String   @id @default(cuid())
   title     String
@@ -316,6 +319,7 @@ model Faction {
 }
 
 model Scene {
+  sourceEvidence SourceEvidence[]
   id          String     @id @default(cuid())
   name        String
   description String?
@@ -562,4 +566,35 @@ model ChapterProposal {
   @@index([authorId, status, createdAt])
   @@index([chapterId, status])
   @@index([expiresAt])
+}
+
+// Optional provenance attached to existing knowledge; text stays in Chapter.
+// Entity endpoint is polymorphic like Relation and checked on every access.
+model SourceEvidence {
+  id String @id @default(cuid())
+  entityType RelatableEntityType
+  entityId String
+  field String?
+  statement String
+  chapterId String
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  sceneId String?
+  scene Scene? @relation(fields: [sceneId], references: [id], onDelete: SetNull)
+  quote String
+  prefix String @default("")
+  suffix String @default("")
+  commentId String?
+  sourceHash String
+  sourceUpdatedAt DateTime
+  flagged Boolean @default(false)
+  authorId String
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  familyId String
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([familyId, entityType, entityId])
+  @@index([chapterId])
+  @@index([sceneId])
 }

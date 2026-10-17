@@ -67,7 +67,7 @@ export function useScenes({ chapterId, showError, requestConfirm, onConfirmed }:
       const response = await fetch(`/api/scenes/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, outline, visibility, ...(tags !== undefined ? { tags } : {}) })
+        body: JSON.stringify({ expectedUpdatedAt: scenes.find(s => s.id === id)?.updatedAt, name, description, outline, visibility, ...(tags !== undefined ? { tags } : {}) })
       })
       if (!response.ok) {
         showError('Szene konnte nicht gespeichert werden.')

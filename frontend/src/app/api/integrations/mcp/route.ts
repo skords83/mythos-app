@@ -1,3 +1,5 @@
+import { storyTools } from '@/lib/story-tool-schema'
+import { callMcpStory } from '@/lib/mcp-story'
 import { entityWriteTools, writeMcpEntity } from '@/lib/mcp-entity-write'
 import { createPendingChapterProposal } from '@/lib/integration-chapter-proposal-store'
 import { NextRequest, NextResponse } from 'next/server'
@@ -102,15 +104,26 @@ export async function POST(request: NextRequest) {
     return rpc(msg.id, {
       protocolVersion: VERSIONS.includes(requestedVersion) ? requestedVersion : VERSION,
       capabilities: { tools: {} },
-      serverInfo: { name: 'mythos', version: '0.3.0' },
+      serverInfo: { name: 'mythos', version: '0.4.0' },
     })
   }
   if (msg.method === 'ping') return rpc(msg.id, {})
-  if (msg.method === 'tools/list') return rpc(msg.id, { tools: [...tools, proposalTool, ...entityWriteTools] })
+  if (msg.method === 'tools/list') return rpc(msg.id, { tools: [...tools, proposalTool, ...entityWriteTools, ...storyTools] })
   if (msg.method !== 'tools/call') return fail(msg.id, -32601, 'Method not found')
 
   const name = msg.params?.name
   const args = msg.params?.arguments ?? {}
+  const storyTool = storyTools.find(tool => tool.name === name)
+  if (storyTool) {
+    try {
+      const denied = await authenticateMcp(request, storyTool.annotations.readOnlyHint ? 'mythos:read' : 'mythos:write')
+      if (denied) return denied
+      const outcome = await callMcpStory(request.headers.get('authorization'), name, args)
+      const result = { content: [{ type: 'text', text: JSON.stringify(outcome) }], isError: outcome.status >= 400 }
+      if (Buffer.byteLength(JSON.stringify(result), 'utf8') > 262144) return rpc(msg.id, { content: [{ type: 'text', text: 'Ergebnis zu groß. Bitte limit reduzieren.' }], isError: true })
+      return rpc(msg.id, result)
+    } catch { return fail(msg.id, -32603, 'Story service unavailable') }
+  }
   if (entityWriteTools.some(tool => tool.name === name)) {
     try {
       const denied = await authenticateMcp(request, 'mythos:write')

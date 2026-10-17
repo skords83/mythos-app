@@ -1,5 +1,7 @@
 'use client'
 
+import { SourceEvidencePanel } from './SourceEvidencePanel'
+
 import React, { useState } from 'react'
 import { Character, Faction } from './types'
 import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY } from '@/lib/theme'
@@ -117,6 +119,7 @@ export function EditFactionModal({ isOpen, onClose, faction, characters, onUpdat
             </button>
           </div>
         </form>
+        <SourceEvidencePanel key={faction.id} entityType="FACTION" entityId={faction.id} projectId={faction.projectId} />
       </div>
     </div>
   )

@@ -1,5 +1,7 @@
 'use client'
 
+import { SourceEvidencePanel } from './SourceEvidencePanel'
+
 import { AliasEditor } from './AliasEditor'
 import React, { useState } from 'react'
 import { Place } from './types'
@@ -157,6 +159,7 @@ export function EditPlaceModal({ isOpen, onClose, place, onUpdate }: EditPlaceMo
             </button>
           </div>
         </form>
+        <SourceEvidencePanel key={place.id} entityType="PLACE" entityId={place.id} projectId={place.projectId} />
       </div>
     </div>
   )

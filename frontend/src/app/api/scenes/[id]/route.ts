@@ -30,12 +30,15 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { name, description, outline, order, visibility, tags } = body
+    const { name, description, outline, order, visibility, tags, expectedUpdatedAt } = body
 
     if (visibility !== undefined && !isValidVisibility(visibility)) {
       return NextResponse.json({ error: 'Sichtbarkeit muss PRIVATE oder FAMILY sein' }, { status: 400 })
     }
 
+    if (typeof expectedUpdatedAt !== 'string' || !Number.isFinite(Date.parse(expectedUpdatedAt))) {
+      return NextResponse.json({ error: 'Aktueller Versionsstand expectedUpdatedAt erforderlich.' }, { status: 400 })
+    }
     const updateData: any = {}
     if (name !== undefined) updateData.name = name
     if (description !== undefined) updateData.description = description
@@ -44,7 +47,14 @@ export async function PUT(
     if (order !== undefined) updateData.order = order
     if (visibility !== undefined) updateData.visibility = visibility
 
-    const updated = await prisma.scene.update({ where: { id: resolvedParams.id }, data: updateData })
+    const updated = await prisma.$transaction(async tx => {
+      const changed = await tx.scene.updateMany({
+        where: { id: resolvedParams.id, familyId: context.familyId, authorId: context.userId, updatedAt: new Date(expectedUpdatedAt) },
+        data: { ...updateData, updatedAt: new Date(Math.max(Date.now(), new Date(expectedUpdatedAt).getTime() + 1)) },
+      })
+      return changed.count ? tx.scene.findUnique({ where: { id: resolvedParams.id } }) : null
+    })
+    if (!updated) return NextResponse.json({ error: 'Szene wurde zwischenzeitlich geändert. Bitte neu laden.' }, { status: 409 })
     return NextResponse.json(updated)
   } catch (error) {
     logger.error(error, { route: 'PUT /api/scenes/[id]', userId })

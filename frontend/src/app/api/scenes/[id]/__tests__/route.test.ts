@@ -8,7 +8,8 @@ import { prisma } from '@/lib/prisma'
 
 jest.mock('@/lib/prisma', () => ({
   prisma: {
-    scene: { findFirst: jest.fn(), update: jest.fn(), delete: jest.fn() },
+    scene: { findFirst: jest.fn(), update: jest.fn(), updateMany: jest.fn(), findUnique: jest.fn(), delete: jest.fn() },
+    $transaction: jest.fn(),
     relation: { deleteMany: jest.fn() },
   },
 }))
@@ -30,6 +31,7 @@ function authedRequest(url: string, init: Omit<RequestInit, 'signal'> = {}) {
 
 beforeEach(() => {
   jest.clearAllMocks()
+  ;(prisma as any).$transaction.mockImplementation((fn: any) => fn(prisma))
 })
 
 describe('PUT /api/scenes/[id]', () => {
@@ -58,17 +60,18 @@ describe('PUT /api/scenes/[id]', () => {
 
   it('updates order along with the other fields', async () => {
     mockedPrisma.scene.findFirst.mockResolvedValueOnce({ id: 'scene-1', authorId: 'user-1' })
-    mockedPrisma.scene.update.mockResolvedValue({ id: 'scene-1', order: 3 })
+    ;(prisma.scene.updateMany as jest.Mock).mockResolvedValue({ count: 1 })
+    ;(prisma.scene.findUnique as jest.Mock).mockResolvedValue({ id: 'scene-1', order: 3 })
 
     const request = authedRequest('http://localhost/api/scenes/scene-1', {
       method: 'PUT',
-      body: JSON.stringify({ order: 3 }),
+      body: JSON.stringify({ order: 3, expectedUpdatedAt: '2026-10-17T00:00:00.000Z' }),
     })
     const response = await PUT(request, { params: Promise.resolve({ id: 'scene-1' }) })
     expect(response.status).toBe(200)
-    expect(mockedPrisma.scene.update).toHaveBeenCalledWith({
-      where: { id: 'scene-1' },
-      data: { order: 3 },
+    expect(prisma.scene.updateMany).toHaveBeenCalledWith({
+      where: { id: 'scene-1', familyId: 'fam-1', authorId: 'user-1', updatedAt: new Date('2026-10-17T00:00:00.000Z') },
+      data: { order: 3, updatedAt: expect.any(Date) },
     })
   })
 })

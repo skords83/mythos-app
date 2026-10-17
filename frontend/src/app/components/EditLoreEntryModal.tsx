@@ -1,5 +1,7 @@
 'use client'
 
+import { SourceEvidencePanel } from './SourceEvidencePanel'
+
 import React, { useState } from 'react'
 import { Character, Place, Item, Faction, LoreEntry } from './types'
 import { OVERLAY, MODAL_PANEL, INPUT, BUTTON_SECONDARY, ACCENT, RADIUS, TEXT_PRIMARY, TEXT_SECONDARY } from '@/lib/theme'
@@ -135,6 +137,7 @@ export function EditLoreEntryModal({
             </button>
           </div>
         </form>
+        <SourceEvidencePanel key={loreEntry.id} entityType="LORE_ENTRY" entityId={loreEntry.id} projectId={loreEntry.projectId} />
       </div>
     </div>
   )

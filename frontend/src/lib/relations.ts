@@ -93,6 +93,7 @@ export function isRelationVisible(
 }
 
 type RelationDeleteClient = {
+  sourceEvidence?: { deleteMany: (args: { where: any }) => Promise<unknown> }
   relation: { deleteMany: (args: { where: any }) => Promise<unknown> }
 }
 
@@ -107,6 +108,8 @@ export async function deleteRelationsForEntity(
   type: RelatableEntityType,
   id: string
 ): Promise<void> {
+  // Same polymorphic lifecycle as relations; never leave evidence on a deleted entry.
+  if (prisma.sourceEvidence) await prisma.sourceEvidence.deleteMany({ where: { entityType: type, entityId: id } })
   await prisma.relation.deleteMany({
     where: {
       OR: [

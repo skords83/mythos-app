@@ -1,5 +1,7 @@
 'use client'
 
+import { SourceEvidencePanel } from './SourceEvidencePanel'
+
 import { AliasEditor } from './AliasEditor'
 import React, { useState, useRef } from 'react'
 import { Character, Place } from './types'
@@ -205,6 +207,7 @@ export function EditCharacterModal({ isOpen, onClose, character, characters, pla
             </button>
           </div>
         </form>
+        <SourceEvidencePanel key={character.id} entityType="CHARACTER" entityId={character.id} projectId={character.projectId} />
       </div>
     </div>
   )

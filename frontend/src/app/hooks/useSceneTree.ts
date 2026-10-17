@@ -107,10 +107,10 @@ export function useSceneTree({ chapters, selectedChapter, showError, requestConf
       const response = await fetch(`/api/scenes/${scene.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
+        body: JSON.stringify({ ...updates, expectedUpdatedAt: scene.updatedAt }),
       })
       if (!response.ok) {
-        showError('Szene konnte nicht gespeichert werden.')
+        showError(response.status === 409 ? 'Szene wurde zwischenzeitlich geändert. Bitte neu laden.' : 'Szene konnte nicht gespeichert werden.')
         return
       }
       const updated: Scene = await response.json()

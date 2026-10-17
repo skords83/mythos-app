@@ -1,4 +1,4 @@
-/** Explicit OAuth capabilities. Write never implies delete. */
+/** Explicit OAuth capabilities. Write allows targeted relation/evidence removal, not entity or project deletion. */
 export const MYTHOS_READ_SCOPE = 'mythos:read'
 export const MYTHOS_WRITE_SCOPE = 'mythos:write'
 export type MythosScope = typeof MYTHOS_READ_SCOPE | typeof MYTHOS_WRITE_SCOPE

@@ -76,13 +76,13 @@ export function OAuthAuthorizeContent() {
         <h1 className="text-2xl font-semibold">Mythos – Zugriffsfreigabe</h1>
         {loading && <p className="mt-5">Anfrage wird geprüft …</p>}
         {error && <p role="alert" className="mt-5 text-red-600">{error}</p>}
-        {client && <p className="mt-5">{client.client_name} möchte {client.scope.split(' ').includes('mythos:write') ? 'lesend zugreifen, Figuren, Orte, Items, Fraktionen und Lore anlegen und bearbeiten sowie Kapiteländerungen zur Freigabe vorschlagen' : 'lesend auf deine Mythos-Daten zugreifen'}.</p>}
+        {client && <p className="mt-5">{client.client_name} möchte {client.scope.split(' ').includes('mythos:write') ? 'lesend zugreifen, Figuren, Orte, Items, Fraktionen, Lore und Szenen anlegen und bearbeiten, Beziehungen und Quellenbelege pflegen und gezielt entfernen sowie Kapiteländerungen zur Freigabe vorschlagen' : 'lesend auf deine Mythos-Daten zugreifen'}.</p>}
         {client && (
           <div className="mt-6">
             <p className="text-sm text-zinc-600 dark:text-zinc-400">
               Berechtigung: Projekte, Kapitel, Figuren, Orte und weitere
               Hintergrundinformationen lesen. {client.scope.split(' ').includes('mythos:write')
-                ? 'Eigene Figuren, Orte, Items, Fraktionen und Lore in eigenen Projekten direkt anlegen und bearbeiten. Kapiteländerungen vorschlagen; diese werden erst nach deiner Freigabe in Mythos übernommen.'
+                ? 'Eigene Wissenseinträge und Szenen direkt anlegen und bearbeiten; Szenen zuordnen und sortieren. Sichtbare Beziehungen und Quellenbelege mit Autorenrechten pflegen und einzeln entfernen. Kapiteltext wird nur über Vorschläge nach deiner Freigabe geändert.'
                 : 'Keine Schreibrechte.'}
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
