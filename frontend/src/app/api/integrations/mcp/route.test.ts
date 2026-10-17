@@ -1,4 +1,5 @@
 /** @jest-environment node */
+import { createPendingChapterProposal } from '@/lib/integration-chapter-proposal-store'
 jest.mock('@/lib/rateLimit', () => ({ checkRateLimit: jest.fn().mockResolvedValue(null), getClientIp: () => 'test' }))
 import { NextRequest } from 'next/server'
 import { authenticateMcp } from '@/lib/mcp-auth'
@@ -56,7 +57,7 @@ test('rejects malformed page argument', async () => {
 })
 
 test('rejects oversized JSON-RPC request bodies', async () => {
-  const response = await POST(request({ jsonrpc: '2.0', id: 5, method: 'ping', padding: 'x'.repeat(20000) }))
+  const response = await POST(request({ jsonrpc: '2.0', id: 5, method: 'ping', padding: 'x'.repeat(2100000) }))
   expect(response.status).toBe(413)
 })
 test('rejects JSON-RPC batch requests explicitly', async () => {
@@ -124,4 +125,60 @@ test('does not let URL query parameters override validated tool arguments', asyn
 test.each([null, {}, [], true])('rejects invalid request IDs %p', async id => {
   const res = await POST(request({ jsonrpc: '2.0', id, method: 'ping' }))
   expect((await res.json()).error.code).toBe(-32600)
+})
+
+jest.mock('@/lib/integration-chapter-proposal-store', () => ({ createPendingChapterProposal: jest.fn() }))
+test('advertises the proposal tool as a non-idempotent write requiring both scopes', async () => {
+  const response = await POST(request({ jsonrpc: '2.0', id: 1, method: 'tools/list' }))
+  const tool = (await response.json()).result.tools.find((t: { name: string }) => t.name === 'mythos_propose_chapter_update')
+  expect(tool.annotations).toMatchObject({ readOnlyHint: false, idempotentHint: false })
+  expect(tool.securitySchemes[0].scopes).toEqual(['mythos:read', 'mythos:write'])
+})
+const proposalCall = { jsonrpc: '2.0', id: 8, method: 'tools/call', params: { name: 'mythos_propose_chapter_update', arguments: {
+  projectId: 'p', chapterId: 'c', expectedUpdatedAt: '2026-01-01T00:00:00.000Z', title: 'New title', content: { type: 'doc', content: [] },
+} } }
+test('blocks read-only credentials before proposal creation', async () => {
+  ;(authenticateMcp as jest.Mock).mockResolvedValueOnce(null).mockResolvedValueOnce(new Response(null, { status: 403 }))
+  expect((await POST(request(proposalCall))).status).toBe(403)
+  expect(createPendingChapterProposal).not.toHaveBeenCalled()
+})
+test('creates a pending proposal using the original bearer and revision', async () => {
+  ;(createPendingChapterProposal as jest.Mock).mockResolvedValueOnce({ status: 201, proposalId: 'proposal' })
+  const response = await POST(request(proposalCall))
+  const result = (await response.json()).result
+  expect(result.isError).toBe(false)
+  expect(JSON.parse(result.content[0].text).state).toBe('PENDING')
+  expect(authenticateMcp).toHaveBeenLastCalledWith(expect.anything(), 'mythos:write')
+  expect(createPendingChapterProposal).toHaveBeenCalledWith('Bearer test', proposalCall.params.arguments)
+  expect(read).not.toHaveBeenCalled()
+})
+test('returns stale revision conflicts as tool errors', async () => {
+  ;(createPendingChapterProposal as jest.Mock).mockResolvedValueOnce({ status: 409, error: 'Chapter changed since last read' })
+  expect((await (await POST(request(proposalCall))).json()).result.isError).toBe(true)
+})
+
+jest.mock('@/lib/mcp-entity-write', () => {
+  const actual = jest.requireActual('@/lib/mcp-entity-write')
+  return { ...actual, writeMcpEntity: jest.fn() }
+})
+import { entityWriteTools, writeMcpEntity } from '@/lib/mcp-entity-write'
+test.each(entityWriteTools.map(tool => tool.name))('enforces write scope for %s', async name => {
+  ;(authenticateMcp as jest.Mock).mockResolvedValueOnce(null).mockResolvedValueOnce(new Response(null, { status: 403 }))
+  const response = await POST(request({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: {} } }))
+  expect(response.status).toBe(403)
+  expect(writeMcpEntity).not.toHaveBeenCalled()
+})
+test('advertises all entity writes with OAuth write metadata', async () => {
+  const response = await POST(request({ jsonrpc: '2.0', id: 1, method: 'tools/list' }))
+  const list = (await response.json()).result.tools
+  for (const tool of entityWriteTools) {
+    expect(list).toContainEqual(expect.objectContaining({ name: tool.name, annotations: expect.objectContaining({ readOnlyHint: false }), securitySchemes: [{ type: 'oauth2', scopes: ['mythos:read', 'mythos:write'] }] }))
+  }
+})
+test.each([200, 201, 400, 404, 409])('returns entity write status %s as a tool result', async status => {
+  ;(writeMcpEntity as jest.Mock).mockResolvedValueOnce({ status })
+  const args = { projectId: 'p', name: 'Name' }
+  const response = await POST(request({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'mythos_create_character', arguments: args } }))
+  expect((await response.json()).result.isError).toBe(status >= 400)
+  expect(writeMcpEntity).toHaveBeenCalledWith('Bearer test', 'mythos_create_character', args)
 })

@@ -85,10 +85,18 @@ test('rejects unbound and differently bound authorization codes', async () => {
   }
 })
 test('rejects scope escalation stored on a code', async () => {
-  ;(db.oAuthAuthorizationCode.findUnique as jest.Mock).mockResolvedValueOnce({ ...valid, scope: 'mythos:read mythos:write' })
+  ;(db.oAuthAuthorizationCode.findUnique as jest.Mock).mockResolvedValueOnce({ ...valid, scope: 'mythos:read mythos:delete' })
   expect((await POST(request())).status).toBe(400)
 })
 test('rejects token requests for a different resource', async () => {
   const response = await POST(request({ resource: 'https://other.example/mcp' }))
   expect(await response.json()).toEqual({ error: 'invalid_target' })
+})
+
+test('preserves an explicitly authorized write grant', async () => {
+  ;(db.oAuthAuthorizationCode.findUnique as jest.Mock).mockResolvedValueOnce({ ...valid, scope: 'mythos:read mythos:write' })
+  const response = await POST(request())
+  expect(response.status).toBe(200)
+  expect((await response.json()).scope).toBe('mythos:read mythos:write')
+  expect(db.oAuthAccessToken.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ scope: 'mythos:read mythos:write' }) }))
 })

@@ -104,3 +104,9 @@ test('rejects duplicate authorization parameters', async () => {
   params.append('resource', data.resource)
   expect((await GET(new NextRequest('https://mythos.example/api/oauth/authorize?' + params))).status).toBe(400)
 })
+
+test('stores explicitly approved read and write permissions', async () => {
+  const response = await POST(req({ ...data, scope: 'mythos:read mythos:write' }))
+  expect(response.status).toBe(200)
+  expect(db.oAuthAuthorizationCode.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ scope: 'mythos:read mythos:write' }) }))
+})

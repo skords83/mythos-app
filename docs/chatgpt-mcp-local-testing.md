@@ -71,8 +71,48 @@ Die folgenden Schritte erfordern einen eigenen HTTPS-Testendpunkt und Zugang zur
    ```
 
    Das Skript registriert nur in der lokalen Testdatenbank und überschreibt keinen bestehenden Client. Dieselbe Client-ID in ChatGPT eintragen. Es wird kein Client-Secret ausgestellt. Wenn die verfügbare ChatGPT-Oberfläche keinen öffentlichen vorregistrierten Client unterstützt, diesen Modus nicht durch ein erfundenes Secret ersetzen; die tatsächlich angebotene Clientkonfiguration muss dann geprüft werden.
-4. Verbinden, mit einem lokalen Testkonto anmelden und Lesefreigabe erteilen. Projekte auflisten und ein Testkapitel lesen. Fremde Projekte und Schreib-/Löschaktionen müssen ausgeschlossen bleiben.
+4. Verbinden, mit einem lokalen Testkonto anmelden und Lesefreigabe erteilen. Projekte auflisten und ein Testkapitel lesen. Fremde Projekte und Löschaktionen müssen ausgeschlossen bleiben. Lesetokens dürfen keine Änderungsvorschläge erstellen.
 5. Widerruf und erneute Autorisierung prüfen. Tokens laufen nach einer Stunde ab; kein Refresh-Token-Grant. Bei Änderung des Testursprungs ist erneute Autorisierung erforderlich.
 6. Ergebnis und konkrete ChatGPT-Konfiguration dokumentieren. Erst danach lässt sich eine tatsächliche ChatGPT-Kompatibilität bestätigen. Eine spätere Produktionsübernahme ist ein eigener freizugebender Schritt.
 
 Referenzen: [OpenAI Authentication](https://developers.openai.com/plugins/build/auth), [Custom MCP servers](https://developers.openai.com/api/docs/guides/custom-mcp-server).
+
+
+## MCP-Schreibzugriff auf Kapitel
+
+Der Connector unterstützt `mythos_propose_chapter_update`. Dafür muss die OAuth-Anfrage
+`scope=mythos:read mythos:write` enthalten und der Nutzer die angezeigte Freigabe erteilen.
+Bestehende Lesetokens erhalten keine zusätzlichen Rechte; die Verbindung muss für
+Schreibrechte erneut autorisiert werden. Discovery und Werkzeugmetadaten nennen beide Scopes.
+
+1. Kapitel mit `mythos_chapter` lesen und `updatedAt` übernehmen.
+2. `mythos_propose_chapter_update` mit `projectId`, `chapterId`, `expectedUpdatedAt`,
+   `title` und `content` (Tiptap-Dokument mit `type: "doc"` und `content`-Array) aufrufen.
+3. Die Antwort enthält eine `proposalId`, `state: "PENDING"` und die `approvalUrl`.
+4. Unter `/integrations/approvals` den Vorschlag prüfen und übernehmen oder ablehnen.
+   Erst die Übernahme ändert das Kapitel und erstellt eine Sicherung. Vorschläge verfallen
+   nach 24 Stunden. Zwischenzeitliche Kapiteländerungen verhindern die Übernahme.
+
+Es können nur Kapitel eigener Projekte vorgeschlagen werden. Das Werkzeug ist nicht
+idempotent: Wiederholungen erzeugen weitere Vorschläge. MCP-Anfragen sind auf 2 MiB
+begrenzt; für Dokumente gilt zusätzlich das bestehende Limit von 500.000 JSON-Zeichen.
+Figuren, Orte, Lore und andere Entitäten bleiben über MCP lesend zugänglich.
+
+### Figuren, Orte und Lore schreiben
+
+Der Connector bietet zusätzlich `mythos_create_character`, `mythos_update_character`,
+`mythos_create_place`, `mythos_update_place`, `mythos_create_lore` und
+`mythos_update_lore`. Alle benötigen `mythos:read mythos:write` und speichern direkt.
+Bestehende Verbindungen mit reinen Leserechten müssen erneut mit Schreibrechten
+verbunden werden; danach die Tool-Liste im Client aktualisieren.
+
+Anlegen: `projectId` und `name` (Figur/Ort) bzw. `title` (Lore) sind Pflicht.
+Neue Einträge sind privat. Bearbeiten: `projectId`, `id`, `expectedUpdatedAt`
+(aus der vorherigen Listenabfrage) sowie mindestens ein Inhaltsfeld übergeben.
+Nicht übergebene Felder bleiben erhalten. Ein konkurrierendes Update liefert 409;
+danach erneut lesen. Antworten enthalten `id` und `updatedAt`.
+
+Schreiben ist nur in eigenen Projekten möglich; bearbeitet werden nur eigene
+Einträge. Textfelder, Figurenrollen und Aliase werden validiert. Sichtbarkeit,
+Zuordnungen, Ortshierarchie und Bilder werden nicht durch diese Tools geändert.
+Löschen wird nicht angeboten. Kapitel verwenden weiterhin den Freigabeprozess.

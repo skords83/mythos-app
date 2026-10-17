@@ -100,8 +100,8 @@ try {
   await sdk.connect(new StreamableHTTPClientTransport(new URL(resource), { requestInit: { headers: { authorization: 'Bearer ' + token } } }))
   check(sdk.getServerVersion().name, 'mythos-readonly')
   const list = await sdk.listTools()
-  check(list.tools.length, 7)
-  assert.ok(list.tools.every(t => t.annotations?.readOnlyHint === true))
+  check(list.tools.length, 14)
+  check(list.tools.filter(t => t.annotations?.readOnlyHint === true).length, 7)
   const projects = await sdk.callTool({ name: 'mythos_projects', arguments: {} })
   check(JSON.parse(projects.content[0].text).map(p => p.id), [project.id])
   check((await tool('chapters', { projectId: project.id })).data[0].id, chapter.id)
@@ -114,7 +114,7 @@ try {
   check((await rpc('ping', null, token, { origin: 'https://evil.invalid' })).status, 403)
   check((await rpc('ping', null, token, { 'mcp-protocol-version': 'invalid' })).status, 400)
   check((await rpc('tools/list', null, 'invalid')).status, 401)
-  for (const [change, status] of [[{ expiresAt: new Date(0) }, 401], [{ revokedAt: new Date() }, 401], [{ resource: 'https://wrong.invalid/mcp' }, 401], [{ resource: null }, 401], [{ scope: 'mythos:write' }, 403], [{ scope: 'mythos:read mythos:write' }, 403]]) {
+  for (const [change, status] of [[{ expiresAt: new Date(0) }, 401], [{ revokedAt: new Date() }, 401], [{ resource: 'https://wrong.invalid/mcp' }, 401], [{ resource: null }, 401], [{ scope: 'mythos:write' }, 403], [{ scope: 'mythos:read mythos:delete' }, 403]]) {
     await prisma.oAuthAccessToken.update({ where: { id: stored.id }, data: change })
     response = await rpc('tools/list')
     check(response.status, status)

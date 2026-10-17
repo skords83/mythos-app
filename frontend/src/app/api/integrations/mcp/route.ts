@@ -1,3 +1,5 @@
+import { entityWriteTools, writeMcpEntity } from '@/lib/mcp-entity-write'
+import { createPendingChapterProposal } from '@/lib/integration-chapter-proposal-store'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 import { authenticateMcp } from '@/lib/mcp-auth'
@@ -38,6 +40,25 @@ const tools = actions.map((action) => ({
   },
 }))
 
+const proposalTool = {
+  name: 'mythos_propose_chapter_update',
+  description: 'Propose a replacement title and Tiptap document for an owned chapter. Read the chapter first and pass its updatedAt as expectedUpdatedAt. Creates a pending proposal only; the user must review and approve it in Mythos before the chapter changes. Proposals expire after 24 hours.',
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  securitySchemes: [{ type: 'oauth2', scopes: ['mythos:read', 'mythos:write'] }],
+  _meta: { securitySchemes: [{ type: 'oauth2', scopes: ['mythos:read', 'mythos:write'] }] },
+  inputSchema: {
+    type: 'object', additionalProperties: false,
+    properties: {
+      projectId: { type: 'string', minLength: 1, maxLength: 128 },
+      chapterId: { type: 'string', minLength: 1, maxLength: 128 },
+      expectedUpdatedAt: { type: 'string', format: 'date-time' },
+      title: { type: 'string', minLength: 1, maxLength: 300 },
+      content: { type: 'object', properties: { type: { const: 'doc' }, content: { type: 'array', items: { type: 'object' } } }, required: ['type', 'content'] },
+    },
+    required: ['projectId', 'chapterId', 'expectedUpdatedAt', 'title', 'content'],
+  },
+}
+
 const rpc = (id: unknown, result: unknown) => NextResponse.json({ jsonrpc: '2.0', id, result }, { headers: { 'Cache-Control': 'no-store' } })
 const fail = (id: unknown, code: number, message: string) => NextResponse.json({ jsonrpc: '2.0', id, error: { code, message } }, { headers: { 'Cache-Control': 'no-store' } })
 
@@ -55,10 +76,10 @@ export async function POST(request: NextRequest) {
   const contentType = request.headers.get('content-type') || ''
   if (contentType.split(';')[0].trim().toLowerCase() !== 'application/json') return new NextResponse(null, { status: 415 })
   const declaredSize = Number(request.headers.get('content-length') || 0)
-  if (declaredSize > 16384) return new NextResponse(null, { status: 413 })
+  if (declaredSize > 2097152) return new NextResponse(null, { status: 413 })
   let msg: any
   try {
-    const raw = await boundedBody(request, 16384)
+    const raw = await boundedBody(request, 2097152)
     msg = JSON.parse(raw)
   } catch (error) {
     if (error instanceof Error && error.message === 'body_limit') return new NextResponse(null, { status: 413 })
@@ -79,16 +100,41 @@ export async function POST(request: NextRequest) {
     return rpc(msg.id, {
       protocolVersion: VERSIONS.includes(requestedVersion) ? requestedVersion : VERSION,
       capabilities: { tools: {} },
-      serverInfo: { name: 'mythos-readonly', version: '0.2.0' },
+      serverInfo: { name: 'mythos', version: '0.3.0' },
     })
   }
   if (msg.method === 'ping') return rpc(msg.id, {})
-  if (msg.method === 'tools/list') return rpc(msg.id, { tools })
+  if (msg.method === 'tools/list') return rpc(msg.id, { tools: [...tools, proposalTool, ...entityWriteTools] })
   if (msg.method !== 'tools/call') return fail(msg.id, -32601, 'Method not found')
 
   const name = msg.params?.name
   const args = msg.params?.arguments ?? {}
-  if (typeof name !== 'string' || !name.startsWith('mythos_') || !actions.includes(name.slice(7) as Action)) return fail(msg.id, -32602, 'Unknown tool')
+  if (entityWriteTools.some(tool => tool.name === name)) {
+    try {
+      const denied = await authenticateMcp(request, 'mythos:write')
+      if (denied) return denied
+      const outcome = await writeMcpEntity(request.headers.get('authorization'), name, args)
+      return rpc(msg.id, { content: [{ type: 'text', text: JSON.stringify(outcome) }], isError: outcome.status >= 400 })
+    } catch { return fail(msg.id, -32603, 'Write service unavailable') }
+  }
+  if (name === proposalTool.name) {
+    try {
+      const denied = await authenticateMcp(request, 'mythos:write')
+      if (denied) return denied
+      if (!args || typeof args !== 'object' || Array.isArray(args) ||
+          Object.keys(args).some(key => !proposalTool.inputSchema.required.includes(key))) {
+        return fail(msg.id, -32602, 'Invalid proposal arguments')
+      }
+      const outcome = await createPendingChapterProposal(request.headers.get('authorization'), args)
+      return rpc(msg.id, {
+        content: [{ type: 'text', text: JSON.stringify(outcome.status === 201
+          ? { ...outcome, state: 'PENDING', approvalUrl: oauthConfig().issuer + '/integrations/approvals', message: 'Review and approve this proposal in Mythos before it is applied.' }
+          : outcome) }],
+        isError: outcome.status !== 201,
+      })
+    } catch { return fail(msg.id, -32603, 'Proposal service unavailable') }
+  }
+  if (typeof name !== 'string'  || !name.startsWith('mythos_') || !actions.includes(name.slice(7) as Action)) return fail(msg.id, -32602, 'Unknown tool')
   if (!args || typeof args !== 'object' || Array.isArray(args)) return fail(msg.id, -32602, 'Invalid arguments')
   const action = name.slice(7) as Action
   const allowed = action === 'projects' ? ['page', 'limit'] : action === 'chapter' ? ['projectId', 'id', 'page', 'limit'] : ['projectId', 'page', 'limit']

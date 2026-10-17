@@ -6,13 +6,13 @@ import { validateChapterProposal } from '@/lib/integration-chapter-proposal'
 
 /**
  * Persists an UNAPPROVED proposal. Never updates a chapter.
- * This function is not exposed through MCP or a public HTTP endpoint yet.
+ * The MCP handler checks resource binding before calling this function.
  */
 export async function createPendingChapterProposal(bearer: string | null, input: unknown):
   Promise<{ status: 201; proposalId: string } | { status: 400 | 401 | 403 | 404 | 409; error: string }> {
   const parsed = validateChapterProposal(input)
   if (!parsed.ok) return { status: 400, error: 'Invalid proposal' }
-  if (!bearer?.startsWith('Bearer ') || bearer.length > 519) return { status: 401, error: 'Unauthorized' }
+  if (!bearer || !/^Bearer /i.test(bearer) || bearer.length > 519) return { status: 401, error: 'Unauthorized' }
   const token = bearer.slice(7)
   if (!token) return { status: 401, error: 'Unauthorized' }
   const auth = await prisma.oAuthAccessToken.findUnique({

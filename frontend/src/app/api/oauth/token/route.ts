@@ -1,3 +1,4 @@
+import { parseMythosScopes } from '@/lib/integration-permissions'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 import { validResource } from '@/lib/oauth-config'
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
   const codeHash = hashCredential(code)
   // Atomic single-use redemption: only one concurrent request can consume a code.
   const authorization = await prisma.oAuthAuthorizationCode.findUnique({ where: { codeHash } })
-  if (!authorization || authorization.resource !== params.get('resource') || authorization.scope !== 'mythos:read' || authorization.clientId !== clientId || authorization.redirectUri !== redirectUri ||
+  if (!authorization || authorization.resource !== params.get('resource') || !parseMythosScopes(authorization.scope) || authorization.clientId !== clientId || authorization.redirectUri !== redirectUri ||
     authorization.consumedAt || authorization.expiresAt <= new Date() ||
     !verifyPkceS256(authorization.codeChallenge, verifier)) return invalid()
 
@@ -49,12 +50,12 @@ export async function POST(request: NextRequest) {
         clientId: authorization.clientId,
         userId: authorization.userId,
         resource: authorization.resource,
-        scope: 'mythos:read',
+        scope: authorization.scope,
         expiresAt: new Date(Date.now() + 60 * 60 * 1000),
       },
     })
     return true
   })
   if (!issued) return invalid()
-  return json({ access_token: credential.value, token_type: 'Bearer', expires_in: 3600, scope: 'mythos:read' })
+  return json({ access_token: credential.value, token_type: 'Bearer', expires_in: 3600, scope: authorization.scope })
 }

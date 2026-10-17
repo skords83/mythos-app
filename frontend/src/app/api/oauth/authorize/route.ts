@@ -1,3 +1,4 @@
+import { parseMythosScopes } from '@/lib/integration-permissions'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 import { oauthConfig, validResource } from '@/lib/oauth-config'
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return json({ error: 'invalid_request' }, 400)
   if (!validResource(data.resource)) return json({ error: 'invalid_target' }, 400)
   const { client_id, redirect_uri, code_challenge, code_challenge_method, response_type, scope, state, consent } = data
-  if (consent !== true || response_type !== 'code' || scope !== 'mythos:read' ||
+  if (consent !== true || response_type !== 'code' || !parseMythosScopes(scope) ||
       code_challenge_method !== 'S256' || !isValidPkceChallenge(code_challenge) ||
       typeof client_id !== 'string' || !client_id || client_id.length > 256 ||
       typeof redirect_uri !== 'string' || redirect_uri.length > 2048 ||
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     data: {
       codeHash: code.hash, clientId: client.id, userId,
       redirectUri: redirect_uri, codeChallenge: code_challenge,
-      resource: data.resource, scope: 'mythos:read', expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+      resource: data.resource, scope: parseMythosScopes(scope)!.join(' '), expiresAt: new Date(Date.now() + 5 * 60 * 1000),
     },
   })
   const destination = new URL(redirect_uri)
@@ -74,7 +75,7 @@ export async function GET(request: NextRequest) {
     !clientId || clientId.length > 256 ||
     !redirectUri || redirectUri.length > 2048 ||
     params.get('response_type') !== 'code' ||
-    params.get('scope') !== 'mythos:read' ||
+    !parseMythosScopes(params.get('scope')) ||
     params.get('code_challenge_method') !== 'S256' ||
     !isValidPkceChallenge(challenge) ||
     !state || state.length < 8 || state.length > 1024
@@ -96,6 +97,6 @@ export async function GET(request: NextRequest) {
     client_id: client.id,
     client_name: client.name,
     redirect_uri: redirectUri,
-    scope: 'mythos:read',
+    scope: parseMythosScopes(params.get('scope'))!.join(' '),
   })
 }
