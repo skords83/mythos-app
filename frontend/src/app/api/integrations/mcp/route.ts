@@ -27,7 +27,7 @@ const tools = actions.map((action) => ({
     chapter: 'Read a chapter with its Tiptap JSON content',
     characters: 'List visible characters for a project',
     places: 'List visible places for a project',
-    timeline: 'List timeline events for a project',
+    timeline: 'List visible timeline events with IDs, updatedAt, all editable fields, chapterId and visible relations. Paginated in manual order then ID. Read evidence separately with entityType EVENT.',
     items: 'List visible items with all content fields, IDs, updatedAt and visible relations for an owned project',
     factions: 'List visible factions with all content fields, IDs, updatedAt and visible relations (including membership) for an owned project',
     lore: 'List lore entries for a project',

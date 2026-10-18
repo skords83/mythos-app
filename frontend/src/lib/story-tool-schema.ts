@@ -19,6 +19,7 @@ export function valid(schema: Schema, value: unknown): boolean {
   }
   return true
 }
+const eventFields = { title: { ...text, minLength: 1, maxLength: 300 }, description: nullableText, date: nullableText, duration: { type: ['string', 'null'], maxLength: 100 }, chapterId: { ...id, type: ['string', 'null'] }, order: { type: 'integer', minimum: 0, maximum: 1000000 }, type: { enum: ['LORE', 'PLOT'] }, visibility: { enum: ['PRIVATE', 'FAMILY'] } }
 const sceneFields = { name: { ...text, minLength: 1, maxLength: 300 }, description: nullableText, outline: nullableText, tags: { type: 'array', maxItems: 100, items: { type: 'string', minLength: 1, maxLength: 100 } }, visibility: { enum: ['PRIVATE', 'FAMILY'] }, chapterId: id }
 const edgeFields = { sourceType: entityType, sourceId: id, targetType: entityType, targetId: id, relationType: { ...text, minLength: 1, maxLength: 300 }, label: nullableText }
 const evidenceFields = {
@@ -31,6 +32,10 @@ const evidenceFields = {
 const anchor = { entityType, entityId: id }
 const paging = { page: { type: 'integer', minimum: 1, maximum: 10000 }, limit: { type: 'integer', minimum: 1, maximum: 100 } }
 const definitions: Array<[string, string, Schema, boolean]> = [
+  ['create_event', 'Ereignis im eigenen Projekt sofort anlegen. Titel sind nicht eindeutig. Ohne order am Ende; date und duration sind freie Texte (auch relativ/ungefähr), kein Kalenderdatum erforderlich. Standard: PLOT, PRIVATE. Beziehungen und Belege separat mit entityType EVENT verwalten; kein Kapiteltext wird verändert.', object({ projectId: id, ...eventFields }, ['projectId', 'title']), true],
+  ['update_event', 'Eigenes Ereignis im eigenen Projekt bearbeiten. Zuvor lesen: expectedUpdatedAt erforderlich. Ausgelassen bleibt unverändert; description/date/duration mit null oder leerem String leeren, chapterId mit null. Projekt und Autor bleiben unverändert.', object({ projectId: id, id, expectedUpdatedAt: version, ...eventFields }, ['projectId', 'id', 'expectedUpdatedAt']), true],
+  ['delete_event', 'Sichtbares Ereignis im eigenen Projekt löschen (Autor oder Familien-Owner), mit expectedUpdatedAt. Beziehungen und Quellenbelege werden atomar entfernt; zeitliche Aussagen blockieren das Löschen. Andere Einträge und Kapiteltexte bleiben erhalten.', object({ projectId: id, id, expectedUpdatedAt: version }, ['projectId', 'id', 'expectedUpdatedAt']), true],
+  ['reorder_events', 'Alle Ereignisse eines eigenen Projekts (PLOT und LORE, ohne Filter) atomar auf Positionen 0 bis n-1 sortieren. Vollständige eindeutige ID-Liste und expectedUpdatedAt je Ereignis erforderlich. Fremde Autoren verhindern jede Änderung.', object({ projectId: id, events: { type: 'array', maxItems: 1000, items: object({ id, expectedUpdatedAt: version }, ['id', 'expectedUpdatedAt']) } }, ['projectId', 'events']), true],
   ['scenes', 'Szenen eines Kapitels vollständig mit sichtbaren Beziehungen lesen. Szenen sind Planung (Beschreibung, Gliederung, Tags), ohne eigenen Romantext oder Status. Kapiteltext bleibt im Kapitel.', object({ chapterId: id, ...paging }, ['chapterId']), false],
   ['scene', 'Eine sichtbare Szene vollständig lesen, einschließlich updatedAt und Beziehungen.', object({ id }, ['id']), false],
   ['create_scene', 'Szene am Kapitelende anlegen. Verändert keinen Kapiteltext.', object(sceneFields, ['chapterId', 'name']), true],

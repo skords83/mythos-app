@@ -121,3 +121,73 @@ test('evidence protects author, source ownership and version; metadata edits pre
   expect((await run('evidence', { entityType: 'CHARACTER', entityId: 'a' }) as any).data.entries).toEqual([])
   expect((await run('delete_evidence', { id: 'e', expectedUpdatedAt })).status).toBe(404)
 })
+
+const event = { ...owned, id: 'ev', projectId: 'p', title: 'Ankunft', date: null }
+beforeEach(() => {
+  db.project = { findFirst: jest.fn().mockResolvedValue({ id: 'p' }), findMany: jest.fn().mockResolvedValue([]) }
+  db.timelineEvent.findFirst.mockResolvedValue(event)
+  db.timelineEvent.findMany.mockResolvedValue([event])
+  db.timelineEvent.aggregate.mockResolvedValue({ _max: { order: 4 } })
+  db.timelineEvent.updateMany.mockResolvedValue({ count: 1 })
+  db.timelineEvent.deleteMany.mockResolvedValue({ count: 1 })
+  db.timelineEvent.findUnique.mockResolvedValue(event)
+})
+test('event creation appends undated duplicate titles; partial updates clear nullable fields only', async () => {
+  for (let i = 0; i < 2; i++) expect((await run('create_event', { projectId: 'p', title: 'Ankunft' })).status).toBe(201)
+  expect(db.timelineEvent.create).toHaveBeenCalledTimes(2)
+  expect(db.timelineEvent.create.mock.calls[0][0].data).toMatchObject({ order: 5, authorId: 'u' })
+  expect((await run('update_event', { projectId: 'p', id: 'ev', expectedUpdatedAt, date: '', duration: null, chapterId: null, description: null })).status).toBe(200)
+  expect(db.timelineEvent.updateMany.mock.calls[0][0].data).toEqual({ date: '', duration: null, chapterId: null, description: null, updatedAt: expect.any(Date) })
+  expect(db.chapter.updateMany).not.toHaveBeenCalled()
+})
+test('event rights, source project, schema and versions prevent writes', async () => {
+  const args = { projectId: 'p', id: 'ev', expectedUpdatedAt, title: 'Neu' }
+  expect((await run('update_event', { ...args, expectedUpdatedAt: '2000-01-01T00:00:00Z' })).status).toBe(409)
+  expect((await run('update_event', { ...args, order: -1 })).status).toBe(400)
+  db.chapter.findFirst.mockResolvedValue(null)
+  expect((await run('update_event', { ...args, chapterId: 'foreign' })).status).toBe(400)
+  db.timelineEvent.findFirst.mockResolvedValue({ ...event, authorId: 'other', visibility: 'FAMILY' })
+  expect((await run('update_event', args)).status).toBe(403)
+  db.timelineEvent.findFirst.mockResolvedValue({ ...event, authorId: 'other' })
+  expect((await run('delete_event', args)).status).toBe(400) // unknown title
+  expect((await run('update_event', args)).status).toBe(404)
+  db.project.findFirst.mockResolvedValue(null)
+  expect((await run('create_event', { projectId: 'p', title: 'Neu' })).status).toBe(404)
+  expect(db.timelineEvent.updateMany).not.toHaveBeenCalled()
+})
+test('event deletion uses shared cleanup and CAS inside serializable transaction', async () => {
+  expect((await run('delete_event', { projectId: 'p', id: 'ev', expectedUpdatedAt })).status).toBe(200)
+  expect(db.sourceEvidence.deleteMany).toHaveBeenCalledWith({ where: { entityType: 'EVENT', entityId: 'ev' } })
+  expect(db.relation.deleteMany).toHaveBeenCalled()
+  expect(db.timelineEvent.deleteMany).toHaveBeenCalledWith({ where: { projectId: 'p', familyId: 'f', id: 'ev', updatedAt: date } })
+  expect(db.$transaction).toHaveBeenLastCalledWith(expect.any(Function), { isolationLevel: 'Serializable' })
+})
+test('event reorder validates full permutation and versions before any write', async () => {
+  const args = { projectId: 'p', events: [{ id: 'ev', expectedUpdatedAt }] }
+  expect((await run('reorder_events', { ...args, events: [] })).status).toBe(409)
+  expect((await run('reorder_events', { ...args, events: [...args.events, ...args.events] })).status).toBe(409)
+  expect(db.timelineEvent.updateMany).not.toHaveBeenCalled()
+  expect((await run('reorder_events', args)).status).toBe(200)
+  db.timelineEvent.findMany.mockResolvedValue([{ ...event, authorId: 'other' }])
+  expect((await run('reorder_events', args)).status).toBe(403)
+})
+test('EVENT evidence supports creation and rejects cross-project source', async () => {
+  const args = { entityType: 'EVENT', entityId: 'ev', statement: 'Ankunft', chapterId: 'c', quote: 'Grüne Augen.', sourceExpectedUpdatedAt: expectedUpdatedAt }
+  expect((await run('create_evidence', args)).status).toBe(201)
+  db.chapter.findFirst.mockResolvedValue({ id: 'c', projectId: 'other', content: quote, updatedAt: date })
+  expect((await run('create_evidence', args)).status).toBe(400)
+})
+test('event edges reject unrelated projects but allow owned books in the same universe', async () => {
+  db.character.findFirst.mockResolvedValue({ ...owned, id: 'a', projectId: 'other' })
+  const args = { sourceType: 'EVENT', sourceId: 'ev', targetType: 'CHARACTER', targetId: 'a', relationType: 'INVOLVES' }
+  expect((await run('create_relation', args)).status).toBe(400)
+  db.project.findMany.mockResolvedValue([{ id: 'p', universeId: 'universe' }, { id: 'other', universeId: 'universe' }])
+  expect((await run('create_relation', args)).status).toBe(201)
+})
+test('continuity dependencies block event deletion before cleanup', async () => {
+  db.continuityAssertion = { count: jest.fn().mockResolvedValue(1) }
+  expect((await run('delete_event', { projectId: 'p', id: 'ev', expectedUpdatedAt })).status).toBe(409)
+  expect(db.sourceEvidence.deleteMany).not.toHaveBeenCalled()
+  expect(db.timelineEvent.deleteMany).not.toHaveBeenCalled()
+  delete db.continuityAssertion
+})

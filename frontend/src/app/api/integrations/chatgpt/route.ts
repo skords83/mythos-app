@@ -76,7 +76,10 @@ export async function GET(request: NextRequest) {
     }
     if (action === 'characters') return ok(await prisma.character.findMany({ where, orderBy: { createdAt: 'asc' }, ...pagination }))
     if (action === 'places') return ok(await prisma.place.findMany({ where, orderBy: { createdAt: 'asc' }, ...pagination }))
-    if (action === 'timeline') return ok(await prisma.timelineEvent.findMany({ where, orderBy: { order: 'asc' }, ...pagination }))
+    if (action === 'timeline') {
+      const entries = await prisma.timelineEvent.findMany({ where, orderBy: [{ order: 'asc' }, { id: 'asc' }], ...pagination })
+      return ok(await Promise.all(entries.map(async entry => ({ ...entry, relations: await readMcpRelations(prisma, 'EVENT', entry, userId) }))))
+    }
     if (action === 'lore') return ok(await prisma.loreEntry.findMany({ where, orderBy: { createdAt: 'asc' }, ...pagination }))
     return error('Unbekannte Aktion', 400)
   } catch {

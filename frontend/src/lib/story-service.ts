@@ -2,7 +2,7 @@ import { checkUniverseEdge } from './universe-relations'
 import { Prisma, RelatableEntityType } from '@prisma/client'
 import type { AuthContext } from './auth'
 import { prisma } from './prisma'
-import { resolveEntity, isEntityVisibleToViewer } from './relations'
+import { deleteRelationsForEntity, ContinuityDependencyError, resolveEntity, isEntityVisibleToViewer } from './relations'
 import { readMcpRelations } from './mcp-relations'
 import { storyTools, valid } from './story-tool-schema'
 import { locateEvidence, sourceHash } from './evidence-anchor'
@@ -39,6 +39,19 @@ export async function validateEdge(db: DB, auth: AuthContext, edge: { id?: strin
   await endpoint(db, auth, edge.targetType, edge.targetId)
   if (edge.sourceType === edge.targetType && edge.sourceId === edge.targetId) fail(400, 'Eine Entität kann nicht mit sich selbst verknüpft werden.')
   if (['MEMBER_OF', 'LEADER_OF', 'FOUNDER_OF', 'FORMER_MEMBER_OF'].includes(edge.relationType) && (edge.sourceType !== 'CHARACTER' || edge.targetType !== 'FACTION')) fail(400, 'Mitgliedschaften verlaufen von Figur zu Fraktion.')
+  if (edge.sourceType === 'EVENT' || edge.targetType === 'EVENT') {
+    const eventId = edge.sourceType === 'EVENT' ? edge.sourceId : edge.targetId
+    const otherType = edge.sourceType === 'EVENT' ? edge.targetType : edge.sourceType
+    const otherId = edge.sourceType === 'EVENT' ? edge.targetId : edge.sourceId
+    const event = await db.timelineEvent.findFirst({ where: { id: eventId, familyId: auth.familyId } })
+    const models = { CHARACTER: 'character', PLACE: 'place', ITEM: 'item', FACTION: 'faction', LORE_ENTRY: 'loreEntry', EVENT: 'timelineEvent', SCENE: 'scene' } as const
+    const other = await (db[models[otherType]] as any).findFirst({ where: { id: otherId }, ...(otherType === 'SCENE' ? { include: { chapter: true } } : {}) })
+    const otherProject = other?.projectId ?? other?.chapter?.projectId
+    if (event?.projectId && otherProject && event.projectId !== otherProject) {
+      const books = await db.project.findMany({ where: { id: { in: [event.projectId, otherProject] }, userId: auth.userId } })
+      if (books.length !== 2 || !books[0].universeId || books[0].universeId !== books[1].universeId) fail(400, 'Projektübergreifende Ereignisbeziehungen benötigen dasselbe Universum.')
+    }
+  }
   const reserved = ['BEFORE', 'TAKES_PLACE_AT', 'REFERENCES_PAST'].includes(edge.relationType)
   if (reserved) {
     if (edge.targetType !== 'EVENT' || edge.sourceType !== (edge.relationType === 'BEFORE' ? 'EVENT' : 'SCENE')) fail(400, 'Ungültige Timeline-Verknüpfung.')
@@ -55,6 +68,44 @@ export async function validateEdge(db: DB, auth: AuthContext, edge: { id?: strin
     ...(edge.relationType === 'TAKES_PLACE_AT' ? {} : { targetType: edge.targetType, targetId: edge.targetId }) } })
   // Deliberately do not reveal the existing edge (it may be invisible).
   if (duplicate) fail(409, 'Diese Zuordnung kann nicht zusätzlich angelegt werden.')
+}
+
+async function events(db: DB, auth: AuthContext, action: string, args: any) {
+  const { projectId, id, expectedUpdatedAt, ...data } = args
+  if (!await db.project.findFirst({ where: { id: projectId, userId: auth.userId } })) fail(404, 'Projekt nicht gefunden oder nicht zugänglich.')
+  const scope = { projectId, familyId: auth.familyId }
+  if (action === 'reorder_events') {
+    const rows = await db.timelineEvent.findMany({ where: scope })
+    if (rows.some(row => row.authorId !== auth.userId)) fail(403, 'Nur Projekte mit ausschließlich eigenen Ereignissen können so sortiert werden.')
+    if (rows.length !== args.events.length || new Set(args.events.map((e: any) => e.id)).size !== rows.length) conflict()
+    for (const item of args.events) { const row = rows.find(r => r.id === item.id); if (!row) conflict(); checkVersion(row!.updatedAt, item.expectedUpdatedAt) }
+    for (const [order, item] of args.events.entries()) {
+      const row = rows.find(r => r.id === item.id)!
+      if ((await db.timelineEvent.updateMany({ where: { ...scope, id: row.id, authorId: auth.userId, updatedAt: row.updatedAt }, data: { order, updatedAt: stamp(row.updatedAt) } })).count !== 1) conflict()
+    }
+    return { entries: await db.timelineEvent.findMany({ where: scope, orderBy: [{ order: 'asc' }, { id: 'asc' }] }) }
+  }
+  if (data.chapterId != null && !await db.chapter.findFirst({ where: { id: data.chapterId, projectId } })) fail(400, 'Kapitel gehört nicht zum Projekt.')
+  if (action === 'create_event') {
+    if (data.order === undefined) {
+      const last = await db.timelineEvent.aggregate({ where: scope, _max: { order: true } })
+      data.order = (last._max.order ?? -1) + 1
+    }
+    return db.timelineEvent.create({ data: { ...data, ...scope, authorId: auth.userId } })
+  }
+  await endpoint(db, auth, 'EVENT', id)
+  const row = await db.timelineEvent.findFirst({ where: { ...scope, id } })
+  if (!row) return fail(404, 'Ereignis nicht gefunden.')
+  if (action !== 'delete_event' || auth.role !== 'OWNER') author(auth, row)
+  checkVersion(row.updatedAt, expectedUpdatedAt)
+  const where = { ...scope, id, updatedAt: row.updatedAt }
+  if (action === 'delete_event') {
+    await deleteRelationsForEntity(db, 'EVENT', id)
+    if ((await db.timelineEvent.deleteMany({ where })).count !== 1) conflict()
+    return { deleted: id }
+  }
+  if ((await db.timelineEvent.updateMany({ where, data: { ...data, updatedAt: stamp(row.updatedAt) } })).count !== 1) conflict()
+  return db.timelineEvent.findUnique({ where: { id } })
 }
 
 async function scenes(db: DB, auth: AuthContext, action: string, args: any) {
@@ -123,7 +174,7 @@ async function relations(db: DB, auth: AuthContext, action: string, args: any) {
 }
 
 async function knowledge(db: DB, auth: AuthContext, type: RelatableEntityType, id: string, writing: boolean) {
-  if (!['CHARACTER', 'PLACE', 'ITEM', 'FACTION', 'LORE_ENTRY'].includes(type)) return fail(400, 'Quellenbelege gehören zu Figuren, Orten, Items, Fraktionen oder Hintergrundwissen.')
+  if (!['CHARACTER', 'PLACE', 'ITEM', 'FACTION', 'LORE_ENTRY', 'EVENT'].includes(type)) return fail(400, 'Quellenbelege gehören zu Figuren, Orten, Items, Fraktionen Hintergrundwissen oder Ereignissen.')
   const row = await endpoint(db, auth, type, id)
   if (writing) author(auth, row)
   return row
@@ -151,6 +202,10 @@ async function evidence(db: DB, auth: AuthContext, action: string, args: any) {
   await knowledge(db, auth, merged.entityType, merged.entityId, true)
   if (old) { author(auth, old); checkVersion(old.updatedAt, expectedUpdatedAt); await evidenceSource(db, auth, old) }
   const source = await evidenceSource(db, auth, merged)
+  if (merged.entityType === 'EVENT') {
+    const event = await db.timelineEvent.findFirst({ where: { id: merged.entityId, familyId: auth.familyId } })
+    if (!event?.projectId || event.projectId !== source.projectId) fail(400, 'Ereignisbelege benötigen ein Kapitel desselben Projekts.')
+  }
   if (action === 'delete_evidence') {
     if ((await db.sourceEvidence.deleteMany({ where: { id, familyId: auth.familyId, authorId: auth.userId, updatedAt: old!.updatedAt } })).count !== 1) conflict()
     return { deleted: id }
@@ -175,12 +230,14 @@ export async function runStoryAction(auth: AuthContext, action: string, input: u
   if (!tool || !valid(tool.inputSchema, input)) return { status: 400, error: 'Ungültige Argumente.' }
   try {
     const data = await prisma.$transaction(async db => {
+      if (action.endsWith('_event') || action === 'reorder_events') return events(db, auth, action, input)
       if (action.includes('scene')) return scenes(db, auth, action, input)
       if (action.includes('relation')) return relations(db, auth, action, input)
       return evidence(db, auth, action, input)
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable })
     return { status: action.startsWith('create_') ? 201 : 200, data }
   } catch (error) {
+    if (error instanceof ContinuityDependencyError) return { status: 409, error: error.message }
     if (error instanceof StoryError) return { status: error.status, error: error.message }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') return { status: 409, error: 'Diese Beziehung oder Quelle wird von zeitlichen Aussagen verwendet. Zuerst die Zuordnung in diesen Aussagen lösen.' }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') return { status: 409, error: 'Zwischenzeitlich geändert. Bitte erneut lesen.' }
