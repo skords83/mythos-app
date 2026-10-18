@@ -27,6 +27,7 @@ export interface Chapter {
 }
 
 export interface Character {
+  universeId?: string | null
   aliases?: string[]
   id: string
   name: string
@@ -54,6 +55,7 @@ export interface PlaceImage {
 }
 
 export interface Place {
+  universeId?: string | null
   aliases?: string[]
   id: string
   name: string
@@ -75,6 +77,7 @@ export interface Place {
 }
 
 export interface Item {
+  universeId?: string | null
   aliases?: string[]
   id: string
   name: string
@@ -90,6 +93,7 @@ export interface Item {
 }
 
 export interface Faction {
+  universeId?: string | null
   id: string
   name: string
   description: string | null
@@ -149,6 +153,7 @@ export interface TimelineEvent {
 }
 
 export interface LoreEntry {
+  universeId?: string | null
   id: string
   title: string
   content: string | null

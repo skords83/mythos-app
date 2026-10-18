@@ -105,6 +105,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Projekt nicht gefunden' }, { status: 404 })
     }
 
+    if (existing.universeId) return NextResponse.json({ error: 'Buch zuerst kontrolliert aus dem Universum lösen.' }, { status: 409 })
     await prisma.project.delete({
       where: { id: resolvedParams.id }
     })

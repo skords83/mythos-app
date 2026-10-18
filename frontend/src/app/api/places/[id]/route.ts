@@ -9,7 +9,7 @@ import {
   isValidVisibility,
   visibilityWhere,
 } from '@/lib/visibility'
-import { deleteRelationsForEntity } from '@/lib/relations'
+import { deleteRelationsForEntity, ContinuityDependencyError } from '@/lib/relations'
 
 // GET /api/places/[id] - Einzelnen Ort abrufen
 export async function GET(
@@ -39,6 +39,7 @@ export async function GET(
 
     return NextResponse.json(place)
   } catch (error) {
+    if (error instanceof ContinuityDependencyError || (error && typeof error === 'object' && 'code' in error && error.code === 'P2003')) return NextResponse.json({ error: 'Eintrag wird von zeitlichen Aussagen oder gemeinsamen Verwendungen benötigt. Zuerst diese Zuordnungen lösen.' }, { status: 409 })
     logger.error(error, { route: 'GET /api/places/[id]', userId })
     return NextResponse.json({ error: 'Fehler beim Laden des Ortes' }, { status: 500 })
   }
@@ -64,6 +65,7 @@ export async function PUT(
     if (!place) {
       return NextResponse.json({ error: 'Ort nicht gefunden' }, { status: 404 })
     }
+    if (place.universeId) return NextResponse.json({ error: 'Gemeinsamer Eintrag: Bitte im Universum mit Versionsschutz bearbeiten. Gemeinsame Einträge werden hier nicht gelöscht.' }, { status: 409 })
     if (place.authorId !== context.userId) {
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
     }
@@ -140,6 +142,7 @@ export async function PUT(
 
     return NextResponse.json(updated)
   } catch (error) {
+    if (error instanceof ContinuityDependencyError || (error && typeof error === 'object' && 'code' in error && error.code === 'P2003')) return NextResponse.json({ error: 'Eintrag wird von zeitlichen Aussagen oder gemeinsamen Verwendungen benötigt. Zuerst diese Zuordnungen lösen.' }, { status: 409 })
     logger.error(error, { route: 'PUT /api/places/[id]', userId })
     return NextResponse.json({ error: 'Fehler beim Aktualisieren' }, { status: 500 })
   }
@@ -165,14 +168,18 @@ export async function DELETE(
     if (!place) {
       return NextResponse.json({ error: 'Ort nicht gefunden' }, { status: 404 })
     }
+    if (place.universeId) return NextResponse.json({ error: 'Gemeinsamer Eintrag: Bitte im Universum mit Versionsschutz bearbeiten. Gemeinsame Einträge werden hier nicht gelöscht.' }, { status: 409 })
     if (place.authorId !== context.userId && context.role !== 'OWNER') {
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
     }
 
-    await deleteRelationsForEntity(prisma, 'PLACE', resolvedParams.id)
-    await prisma.place.delete({ where: { id: resolvedParams.id } })
+    await prisma.$transaction(async tx => {
+      await deleteRelationsForEntity(tx, 'PLACE', resolvedParams.id)
+      await tx.place.delete({ where: { id: resolvedParams.id } })
+    })
     return NextResponse.json({ success: true })
   } catch (error) {
+    if (error instanceof ContinuityDependencyError || (error && typeof error === 'object' && 'code' in error && error.code === 'P2003')) return NextResponse.json({ error: 'Eintrag wird von zeitlichen Aussagen oder gemeinsamen Verwendungen benötigt. Zuerst diese Zuordnungen lösen.' }, { status: 409 })
     logger.error(error, { route: 'DELETE /api/places/[id]', userId })
     return NextResponse.json({ error: 'Fehler beim Löschen' }, { status: 500 })
   }

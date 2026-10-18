@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma'
 
 jest.mock('@/lib/prisma', () => ({
   prisma: {
+    $transaction: jest.fn((fn: any) => fn(require('@/lib/prisma').prisma)),
     place: { findFirst: jest.fn(), findUnique: jest.fn(), update: jest.fn(), findMany: jest.fn(), updateMany: jest.fn(), delete: jest.fn() },
     relation: { deleteMany: jest.fn() },
   },

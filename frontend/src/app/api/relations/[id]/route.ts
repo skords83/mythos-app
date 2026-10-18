@@ -1,3 +1,5 @@
+import { checkUniverseEdge } from '@/lib/universe-relations'
+import { runStoryAction } from '@/lib/story-service'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthContext } from '@/lib/auth'
@@ -29,6 +31,11 @@ export async function PUT(
 
     const body = await request.json()
     const { relationType, label } = body
+    if (await checkUniverseEdge(prisma, context, relation)) {
+      if (!body.expectedUpdatedAt) return NextResponse.json({ error: 'Gemeinsame Beziehung: expectedUpdatedAt erforderlich.' }, { status: 409 })
+      const result = await runStoryAction(context, 'update_relation', { id: relation.id, expectedUpdatedAt: body.expectedUpdatedAt, ...(relationType !== undefined ? { relationType } : {}), ...(label !== undefined ? { label } : {}) })
+      return NextResponse.json(result.data ?? { error: result.error }, { status: result.status })
+    }
 
     const updateData: any = {}
     if (relationType !== undefined) updateData.relationType = relationType
@@ -66,6 +73,12 @@ export async function DELETE(
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
     }
 
+    if (await checkUniverseEdge(prisma, context, relation)) {
+      const expectedUpdatedAt = request.nextUrl.searchParams.get('expectedUpdatedAt')
+      if (!expectedUpdatedAt) return NextResponse.json({ error: 'Gemeinsame Beziehung: expectedUpdatedAt erforderlich.' }, { status: 409 })
+      const result = await runStoryAction(context, 'delete_relation', { id: relation.id, expectedUpdatedAt })
+      return NextResponse.json(result.data ?? { error: result.error }, { status: result.status })
+    }
     await prisma.relation.delete({ where: { id: resolvedParams.id } })
     return NextResponse.json({ success: true })
   } catch (error) {

@@ -1,3 +1,4 @@
+import { checkUniverseEdge } from './universe-relations'
 import type { Prisma, RelatableEntityType } from '@prisma/client'
 import { isValidEntityType, resolveEntity, isEntityVisibleToViewer, type ResolvedEntity } from './relations'
 
@@ -69,6 +70,7 @@ export async function prepareMcpRelations(db: Prisma.TransactionClient, type: 'I
       const endpoints = link.direction === 'outgoing'
         ? { sourceType: type, sourceId: anchorId, targetType: link.entityType, targetId: link.entityId }
         : { sourceType: link.entityType, sourceId: link.entityId, targetType: type, targetId: anchorId }
+      await checkUniverseEdge(db, { userId: scope.authorId, familyId: scope.familyId, role: 'ADULT' }, endpoints)
       await db.relation.create({ data: { ...endpoints, familyId: scope.familyId, authorId: scope.authorId, relationType: link.relationType, label: link.label || null } })
     }
   } }

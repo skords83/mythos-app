@@ -26,5 +26,5 @@ it('indexes stored manuscript HTML and filters relations to visible endpoints',a
  expect(data.chapters[0].text).toBe('Matti Matti Matti')
  expect(data.suggestions).toEqual([{name:'Matti',count:3}])
  expect(data.relations).toEqual([])
- expect(db.character.findMany.mock.calls[0][0].where.OR).toEqual([{visibility:'FAMILY'},{authorId:'u'}])
+ expect(db.character.findMany.mock.calls[0][0].where.AND[1].OR).toEqual([{visibility:'FAMILY'},{authorId:'u'}])
 })

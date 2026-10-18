@@ -137,6 +137,7 @@ export function EditLoreEntryModal({
             </button>
           </div>
         </form>
+        <p className="text-sm">{loreEntry.universeId ? <a className="underline" href="/universes">Gemeinsam im Universum – allgemeine Angaben und Entwicklungen dort bearbeiten</a> : 'Nur dieses Buch'}</p>
         <SourceEvidencePanel key={loreEntry.id} entityType="LORE_ENTRY" entityId={loreEntry.id} projectId={loreEntry.projectId} />
       </div>
     </div>

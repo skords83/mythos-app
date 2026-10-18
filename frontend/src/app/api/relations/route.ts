@@ -1,3 +1,5 @@
+import { runStoryAction } from '@/lib/story-service'
+import { checkUniverseEdge } from '@/lib/universe-relations'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthContext } from '@/lib/auth'
@@ -105,6 +107,7 @@ export async function POST(request: NextRequest) {
       if (relationType === 'TAKES_PLACE_AT' && await prisma.relation.findFirst({where:{sourceType,sourceId,relationType}})) return NextResponse.json({error:'Die Szene hat bereits einen Zeitpunkt. Entferne zuerst die bestehende Zuordnung.'}, {status:409})
       if (await prisma.relation.findFirst({where:{sourceType,sourceId,targetType,targetId,relationType}})) return NextResponse.json({error:'Verknüpfung besteht bereits'}, {status:409})
     }
+    try { if (await checkUniverseEdge(prisma, context, { sourceType, sourceId, targetType, targetId })) { const result = await runStoryAction(context, 'create_relation', { sourceType, sourceId, targetType, targetId, relationType, label: label || null }); return NextResponse.json(result.data ?? { error: result.error }, { status: result.status }) } } catch (e) { return NextResponse.json({ error: e instanceof Error ? e.message : 'Unzulässige Referenz.' }, { status: 409 }) }
     const relation = await prisma.relation.create({
       data: {
         sourceType,

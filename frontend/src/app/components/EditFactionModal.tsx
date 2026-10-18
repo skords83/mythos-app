@@ -119,6 +119,7 @@ export function EditFactionModal({ isOpen, onClose, faction, characters, onUpdat
             </button>
           </div>
         </form>
+        <p className="text-sm">{faction.universeId ? <a className="underline" href="/universes">Gemeinsam im Universum – allgemeine Angaben und Entwicklungen dort bearbeiten</a> : 'Nur dieses Buch'}</p>
         <SourceEvidencePanel key={faction.id} entityType="FACTION" entityId={faction.id} projectId={faction.projectId} />
       </div>
     </div>

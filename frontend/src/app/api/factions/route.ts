@@ -1,3 +1,4 @@
+import { bookEntityScope } from '@/lib/universe-scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthContext } from '@/lib/auth'
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
       }
 
       const factions = await prisma.faction.findMany({
-        where: { projectId, OR: visibilityWhere(context) },
+        where: { AND: [await bookEntityScope(prisma, projectId, 'FACTION'), { OR: visibilityWhere(context) }] },
         orderBy: { createdAt: 'desc' },
       })
       return NextResponse.json(factions)

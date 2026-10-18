@@ -78,3 +78,10 @@ Unit-Tests mit Jest + React Testing Library (`frontend/`):
 ```bash
 npm test
 ```
+
+### Gemeinsame Universen
+
+Universen verbinden geordnete Buchprojekte mit gemeinsamen Wissensidentitäten,
+zeitlichen Entwicklungen und getrenntem Welt-, Figuren- und Leserwissen.
+[Modell, Bedienung, MCP, Migration und Deployment](docs/universes.md).
+Bestehende Bücher werden nicht automatisch zugeordnet oder übernommen.

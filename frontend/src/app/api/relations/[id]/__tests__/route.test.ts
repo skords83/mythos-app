@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma'
 
 jest.mock('@/lib/prisma', () => ({
   prisma: {
+    character: { findFirst: jest.fn() },
     relation: { findFirst: jest.fn(), update: jest.fn(), delete: jest.fn() },
   },
 }))
@@ -42,7 +43,7 @@ describe('PUT /api/relations/[id]', () => {
   })
 
   it('returns 403 when the caller is not the author', async () => {
-    mockedPrisma.relation.findFirst.mockResolvedValueOnce({ id: 'rel-1', authorId: 'other-user' })
+    mockedPrisma.relation.findFirst.mockResolvedValueOnce({ sourceType: 'CHARACTER', sourceId: 'a', targetType: 'CHARACTER', targetId: 'b', id: 'rel-1', authorId: 'other-user' })
     const request = authedRequest('http://localhost/api/relations/rel-1', {
       method: 'PUT',
       body: JSON.stringify({ label: 'Vater von' }),
@@ -52,7 +53,7 @@ describe('PUT /api/relations/[id]', () => {
   })
 
   it('updates relationType and label', async () => {
-    mockedPrisma.relation.findFirst.mockResolvedValueOnce({ id: 'rel-1', authorId: 'user-1' })
+    mockedPrisma.relation.findFirst.mockResolvedValueOnce({ sourceType: 'CHARACTER', sourceId: 'a', targetType: 'CHARACTER', targetId: 'b', id: 'rel-1', authorId: 'user-1' })
     mockedPrisma.relation.update.mockResolvedValue({ id: 'rel-1', relationType: 'PARENT_OF', label: 'Vater von' })
 
     const request = authedRequest('http://localhost/api/relations/rel-1', {
@@ -79,7 +80,7 @@ describe('DELETE /api/relations/[id]', () => {
   })
 
   it('returns 403 when the caller is neither author nor OWNER', async () => {
-    mockedPrisma.relation.findFirst.mockResolvedValueOnce({ id: 'rel-1', authorId: 'other-user' })
+    mockedPrisma.relation.findFirst.mockResolvedValueOnce({ sourceType: 'CHARACTER', sourceId: 'a', targetType: 'CHARACTER', targetId: 'b', id: 'rel-1', authorId: 'other-user' })
     const response = await DELETE(authedRequest('http://localhost/api/relations/rel-1', { method: 'DELETE' }), {
       params: Promise.resolve({ id: 'rel-1' }),
     })
@@ -88,7 +89,7 @@ describe('DELETE /api/relations/[id]', () => {
   })
 
   it('allows a family OWNER to delete a relation authored by someone else', async () => {
-    mockedPrisma.relation.findFirst.mockResolvedValueOnce({ id: 'rel-1', authorId: 'other-user' })
+    mockedPrisma.relation.findFirst.mockResolvedValueOnce({ sourceType: 'CHARACTER', sourceId: 'a', targetType: 'CHARACTER', targetId: 'b', id: 'rel-1', authorId: 'other-user' })
     mockedPrisma.relation.delete.mockResolvedValue({ id: 'rel-1' })
 
     const response = await DELETE(

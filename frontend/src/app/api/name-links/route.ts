@@ -1,3 +1,5 @@
+import { bookEntityScope } from '@/lib/universe-scope'
+import { visibilityWhere } from '@/lib/visibility'
 import { NextRequest, NextResponse } from 'next/server'
 import { createHash } from 'crypto'
 import { prisma } from '@/lib/prisma'
@@ -18,8 +20,8 @@ export async function POST(request: NextRequest) {
     }
     const project = await prisma.project.findFirst({ where: { id: projectId, userId: auth.userId } })
     if (!project) return NextResponse.json({ error: 'Projekt nicht gefunden' }, { status: 404 })
-    const loadCandidates = async (db: Pick<typeof prisma, 'character' | 'place' | 'item'>) => {
-      const rows = await Promise.all([db.character.findMany({ where: { projectId } }), db.place.findMany({ where: { projectId } }), db.item.findMany({ where: { projectId } })])
+    const loadCandidates = async (db: Pick<typeof prisma, 'character' | 'place' | 'item' | 'project' | 'entityUsage'>) => {
+      const rows = await Promise.all([db.character.findMany({ where: { AND: [await bookEntityScope(db, projectId, 'CHARACTER'), { familyId: auth.familyId, OR: visibilityWhere(auth) }] } }), db.place.findMany({ where: { AND: [await bookEntityScope(db, projectId, 'PLACE'), { familyId: auth.familyId, OR: visibilityWhere(auth) }] } }), db.item.findMany({ where: { AND: [await bookEntityScope(db, projectId, 'ITEM'), { familyId: auth.familyId, OR: visibilityWhere(auth) }] } })])
       return rows.flatMap((entities, i) => entities.flatMap(e => [e.name, ...e.aliases].map(name => ({ id: e.id, name, label: e.name, kind: (['CHARACTER', 'PLACE', 'ITEM'] as const)[i] })))).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))) as NameCandidate[]
     }
     const fingerprint = (candidates: NameCandidate[]) => createHash('sha256').update(JSON.stringify(candidates)).digest('hex')

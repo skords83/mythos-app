@@ -345,7 +345,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <h1 className={`text-3xl font-display font-light ${TEXT_PRIMARY}`}>
-                Deine Projekte
+                Deine Projekte <a href="/universes" className="text-base underline ml-4">Universen</a>
               </h1>
               <span className={`px-2 py-0.5 ${RADIUS} border ${HAIRLINE} ${MONO_LABEL_MUTED}`}>
                 {projects.length} {projects.length === 1 ? 'Projekt' : 'Projekte'}

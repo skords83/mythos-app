@@ -1,3 +1,4 @@
+import { bookEntityScope } from '@/lib/universe-scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthContext } from '@/lib/auth'
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const where = { projectId: resolvedParams.id, OR: visibilityWhere(context) }
     const [chapters, characters, places, items, scenes, events] = await Promise.all([
       prisma.chapter.findMany({ where: { projectId: resolvedParams.id }, orderBy: { order: 'asc' } }),
-      prisma.character.findMany({ where }), prisma.place.findMany({ where }), prisma.item.findMany({ where }),
+      prisma.character.findMany({ where: { AND: [await bookEntityScope(prisma, resolvedParams.id, 'CHARACTER'), { OR: visibilityWhere(context) }] } }), prisma.place.findMany({ where: { AND: [await bookEntityScope(prisma, resolvedParams.id, 'PLACE'), { OR: visibilityWhere(context) }] } }), prisma.item.findMany({ where: { AND: [await bookEntityScope(prisma, resolvedParams.id, 'ITEM'), { OR: visibilityWhere(context) }] } }),
       prisma.scene.findMany({ where: { chapter: { projectId: resolvedParams.id }, OR: visibilityWhere(context) }, orderBy: { order: 'asc' } }),
       prisma.timelineEvent.findMany({ where, orderBy: { order: 'asc' } }),
     ])

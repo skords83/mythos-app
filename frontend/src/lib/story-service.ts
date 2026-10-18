@@ -1,3 +1,4 @@
+import { checkUniverseEdge } from './universe-relations'
 import { Prisma, RelatableEntityType } from '@prisma/client'
 import type { AuthContext } from './auth'
 import { prisma } from './prisma'
@@ -33,6 +34,7 @@ const author = (auth: AuthContext, row: { authorId: string }) => { if (row.autho
 const page = <T>(rows: T[], args: any) => { const limit = args.limit ?? 50, start = ((args.page ?? 1) - 1) * limit; return { entries: rows.slice(start, start + limit), page: args.page ?? 1, hasMore: rows.length > start + limit } }
 
 export async function validateEdge(db: DB, auth: AuthContext, edge: { id?: string; sourceType: RelatableEntityType; sourceId: string; targetType: RelatableEntityType; targetId: string; relationType: string }) {
+  try { await checkUniverseEdge(db, auth, edge) } catch (e) { fail(409, e instanceof Error ? e.message : 'Unzulässige Universumsreferenz.') }
   await endpoint(db, auth, edge.sourceType, edge.sourceId)
   await endpoint(db, auth, edge.targetType, edge.targetId)
   if (edge.sourceType === edge.targetType && edge.sourceId === edge.targetId) fail(400, 'Eine Entität kann nicht mit sich selbst verknüpft werden.')
@@ -43,7 +45,10 @@ export async function validateEdge(db: DB, auth: AuthContext, edge: { id?: strin
     const target = await db.timelineEvent.findFirst({ where: { id: edge.targetId, familyId: auth.familyId } })
     const origin = edge.sourceType === 'EVENT' ? await db.timelineEvent.findFirst({ where: { id: edge.sourceId, familyId: auth.familyId } }) : await db.scene.findFirst({ where: { id: edge.sourceId, familyId: auth.familyId }, include: { chapter: true } })
     const projectId = origin && ('chapter' in origin ? origin.chapter.projectId : origin.projectId)
-    if (!target?.projectId || target.projectId !== projectId) fail(400, 'Timeline-Verknüpfungen müssen im selben Projekt liegen.')
+    if (!target?.projectId || target.projectId !== projectId) {
+      const books = projectId && target?.projectId ? await db.project.findMany({ where: { id: { in: [projectId, target.projectId] }, userId: auth.userId } }) : []
+      if (edge.relationType !== 'BEFORE' || books.length !== 2 || !books[0].universeId || books[0].universeId !== books[1].universeId) fail(400, 'Timeline-Verknüpfungen benötigen dasselbe Projekt; BEFORE darf eigene Bücher desselben Universums verbinden.')
+    }
   }
   const other = edge.id ? { id: { not: edge.id } } : {}
   const duplicate = await db.relation.findFirst({ where: { familyId: auth.familyId, ...other, sourceType: edge.sourceType, sourceId: edge.sourceId, relationType: edge.relationType,
@@ -177,6 +182,7 @@ export async function runStoryAction(auth: AuthContext, action: string, input: u
     return { status: action.startsWith('create_') ? 201 : 200, data }
   } catch (error) {
     if (error instanceof StoryError) return { status: error.status, error: error.message }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') return { status: 409, error: 'Diese Beziehung oder Quelle wird von zeitlichen Aussagen verwendet. Zuerst die Zuordnung in diesen Aussagen lösen.' }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') return { status: 409, error: 'Zwischenzeitlich geändert. Bitte erneut lesen.' }
     throw error
   }

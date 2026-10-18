@@ -92,7 +92,10 @@ export function isRelationVisible(
   return isEntityVisibleToViewer(context, source) && isEntityVisibleToViewer(context, target)
 }
 
+export class ContinuityDependencyError extends Error {}
+
 type RelationDeleteClient = {
+  continuityAssertion?: { count: (args: any) => Promise<number> }
   sourceEvidence?: { deleteMany: (args: { where: any }) => Promise<unknown> }
   relation: { deleteMany: (args: { where: any }) => Promise<unknown> }
 }
@@ -108,6 +111,10 @@ export async function deleteRelationsForEntity(
   type: RelatableEntityType,
   id: string
 ): Promise<void> {
+  if (prisma.continuityAssertion && await prisma.continuityAssertion.count({ where: { OR: [
+    { entityId: id }, { observerId: id },
+    ...['startsAt', 'endsAt', 'revealedAt'].flatMap(field => ['eventId', 'sceneId'].map(key => ({ [field]: { path: [key], equals: id } }))),
+  ] } })) throw new ContinuityDependencyError('Eintrag wird von zeitlichen Aussagen verwendet. Zuerst deren Zuordnungen lösen.')
   // Same polymorphic lifecycle as relations; never leave evidence on a deleted entry.
   if (prisma.sourceEvidence) await prisma.sourceEvidence.deleteMany({ where: { entityType: type, entityId: id } })
   await prisma.relation.deleteMany({

@@ -1,3 +1,4 @@
+import { bookEntityScope } from '@/lib/universe-scope'
 import { parseAliases } from '@/lib/storyTools'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
       }
 
       const places = await prisma.place.findMany({
-        where: { projectId, OR: visibilityWhere(context) },
+        where: { AND: [await bookEntityScope(prisma, projectId, 'PLACE'), { OR: visibilityWhere(context) }] },
         orderBy: { createdAt: 'desc' },
         include: { images: { orderBy: { createdAt: 'asc' } } },
       })

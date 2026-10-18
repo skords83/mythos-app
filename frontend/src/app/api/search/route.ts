@@ -1,3 +1,4 @@
+import { bookEntityScope } from '@/lib/universe-scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
@@ -74,8 +75,7 @@ export async function GET(request: NextRequest) {
     ] = await Promise.all([
       prisma.character.findMany({
         where: {
-          projectId,
-          AND: [
+          AND: [await bookEntityScope(prisma, projectId, 'CHARACTER'),
             {
               OR: [
                 { name: { contains: q, mode: 'insensitive' } },
@@ -93,8 +93,7 @@ export async function GET(request: NextRequest) {
       }),
       prisma.place.findMany({
         where: {
-          projectId,
-          AND: [
+          AND: [await bookEntityScope(prisma, projectId, 'PLACE'),
             {
               OR: [
                 { name: { contains: q, mode: 'insensitive' } },
@@ -142,8 +141,7 @@ export async function GET(request: NextRequest) {
       ) : Promise.resolve([]),
       prisma.item.findMany({
         where: {
-          projectId,
-          AND: [
+          AND: [await bookEntityScope(prisma, projectId, 'ITEM'),
             {
               OR: [
                 { name: { contains: q, mode: 'insensitive' } },
@@ -160,8 +158,7 @@ export async function GET(request: NextRequest) {
       }),
       prisma.faction.findMany({
         where: {
-          projectId,
-          AND: [
+          AND: [await bookEntityScope(prisma, projectId, 'FACTION'),
             {
               OR: [
                 { name: { contains: q, mode: 'insensitive' } },
@@ -210,8 +207,7 @@ export async function GET(request: NextRequest) {
       }),
       prisma.loreEntry.findMany({
         where: {
-          projectId,
-          AND: [
+          AND: [await bookEntityScope(prisma, projectId, 'LORE_ENTRY'),
             {
               OR: [
                 { title: { contains: q, mode: 'insensitive' } },

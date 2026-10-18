@@ -3,7 +3,7 @@ import { parseMcpRelations, prepareMcpRelations, readMcpRelations } from './mcp-
 import type { Prisma } from '@prisma/client'
 const character = { findFirst: jest.fn() }
 const relation = { findMany: jest.fn(), deleteMany: jest.fn(), create: jest.fn() }
-const db = { character, relation } as unknown as Prisma.TransactionClient
+const db = { character, relation, faction: { findFirst: jest.fn() } } as unknown as Prisma.TransactionClient
 const scope = { authorId: 'u', familyId: 'f' }
 const link = { entityType: 'CHARACTER' as const, entityId: 'c', direction: 'incoming' as const, relationType: 'LEADER_OF' }
 const row = { id: 'r', sourceType: 'CHARACTER', sourceId: 'c', targetType: 'FACTION', targetId: 'g', relationType: 'LEADER_OF', ...scope }

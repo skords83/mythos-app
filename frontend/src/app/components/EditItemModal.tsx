@@ -127,6 +127,7 @@ export function EditItemModal({ isOpen, onClose, item, onUpdate }: EditItemModal
             </button>
           </div>
         </form>
+        <p className="text-sm">{item.universeId ? <a className="underline" href="/universes">Gemeinsam im Universum – allgemeine Angaben und Entwicklungen dort bearbeiten</a> : 'Nur dieses Buch'}</p>
         <SourceEvidencePanel key={item.id} entityType="ITEM" entityId={item.id} projectId={item.projectId} />
       </div>
     </div>

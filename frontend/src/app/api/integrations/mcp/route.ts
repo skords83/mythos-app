@@ -1,3 +1,4 @@
+import { universeTools } from '@/lib/universe-schema'
 import { storyTools } from '@/lib/story-tool-schema'
 import { callMcpStory } from '@/lib/mcp-story'
 import { entityWriteTools, writeMcpEntity } from '@/lib/mcp-entity-write'
@@ -108,12 +109,12 @@ export async function POST(request: NextRequest) {
     })
   }
   if (msg.method === 'ping') return rpc(msg.id, {})
-  if (msg.method === 'tools/list') return rpc(msg.id, { tools: [...tools, proposalTool, ...entityWriteTools, ...storyTools] })
+  if (msg.method === 'tools/list') return rpc(msg.id, { tools: [...tools, proposalTool, ...entityWriteTools, ...storyTools, ...universeTools] })
   if (msg.method !== 'tools/call') return fail(msg.id, -32601, 'Method not found')
 
   const name = msg.params?.name
   const args = msg.params?.arguments ?? {}
-  const storyTool = storyTools.find(tool => tool.name === name)
+  const storyTool = [...storyTools, ...universeTools].find(tool => tool.name === name)
   if (storyTool) {
     try {
       const denied = await authenticateMcp(request, storyTool.annotations.readOnlyHint ? 'mythos:read' : 'mythos:write')

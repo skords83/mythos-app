@@ -1,4 +1,5 @@
 /** @jest-environment node */
+import { universeTools } from '@/lib/universe-schema'
 import { createPendingChapterProposal } from '@/lib/integration-chapter-proposal-store'
 jest.mock('@/lib/rateLimit', () => ({ checkRateLimit: jest.fn().mockResolvedValue(null), getClientIp: () => 'test' }))
 import { NextRequest } from 'next/server'
@@ -181,4 +182,10 @@ test.each([200, 201, 400, 404, 409])('returns entity write status %s as a tool r
   const response = await POST(request({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'mythos_create_character', arguments: args } }))
   expect((await response.json()).result.isError).toBe(status >= 400)
   expect(writeMcpEntity).toHaveBeenCalledWith('Bearer test', 'mythos_create_character', args)
+})
+
+test('registers all universe tools with their schemas and OAuth capabilities', async () => {
+ const response=await POST(request({jsonrpc:'2.0',id:101,method:'tools/list'}))
+ const tools=(await response.json()).result.tools
+ for(const tool of universeTools) expect(tools.find((t:{name:string})=>t.name===tool.name)).toEqual(tool)
 })

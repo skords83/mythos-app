@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getAuthContext } from '@/lib/auth'
 import { logger } from '@/lib/logger'
 import { isValidVisibility } from '@/lib/visibility'
-import { deleteRelationsForEntity } from '@/lib/relations'
+import { deleteRelationsForEntity, ContinuityDependencyError } from '@/lib/relations'
 
 // PUT /api/items/[id] - Item aktualisieren (nur Autor)
 export async function PUT(
@@ -26,6 +26,7 @@ export async function PUT(
     if (!item) {
       return NextResponse.json({ error: 'Item nicht gefunden' }, { status: 404 })
     }
+    if (item.universeId) return NextResponse.json({ error: 'Gemeinsamer Eintrag: Bitte im Universum mit Versionsschutz bearbeiten. Gemeinsame Einträge werden hier nicht gelöscht.' }, { status: 409 })
     if (item.authorId !== context.userId) {
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
     }
@@ -50,6 +51,7 @@ export async function PUT(
     const updated = await prisma.item.update({ where: { id: resolvedParams.id }, data: updateData })
     return NextResponse.json(updated)
   } catch (error) {
+    if (error instanceof ContinuityDependencyError || (error && typeof error === 'object' && 'code' in error && error.code === 'P2003')) return NextResponse.json({ error: 'Eintrag wird von zeitlichen Aussagen oder gemeinsamen Verwendungen benötigt. Zuerst diese Zuordnungen lösen.' }, { status: 409 })
     logger.error(error, { route: 'PUT /api/items/[id]', userId })
     return NextResponse.json({ error: 'Fehler beim Aktualisieren' }, { status: 500 })
   }
@@ -75,14 +77,18 @@ export async function DELETE(
     if (!item) {
       return NextResponse.json({ error: 'Item nicht gefunden' }, { status: 404 })
     }
+    if (item.universeId) return NextResponse.json({ error: 'Gemeinsamer Eintrag: Bitte im Universum mit Versionsschutz bearbeiten. Gemeinsame Einträge werden hier nicht gelöscht.' }, { status: 409 })
     if (item.authorId !== context.userId && context.role !== 'OWNER') {
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
     }
 
-    await deleteRelationsForEntity(prisma, 'ITEM', resolvedParams.id)
-    await prisma.item.delete({ where: { id: resolvedParams.id } })
+    await prisma.$transaction(async tx => {
+      await deleteRelationsForEntity(tx, 'ITEM', resolvedParams.id)
+      await tx.item.delete({ where: { id: resolvedParams.id } })
+    })
     return NextResponse.json({ success: true })
   } catch (error) {
+    if (error instanceof ContinuityDependencyError || (error && typeof error === 'object' && 'code' in error && error.code === 'P2003')) return NextResponse.json({ error: 'Eintrag wird von zeitlichen Aussagen oder gemeinsamen Verwendungen benötigt. Zuerst diese Zuordnungen lösen.' }, { status: 409 })
     logger.error(error, { route: 'DELETE /api/items/[id]', userId })
     return NextResponse.json({ error: 'Fehler beim Löschen' }, { status: 500 })
   }

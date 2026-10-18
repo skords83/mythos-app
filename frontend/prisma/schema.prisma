@@ -49,6 +49,7 @@ enum IdeaStatus {
 }
 
 model Family {
+  universes Universe[]
   sourceEvidence SourceEvidence[]
   id         String      @id @default(cuid())
   name       String
@@ -71,6 +72,7 @@ model Family {
 }
 
 model User {
+  universes Universe[]
   sourceEvidence SourceEvidence[]
   id         String      @id @default(cuid())
   email      String      @unique
@@ -115,6 +117,10 @@ model UserSettings {
 }
 
 model Project {
+  universeId String?
+  universe Universe? @relation(fields: [universeId], references: [id], onDelete: Restrict)
+  universeOrder Int @default(0)
+  entityUsages EntityUsage[]
   totalWordGoal Int?
   writingSessions WritingSession[]
   growthSnapshots GrowthSnapshot[]
@@ -200,6 +206,8 @@ model ChapterVersion {
 }
 
 model Character {
+  universeId String?
+  universe Universe? @relation(fields: [universeId], references: [id], onDelete: Restrict)
   aliases String[] @default([])
   id          String     @id @default(cuid())
   name        String
@@ -235,6 +243,8 @@ model Note {
 }
 
 model Place {
+  universeId String?
+  universe Universe? @relation(fields: [universeId], references: [id], onDelete: Restrict)
   aliases String[] @default([])
   id          String     @id @default(cuid())
   name        String
@@ -281,6 +291,8 @@ model PlaceImage {
 }
 
 model Item {
+  universeId String?
+  universe Universe? @relation(fields: [universeId], references: [id], onDelete: Restrict)
   aliases String[] @default([])
   id           String     @id @default(cuid())
   name         String
@@ -301,6 +313,8 @@ model Item {
 }
 
 model Faction {
+  universeId String?
+  universe Universe? @relation(fields: [universeId], references: [id], onDelete: Restrict)
   id          String     @id @default(cuid())
   name        String
   description String?
@@ -390,6 +404,8 @@ model TimelineEvent {
 // is a free-text facet (e.g. "Magie", "Politik", "Religion") rather than an
 // enum, matching Item.origin/Faction.goal's free-text convention.
 model LoreEntry {
+  universeId String?
+  universe Universe? @relation(fields: [universeId], references: [id], onDelete: Restrict)
   id          String     @id @default(cuid())
   title       String
   content     String?
@@ -597,4 +613,65 @@ model SourceEvidence {
   @@index([familyId, entityType, entityId])
   @@index([chapterId])
   @@index([sceneId])
+}
+
+// One continuity, with explicitly ordered books; order is editorial, not temporal.
+model Universe {
+  id String @id @default(cuid())
+  title String
+  description String?
+  visibility Visibility @default(PRIVATE)
+  familyId String
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  authorId String
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  projects Project[]
+  characters Character[]
+  places Place[]
+  items Item[]
+  factions Faction[]
+  loreEntries LoreEntry[]
+  assertions ContinuityAssertion[]
+}
+
+// Polymorphic endpoint follows Relation, validated transactionally by the service.
+model EntityUsage {
+  id String @id @default(cuid())
+  entityType RelatableEntityType
+  entityId String
+  projectId String
+  project Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([entityType, entityId, projectId])
+  @@index([projectId])
+}
+
+model ContinuityAssertion {
+  id String @id @default(cuid())
+  universeId String
+  universe Universe @relation(fields: [universeId], references: [id], onDelete: Restrict)
+  entityType RelatableEntityType
+  entityId String
+  // PROPERTY, OWNER, LOCATION, RELATION, MEMBERSHIP, KNOWLEDGE, RULE
+  kind String
+  property String
+  value String
+  // WORLD vs BELIEF; observerId required for BELIEF.
+  perspective String @default("WORLD")
+  observerId String?
+  // CONFIRMED, SUSPECTED, DISPUTED, REJECTED; independent of temporal validity.
+  status String @default("CONFIRMED")
+  // Validated anchors: {projectId, chapterId?, sceneId?, eventId?}.
+  startsAt Json
+  endsAt Json?
+  revealedAt Json?
+  relationId String?
+  evidenceIds String[] @default([])
+  authorId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([universeId, entityType, entityId])
 }

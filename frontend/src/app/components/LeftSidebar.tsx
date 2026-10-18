@@ -41,6 +41,7 @@ export function LeftSidebar({
     <aside
       className={`${focusMode ? 'w-0 opacity-0 overflow-hidden' : leftSidebarOpen ? 'w-44' : 'w-[72px]'} ${SURFACE_ALT} border-r ${HAIRLINE} flex flex-col transition-[width] duration-200 ${EASE_STANDARD}`}
     >
+      <a href="/universes" className="px-4 pt-3 text-sm underline" title="Gemeinsame Welten und Buchverwendungen">Universen</a>
       <div className={`p-4 border-b ${HAIRLINE}`}>
         {leftSidebarOpen ? (
           <div className="flex items-center justify-between">

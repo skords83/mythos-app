@@ -18,3 +18,7 @@ test('revoked and wrong-resource tokens never reach service', async () => {
   expect((await callMcpStory('Bearer t', 'mythos_scene', {})).status).toBe(401)
   expect(runStoryAction).not.toHaveBeenCalled()
 })
+
+test('universe writes require write scope before service dispatch', async () => {
+ expect((await callMcpStory('Bearer test', 'mythos_create_universe', {title:'Universe'})).status).toBe(403)
+})

@@ -1,3 +1,5 @@
+import { bookEntityScope } from '@/lib/universe-scope'
+import type { RelatableEntityType } from '@prisma/client'
 import { readMcpRelations } from '@/lib/mcp-relations'
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveReadOnlyUser } from '@/lib/integration-auth'
@@ -63,7 +65,9 @@ export async function GET(request: NextRequest) {
       })
       return chapter ? ok(chapter) : error('Kapitel nicht gefunden', 404)
     }
-    const where = { projectId, OR: visibilityWhere(viewer) }
+    const kind = ({ items: 'ITEM', factions: 'FACTION', characters: 'CHARACTER', places: 'PLACE', lore: 'LORE_ENTRY' } as Record<string, RelatableEntityType>)[action ?? '']
+    const scope = kind ? await bookEntityScope(prisma, projectId, kind) : { projectId }
+    const where = 'OR' in scope ? { AND: [scope, { OR: visibilityWhere(viewer) }] } : { projectId, OR: visibilityWhere(viewer) }
     if (action === 'items' || action === 'factions') {
       const entries = action === 'items'
         ? await prisma.item.findMany({ where, orderBy: { createdAt: 'asc' }, ...pagination })
