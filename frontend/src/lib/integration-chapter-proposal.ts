@@ -1,3 +1,5 @@
+import { proposalToChapterHtml } from './integration-proposal-html'
+
 export type ChapterProposalState = 'PENDING' | 'APPLIED' | 'REJECTED' | 'EXPIRED'
 
 /** A proposal is untrusted content, never proof of the user's consent. */
@@ -23,6 +25,7 @@ export function validateChapterProposal(input: unknown):
   const document = content as Record<string, unknown>
   if (document.type !== 'doc' || !Array.isArray(document.content)) return { ok: false, error: 'Invalid document' }
   if (JSON.stringify(content).length > 500_000) return { ok: false, error: 'Document too large' }
+  if (proposalToChapterHtml(content) === null) return { ok: false, error: 'Unsupported proposal formatting' }
   return {
     ok: true,
     value: {

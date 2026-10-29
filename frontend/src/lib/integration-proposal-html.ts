@@ -24,13 +24,14 @@ export function proposalToChapterHtml(value: unknown): string | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
 
   const doc = value as Node
-  if (doc.type !== 'doc' || !Array.isArray(doc.content)) return null
+  if (doc.type !== 'doc' || !Array.isArray(doc.content) || Object.keys(doc).some(key => !['type', 'content'].includes(key))) return null
 
   function renderInline(value: unknown): string | null {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return null
     const node = value as Node
+    if (Object.keys(node).some(key => !['type', 'text', 'marks'].includes(key))) return null
 
-    if (node.type === 'hardBreak' && node.marks === undefined && node.content === undefined) {
+    if (node.type === 'hardBreak' && node.marks === undefined && node.content === undefined && node.text === undefined) {
       return '<br>'
     }
 
@@ -67,6 +68,7 @@ export function proposalToChapterHtml(value: unknown): string | null {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return null
 
     const node = value as Node
+    if (Object.keys(node).some(key => !['type', 'content', 'attrs'].includes(key))) return null
     if (node.marks !== undefined) return null
     if (node.content !== undefined && !Array.isArray(node.content)) return null
 
@@ -111,11 +113,11 @@ export function proposalToChapterHtml(value: unknown): string | null {
       return `<blockquote>${parts.join('')}</blockquote>`
     }
 
-if (node.type === 'bulletList' || node.type === 'orderedList') {
-  if (children.length === 0) return null
+    if (node.type === 'bulletList' || node.type === 'orderedList') {
+      if (children.length === 0) return null
 
-  let tag = 'ul'
-  let attribute = ''
+      let tag = 'ul'
+      let attribute = ''
       if (node.type === 'orderedList') {
         tag = 'ol'
 

@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { hashCredential } from '@/lib/oauth-credentials'
 import { hasMythosScope } from '@/lib/integration-permissions'
+import { hasProtectedChapterContent } from '@/lib/integration-protected-content'
 import { validateChapterProposal } from '@/lib/integration-chapter-proposal'
 
 /**
@@ -30,11 +31,14 @@ export async function createPendingChapterProposal(bearer: string | null, input:
   if (!project) return { status: 404, error: 'Project not found' }
   const chapter = await prisma.chapter.findFirst({
     where: { id: chapterId, projectId },
-    select: { updatedAt: true },
+    select: { updatedAt: true, content: true },
   })
   if (!chapter) return { status: 404, error: 'Chapter not found' }
   if (chapter.updatedAt.getTime() !== new Date(expectedUpdatedAt).getTime()) {
     return { status: 409, error: 'Chapter changed since last read' }
+  }
+  if (hasProtectedChapterContent(chapter.content)) {
+    return { status: 409, error: 'Chapter contains protected mentions or comments' }
   }
   const owner = await prisma.user.findUnique({
     where: { id: auth.userId }, select: { familyId: true },

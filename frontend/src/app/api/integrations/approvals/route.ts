@@ -15,13 +15,14 @@ export async function GET(request: NextRequest) {
   const proposals = await prisma.chapterProposal.findMany({
     where: {
       authorId: userId,
-      status: 'PENDING',
+      status: { in: ['PENDING', 'EXPIRED'] },
       chapter: { project: { userId } },
     },
     orderBy: { createdAt: 'desc' },
     take: 100,
     select: {
       id: true,
+      status: true,
       title: true,
       content: true,
       createdAt: true,
@@ -42,7 +43,8 @@ export async function GET(request: NextRequest) {
   return json({
     proposals: proposals.map((proposal) => ({
       ...proposal,
-      canApply: proposal.expiresAt > new Date() &&
+      canResubmit: proposal.expiresAt <= new Date() && proposal.chapter.updatedAt.getTime() === proposal.expectedUpdatedAt.getTime(),
+      canApply: proposal.status === 'PENDING' && proposal.expiresAt > new Date() &&
         proposal.chapter.updatedAt.getTime() === proposal.expectedUpdatedAt.getTime(),
     })),
   })

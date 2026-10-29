@@ -1,0 +1,67 @@
+name: PR checks
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://unused:unused@127.0.0.1:55432/unused
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run lint
+      - run: npm test -- --runInBand
+      - run: npm run build
+        env:
+          DATABASE_URL: postgresql://unused:unused@127.0.0.1:55432/unused
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: mythos_test
+          POSTGRES_PASSWORD: mythos_local_test_2026
+          POSTGRES_DB: mythos_integration_test
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U mythos_test -d mythos_integration_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://mythos_test:mythos_local_test_2026@127.0.0.1:55432/mythos_integration_test?schema=public
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx prisma db push --skip-generate
+      - run: npm test -- --runInBand --testPathPatterns='integration-chapter-.*db.test|proposal-integrity.db.test'
+        env:
+          MYTHOS_RUN_DB_INTEGRATION: '1'
+      - run: npx prisma db push --skip-generate
+        env:
+          DATABASE_URL: postgresql://mythos_test:mythos_local_test_2026@127.0.0.1:55432/mythos_integration_test?schema=universe_acceptance
+      - run: npm test -- --runInBand --testPathPatterns='universe-service.db.test'
+        env:
+          DATABASE_URL: postgresql://mythos_test:mythos_local_test_2026@127.0.0.1:55432/mythos_integration_test?schema=universe_acceptance
+          MYTHOS_RUN_UNIVERSE_TEST: '1'

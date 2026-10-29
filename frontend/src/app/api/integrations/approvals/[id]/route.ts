@@ -32,7 +32,7 @@ export async function POST(
     return json({ error: 'Ungültige Entscheidung' }, 400)
   }
   const decision = (body as Record<string, unknown>).decision
-  if (decision !== 'approve' && decision !== 'reject') {
+  if (decision !== 'approve' && decision !== 'reject' && decision !== 'resubmit') {
     return json({ error: 'Ungültige Entscheidung' }, 400)
   }
   const result = await decideChapterProposal(userId, resolvedParams.id, decision)

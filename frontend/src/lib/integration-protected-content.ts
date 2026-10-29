@@ -1,9 +1,15 @@
-/**
- * Conservatively protects Mythos-specific references and comment anchors.
- * False positives are acceptable; losing existing references is not.
- */
+/** Unknown formats fail closed; empty legacy documents and ordinary Tiptap prose are safe. */
 export function hasProtectedChapterContent(content: unknown): boolean {
-  if (typeof content !== "string") return true
-
-  return /data-(?:character-mention|entity-mention|comment-id)(?=[\s=/><])/i.test(content)
+  if (content === null) return false
+  if (typeof content === 'string') return /data-(?:character-mention|entity-mention|comment-id)(?=[\s=/><])/i.test(content)
+  if (!content || typeof content !== 'object' || Array.isArray(content)) return true
+  const node = content as Record<string, unknown>
+  if (Object.keys(node).length === 0) return false
+  if (['characterMention', 'entityMention', 'mention', 'comment'].includes(String(node.type))) return true
+  if (node.attrs && typeof node.attrs === 'object' && 'commentId' in node.attrs) return true
+  if (node.marks !== undefined && (!Array.isArray(node.marks) || node.marks.some(hasProtectedChapterContent))) return true
+  if (node.type === undefined && typeof node.content === 'string') return hasProtectedChapterContent(node.content)
+  if (typeof node.type !== 'string' || !['doc', 'paragraph', 'heading', 'blockquote', 'bulletList', 'orderedList', 'listItem', 'text', 'hardBreak', 'bold', 'italic', 'strike', 'code'].includes(node.type)) return true
+  if (node.type === 'doc' && !Array.isArray(node.content)) return true
+  return node.content !== undefined && (!Array.isArray(node.content) || node.content.some(hasProtectedChapterContent))
 }

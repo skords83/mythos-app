@@ -1,3 +1,4 @@
+import { nextChapterRevision } from '@/lib/chapter-write-conflict'
 import { bookEntityScope } from '@/lib/universe-scope'
 import { visibilityWhere } from '@/lib/visibility'
 import { NextRequest, NextResponse } from 'next/server'
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
       if (!chapter || chapter.updatedAt.toISOString() !== body.updatedAt) return { status: 'skipped', reason: 'Kapitel wurde zwischenzeitlich geändert oder gelöscht.', added: 0 }
       const result = bulkNameLinks(chapterHtml(chapter.content), candidates, kinds, body.selected)
       if (!result.added) return { status: 'processed', added: 0, skipped: result.skipped, chapter }
-      const update = await tx.chapter.updateMany({ where: { id: chapterId, updatedAt: chapter.updatedAt, project: { userId: auth.userId } }, data: { content: replaceChapterHtml(chapter.content, result.content) as Prisma.InputJsonValue } })
+      const update = await tx.chapter.updateMany({ where: { id: chapterId, updatedAt: chapter.updatedAt, project: { userId: auth.userId } }, data: { content: replaceChapterHtml(chapter.content, result.content) as Prisma.InputJsonValue, updatedAt: nextChapterRevision(chapter.updatedAt) } })
       if (update.count !== 1) throw new Error('Concurrent chapter update')
       await tx.chapterVersion.create({ data: { chapterId, name: `Vor Namen-Verknüpfung ${new Date().toLocaleString('de-DE')}`, content: chapter.content ?? Prisma.JsonNull, wordCount: chapter.wordCount, familyId: auth.familyId, authorId: auth.userId } })
       return { status: 'processed', added: result.added, skipped: result.skipped, chapter: await tx.chapter.findUnique({ where: { id: chapterId } }) }

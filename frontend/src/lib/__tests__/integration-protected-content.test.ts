@@ -17,7 +17,21 @@ expect(hasProtectedChapterContent(content)).toBe(expected)
 })
 
 test("blockiert unbekannte Inhaltsformate", () => {
-expect(hasProtectedChapterContent(null)).toBe(true)
+expect(hasProtectedChapterContent(null)).toBe(false)
 expect(hasProtectedChapterContent({ type: "doc" })).toBe(true)
 })
+})
+
+test('accepts empty legacy chapters and ordinary JSON prose while protecting JSON anchors', () => {
+  expect(hasProtectedChapterContent({})).toBe(false)
+  expect(hasProtectedChapterContent({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hallo' }] }] })).toBe(false)
+  for (const node of [{ type: 'characterMention' }, { type: 'entityMention' }, { type: 'text', marks: [{ type: 'comment', attrs: { commentId: 'c' } }] }]) {
+    expect(hasProtectedChapterContent({ type: 'doc', content: [{ type: 'paragraph', content: [node] }] })).toBe(true)
+  }
+  expect(hasProtectedChapterContent({ content: '<mark data-comment-id="c">Text</mark>' })).toBe(true)
+})
+
+test('fails closed for unknown JSON nodes and malformed protected nodes', () => {
+  expect(hasProtectedChapterContent({ type: 'futureAnchor', attrs: { id: 'anchor' } })).toBe(true)
+  expect(hasProtectedChapterContent({ type: 'characterMention', content: 'legacy' })).toBe(true)
 })

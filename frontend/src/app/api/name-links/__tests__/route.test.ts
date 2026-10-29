@@ -63,3 +63,11 @@ test('reports a transaction conflict as skipped and a database failure as failed
   db.$transaction.mockRejectedValue(new Error('database unavailable'))
   expect((await apply()).status).toBe(500)
 })
+
+test('linking names advances the chapter revision even within the same clock tick', async () => {
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(chapter.updatedAt.getTime())
+  try {
+    expect((await apply()).status).toBe(200)
+    expect(db.chapter.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ updatedAt: new Date(chapter.updatedAt.getTime() + 1) }) }))
+  } finally { clock.mockRestore() }
+})
