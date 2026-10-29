@@ -28,6 +28,10 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/skords83/mythos-app/app:latest
+          pull: true
+          no-cache: true
+          tags: |
+            ghcr.io/skords83/mythos-app/app:latest
+            ghcr.io/skords83/mythos-app/app:sha-${{ github.sha }}
           build-args: |
             NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}

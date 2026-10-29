@@ -65,3 +65,46 @@ jobs:
         env:
           DATABASE_URL: postgresql://mythos_test:mythos_local_test_2026@127.0.0.1:55432/mythos_integration_test?schema=universe_acceptance
           MYTHOS_RUN_UNIVERSE_TEST: '1'
+
+  container-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build runtime image without publishing
+        run: docker build --pull --tag mythos-security-review:ci .
+      - name: Check runtime and local migration CLI without a database
+        run: |
+          docker run --rm --network none --entrypoint sh --env CHECKPOINT_DISABLE=1 mythos-security-review:ci -c '
+            set -eu
+            node --version
+            node /app/node_modules/prisma/build/index.js --version
+            test ! -e /app/.env
+            test ! -e /app/node_modules/jest
+            test ! -e /app/node_modules/eslint
+            test ! -e /usr/local/bin/npm
+          '
+      - name: Export runtime image
+        run: docker save --output "${RUNNER_TEMP}/mythos-image.tar" mythos-security-review:ci
+      - name: Scan all findings and reject critical vulnerabilities
+        run: |
+          docker run --rm \
+            --volume "${RUNNER_TEMP}/mythos-image.tar:/scan/mythos.tar:ro" \
+            anchore/grype:v0.121.0 docker-archive:/scan/mythos.tar \
+            --output json --fail-on critical > "${RUNNER_TEMP}/container-scan.json"
+      - name: Reject high vulnerabilities with available fixes
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const scan = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/container-scan.json', 'utf8'));
+          const high = scan.matches.filter(m => m.vulnerability.severity === 'High');
+          const fixable = high.filter(m => m.vulnerability.fix?.versions?.length);
+          console.log(`High findings: ${high.length}; with available fixes: ${fixable.length}`);
+          for (const m of fixable) console.error(m.vulnerability.id, m.artifact.name, m.artifact.version);
+          process.exitCode = fixable.length ? 1 : 0;
+          NODE
+      - name: Retain complete vulnerability report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-vulnerability-report
+          path: ${{ runner.temp }}/container-scan.json
