@@ -30,3 +30,8 @@ test('accepts empty legacy chapters and ordinary JSON prose while protecting JSO
   }
   expect(hasProtectedChapterContent({ content: '<mark data-comment-id="c">Text</mark>' })).toBe(true)
 })
+
+test('fails closed for unknown JSON nodes and malformed protected nodes', () => {
+  expect(hasProtectedChapterContent({ type: 'futureAnchor', attrs: { id: 'anchor' } })).toBe(true)
+  expect(hasProtectedChapterContent({ type: 'characterMention', content: 'legacy' })).toBe(true)
+})

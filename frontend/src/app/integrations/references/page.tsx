@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import type { ChapterReference } from '@/lib/chapter-references'
 
-type Inspection = { updatedAt: string; references: (ChapterReference & { orphaned: boolean })[]; targets: { id: string; name: string; kind: string }[] }
+type Inspection = { updatedAt: string; references: (ChapterReference & { orphaned: boolean; unavailable: boolean })[]; targets: { id: string; name: string; kind: string }[] }
 export default function ReferencesPage() {
   const [chapters, setChapters] = useState<{ id: string; title: string; project: { title: string } }[]>([])
   const [chapterId, setChapterId] = useState('')
@@ -38,7 +38,7 @@ export default function ReferencesPage() {
   return <main className="mx-auto max-w-4xl p-6 text-zinc-900 dark:text-zinc-100">
     <Link href="/integrations/approvals" className="underline">Zur Kapitelprüfung</Link>
     <h1 className="my-5 text-2xl font-semibold">Verwaiste Verknüpfungen</h1>
-    <p className="mb-5">Prüfe Figuren, Orte, Gegenstände und Kommentaranker. Fehlende oder in diesem Buch nicht verfügbare Ziele können gezielt ersetzt oder entfernt werden. Der sichtbare Kapiteltext bleibt erhalten. Jede Änderung sichert die bisherige Fassung als Kapitelversion.</p>
+    <p className="mb-5">Prüfe Figuren, Orte, Gegenstände und Kommentaranker. Verknüpfungen mit fehlenden Zielen können gezielt ersetzt oder entfernt werden. Vorhandene, aber nicht verfügbare Ziele bleiben geschützt. Der sichtbare Kapiteltext bleibt erhalten. Jede Änderung sichert die bisherige Fassung als Kapitelversion.</p>
     <label htmlFor="chapter">Kapitel</label>
     <select id="chapter" disabled={busy} value={chapterId} onChange={e => setChapterId(e.target.value)} className="mx-3 max-w-full rounded border bg-white p-2 dark:bg-zinc-800">
       <option value="">Kapitel auswählen</option>
@@ -47,9 +47,10 @@ export default function ReferencesPage() {
     {error && <p role="alert" className="my-5 text-red-600">{error}</p>}
     {chapterId && !data && !error && <p className="my-5">Verknüpfungen werden geprüft …</p>}
     {data && <p className="my-5">{data.references.filter(r => r.orphaned).length} verwaiste von {data.references.length} Verknüpfungen.</p>}
+    {data?.references.some(r => r.unavailable) && <p className="my-4" role="status">{data.references.filter(r => r.unavailable).length} vorhandene Ziele sind nicht sichtbar oder diesem Buch nicht zugeordnet. Diese Verknüpfungen sind nicht verwaist und werden hier nicht verändert.</p>}
     {data?.references.filter(r => r.orphaned).map(ref => <section key={ref.key} className="my-4 rounded border p-4">
       <h2 className="font-semibold">{ref.kind} – {ref.label}</h2>
-      <p className="my-2 break-all text-sm">Fehlendes oder nicht verfügbares Ziel: {ref.targetId || '(leer)'}</p>
+      <p className="my-2 break-all text-sm">Fehlendes Ziel: {ref.targetId || '(leer)'}</p>
       <label>Neues Ziel <select disabled={busy} value={targets[ref.key] ?? ''} onChange={e => setTargets({ ...targets, [ref.key]: e.target.value })} className="max-w-full rounded border bg-white p-2 dark:bg-zinc-800">
         <option value="">Ziel auswählen</option>
         {data.targets.filter(t => t.kind === ref.kind).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}

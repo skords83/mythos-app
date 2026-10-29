@@ -39,3 +39,11 @@ test('only pending, unexpired, unchanged proposals can be applied', () => {
 test.each(['image', 'table', 'characterMention', 'unknown'])('rejects unsupported %s at creation', type => {
   expect(validateChapterProposal({ ...proposal, content: { type: 'doc', content: [{ type }] } }).ok).toBe(false)
 })
+
+test('never silently drops unsupported content or anchor metadata', () => {
+  for (const content of [
+    { type: 'doc', content: [], marks: [{ type: 'comment', attrs: { commentId: 'c' } }] },
+    { type: 'doc', content: [{ type: 'paragraph', text: 'Would be lost' }] },
+    { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Text', attrs: { commentId: 'c' } }] }] },
+  ]) expect(validateChapterProposal({ ...proposal, content }).ok).toBe(false)
+})

@@ -57,11 +57,17 @@ describe('checkRateLimit', () => {
   })
 
   it('resets the count after the window elapses', async () => {
-    const options = { limit: 1, windowMs: 10 }
-    expect(await checkRateLimit('user-e', 'test-scope-4', options)).toBeNull()
-    expect(await checkRateLimit('user-e', 'test-scope-4', options)).not.toBeNull()
-
-    await new Promise((resolve) => setTimeout(resolve, 20))
-    expect(await checkRateLimit('user-e', 'test-scope-4', options)).toBeNull()
+    // Freeze the clock: a loaded CI host may otherwise spend >10ms between
+    // the first two requests and expire the window before the blocking check.
+    jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] })
+    try {
+      const options = { limit: 1, windowMs: 10 }
+      expect(await checkRateLimit('user-e', 'test-scope-4', options)).toBeNull()
+      expect(await checkRateLimit('user-e', 'test-scope-4', options)).not.toBeNull()
+      await jest.advanceTimersByTimeAsync(20)
+      expect(await checkRateLimit('user-e', 'test-scope-4', options)).toBeNull()
+    } finally {
+      jest.useRealTimers()
+    }
   })
 })

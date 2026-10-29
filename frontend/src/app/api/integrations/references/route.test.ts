@@ -44,8 +44,35 @@ test('only orphaned references and available targets may be changed', async () =
 test('targeted unlink preserves chapter text and repair uses available target', async () => {
   expect((await POST(request())).status).toBe(200)
   expect(prisma.chapterVersion.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ chapterId: 'chapter', authorId: 'owner', wordCount: 1 }) }))
-  expect(prisma.chapter.updateMany).toHaveBeenCalledWith({ where: { id: 'chapter', updatedAt: revision }, data: { content: '<p><span  >@Ada</span></p>' } })
+  expect(prisma.chapter.updateMany).toHaveBeenCalledWith({ where: { id: 'chapter', updatedAt: revision }, data: { content: '<p><span  >@Ada</span></p>', updatedAt: expect.any(Date) } })
   ;(prisma.character.findMany as jest.Mock).mockResolvedValue([{ id: 'replacement', name: 'Ada' }])
   expect((await POST(request({ targetId: 'replacement' }))).status).toBe(200)
-  expect(prisma.chapter.updateMany).toHaveBeenLastCalledWith(expect.objectContaining({ data: { content: '<p><span data-character-mention="" data-character-id="replacement">@Ada</span></p>' } }))
+  expect(prisma.chapter.updateMany).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ content: '<p><span data-character-mention="" data-character-id="replacement">@Ada</span></p>' }) }))
+})
+
+test('existing hidden or out-of-book targets are unavailable, never orphaned', async () => {
+  ;(prisma.character.findMany as jest.Mock).mockImplementation(({ select }) => Promise.resolve(select.name ? [] : [{ id: 'missing' }]))
+  const response = await GET(new NextRequest('http://localhost/api/integrations/references?chapterId=chapter'))
+  const data = await response.json()
+  expect(data.references[0]).toMatchObject({ orphaned: false, unavailable: true })
+  expect(data.targets).toEqual([])
+  expect((await POST(request())).status).toBe(409)
+  expect(prisma.chapterVersion.create).not.toHaveBeenCalled()
+})
+test('serialization and lost update conflicts roll back with 409', async () => {
+  const { Prisma } = await import('@prisma/client')
+  ;(prisma.$transaction as jest.Mock).mockRejectedValueOnce(new Prisma.PrismaClientKnownRequestError('write conflict', { code: 'P2034', clientVersion: '5.22.0' }))
+  expect((await POST(request())).status).toBe(409)
+  ;(prisma.chapter.updateMany as jest.Mock).mockResolvedValue({ count: 0 })
+  expect((await POST(request())).status).toBe(409)
+})
+
+test('rejects malformed, oversized and non-JSON writes before touching the database', async () => {
+  const make = (body: string, contentType = 'application/json', origin?: string) => new NextRequest('http://localhost/api/integrations/references', { method: 'POST', headers: { 'Content-Type': contentType, ...(origin ? { origin } : {}) }, body })
+  expect((await POST(make('{}'))).status).toBe(403)
+  expect((await POST(make('{}', 'text/plain', 'http://localhost'))).status).toBe(415)
+  expect((await POST(make('{', 'application/json', 'http://localhost'))).status).toBe(400)
+  expect((await POST(make('[]', 'application/json', 'http://localhost'))).status).toBe(400)
+  expect((await POST(make(' '.repeat(4097), 'application/json', 'http://localhost'))).status).toBe(413)
+  expect(prisma.chapter.updateMany).not.toHaveBeenCalled()
 })

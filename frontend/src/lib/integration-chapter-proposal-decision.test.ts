@@ -38,7 +38,7 @@ test('empty object chapter is approvable and backed up', async () => {
   const { proposal, tx } = setup()
   proposal.expiresAt = new Date('2099-01-01')
   expect(await decideChapterProposal('u', 'p', 'approve')).toMatchObject({ status: 200, decision: 'APPLIED', backupId: 'backup' })
-  expect(tx.chapter.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { title: 'Titel', content: '<p>Neu</p>', wordCount: 1 } }))
+  expect(tx.chapter.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ title: 'Titel', content: '<p>Neu</p>', wordCount: 1, updatedAt: expect.any(Date) }) }))
   expect(tx.chapterVersion.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ content: {} }) }))
 })
 test('rejects decided proposals and unavailable proposals', async () => {
@@ -57,4 +57,17 @@ test('stored EXPIRED proposal renews once and cannot bypass revision or format c
   ;(proposal as { content: unknown }).content = { type: 'doc', content: [{ type: 'image' }] }
   expect((await decideChapterProposal('u', 'p', 'resubmit')).status).toBe(409)
   expect(tx.chapter.updateMany).not.toHaveBeenCalled()
+})
+
+test('serialization conflicts return 409 instead of an internal error', async () => {
+  const { Prisma } = await import('@prisma/client')
+  ;(prisma.$transaction as jest.Mock).mockRejectedValue(new Prisma.PrismaClientKnownRequestError('write conflict', { code: 'P2034', clientVersion: '5.22.0' }))
+  expect((await decideChapterProposal('u', 'p', 'approve')).status).toBe(409)
+})
+
+test('approval preserves metadata in legacy HTML chapter wrappers', async () => {
+  const { proposal, tx } = setup('PENDING', { content: '<p>Alt</p>', metadata: { layout: 'legacy' } })
+  proposal.expiresAt = new Date('2099-01-01')
+  expect((await decideChapterProposal('u', 'p', 'approve')).status).toBe(200)
+  expect(tx.chapter.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ content: { content: '<p>Neu</p>', metadata: { layout: 'legacy' } } }) }))
 })

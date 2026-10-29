@@ -1,3 +1,4 @@
+import { nextChapterRevision } from './chapter-write-conflict'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { hashCredential } from '@/lib/oauth-credentials'
@@ -60,6 +61,7 @@ export async function replaceChapterWithBackup(
       where: { id: chapterId, projectId, updatedAt: expected },
       data: {
         title: parsed.value.title,
+        updatedAt: nextChapterRevision(current.updatedAt),
         content: parsed.value.content as Prisma.InputJsonValue,
         wordCount: countTiptapWords(parsed.value.content),
       },

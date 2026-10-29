@@ -44,6 +44,7 @@ suite('real PostgreSQL chapter replacement (disposable local DB only)', () => {
   })
 
   afterAll(async () => {
+    if (process.env.DATABASE_URL !== expectedUrl) return
     // Cleanup is limited to rows owned by this uniquely named test fixture.
     if (projectId) await prisma.project.deleteMany({ where: { id: projectId } })
     if (userId) await prisma.user.deleteMany({ where: { id: userId } })

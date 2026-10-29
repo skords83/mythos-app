@@ -20,8 +20,9 @@ Die Entscheidungen bleiben Session- und Same-Origin-geschützt; OAuth erteilt ke
 
 Die Freigabeseite verlinkt `/integrations/references`. Nach Kapitelauswahl werden
 verwaiste Figuren-, Orts-, Gegenstands- und Kommentaranker aufgelistet. „Verwaist“
-bedeutet: Das Ziel fehlt oder ist im bestehenden Buch-/Sichtbarkeitskontext nicht
-verfügbar. Die Oberfläche behauptet nicht, dass ein unsichtbares Ziel gelöscht ist.
+bedeutet: Das Ziel fehlt im zulässigen Familien-/Kapitelkontext. Vorhandene, aber
+private oder nicht dem Buch zugeordnete Ziele gelten als nicht verfügbar und werden
+weder als verwaist angeboten noch verändert. Ihre Namen und Inhalte werden nicht offengelegt.
 Reparaturziele kommen aus demselben Buchkontext, Kommentare aus demselben Kapitel.
 Nur eigene Kapitel dürfen bearbeitet werden.
 
@@ -60,3 +61,30 @@ Im Verzeichnis `frontend`:
 Die PostgreSQL-Tests bleiben standardmäßig deaktiviert. Ihr expliziter Opt-in
 `MYTHOS_RUN_DB_INTEGRATION=1` erfordert die im Test fest definierte isolierte
 Testdatenbank; sie dürfen nicht gegen Produktionsdatenbanken ausgeführt werden.
+
+## Zusätzliche Integritätsprüfung von PR #4
+
+- Alle 20 zuvor deaktivierten PostgreSQL-Tests wurden in einem neu gestarteten,
+  flüchtigen lokalen PostgreSQL-16-Container ausgeführt: 10 Kapiteltests im Schema
+  `public`, 10 Universumstests im Schema `universe_acceptance`.
+- Zusätzliche echte DB-Tests prüfen konkurrierendes Autosave/Freigabe, genau einen
+  erfolgreichen Schreiber, atomare Versionssicherung, Rollback bei Sicherungsfehlern,
+  geschützte private Ziele, Revisionskonflikte und ältere/abgelaufene Vorschläge.
+- Kapitel-PUT verlangt jetzt immer einen kanonischen `expectedUpdatedAt`-Wert.
+  Die vorhandene Oberfläche sendet ihn bereits; alte Clients ohne Revision erhalten
+  HTTP 400. Autosave, Freigabe und Referenzreparatur erhöhen die Revision monoton,
+  auch wenn mehrere Schreibversuche in derselben Millisekunde erfolgen. Auch die
+  vorhandene Namen-Verknüpfung und interne Kapitel-Ersetzung erhöhen die Revision.
+- Serialisierungsfehler und verlorene Revisionsvergleiche liefern HTTP 409;
+  Kapitel, Vorschlagsstatus und Sicherung bleiben transaktional konsistent.
+- Nicht unterstützte Vorschlagsfelder werden abgewiesen, statt beim Rendern
+  stillschweigend entfernt zu werden. Auch ältere solche Vorschläge bleiben verwerfbar.
+- Fehlerhafte Entity-Marker ohne gültigen Typ werden als `UNKNOWN` erkannt.
+  Vorhandene Ziele bleiben geschützt; fehlt das Ziel, ist gezieltes Entfernen
+  möglich. Ein neues typisiertes Ziel kann anschließend im Editor verknüpft werden.
+- `.github/workflows/pr-checks.yml` ergänzt PR-Prüfungen für Lint, Unit-Tests,
+  Build und isolierte PostgreSQL-Tests. Dieser Workflow veröffentlicht keine Images.
+  Der vorhandene Veröffentlichungsworkflow für `main` wurde nicht verändert.
+
+Bei Kommentarreparaturen wird auch der im Anker gespeicherte Erledigt-Status mit
+dem neuen Ziel synchronisiert. HTML-Wrapper-Metadaten bleiben bei der Freigabe erhalten.
