@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.17.0",
-    "@sentry/nextjs": "^10.65.0",
+    "@sentry/nextjs": "^10.78.0",
     "@tiptap/extension-image": "^2.5.4",
     "@tiptap/extension-mention": "^2.27.2",
     "@tiptap/extension-placeholder": "^2.5.4",
