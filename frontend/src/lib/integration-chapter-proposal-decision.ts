@@ -6,7 +6,7 @@ import { proposalToChapterHtml } from '@/lib/integration-proposal-html'
 import { hasProtectedChapterContent } from '@/lib/integration-protected-content'
 
 type DecisionResult =
-  | { status: 200; proposalId: string; backupId?: string; decision: 'APPLIED' | 'REJECTED' }
+  | { status: 200; proposalId: string; backupId?: string; decision: 'APPLIED' | 'REJECTED' | 'PENDING' }
   | { status: 400 | 404 | 409 | 410; error: string }
 
 /**
@@ -17,10 +17,10 @@ type DecisionResult =
 export async function decideChapterProposal(
   userId: string,
   proposalId: string,
-  decision: 'approve' | 'reject',
+  decision: 'approve' | 'reject' | 'resubmit',
 ): Promise<DecisionResult> {
   if (!userId || !proposalId || proposalId.length > 128 ||
-      (decision !== 'approve' && decision !== 'reject')) {
+      (decision !== 'approve' && decision !== 'reject' && decision !== 'resubmit')) {
     return { status: 400, error: 'Invalid decision' }
   }
   return prisma.$transaction(async (tx) => {
@@ -32,12 +32,11 @@ export async function decideChapterProposal(
       },
     })
     if (!proposal) return { status: 404, error: 'Proposal not found' } as const
-    if (proposal.status !== 'PENDING') return { status: 409, error: 'Proposal already decided' } as const
-    if (proposal.expiresAt <= new Date()) return { status: 410, error: 'Proposal expired' } as const
+    if (proposal.status !== 'PENDING' && !(proposal.status === 'EXPIRED' && decision !== 'approve')) return { status: 409, error: 'Proposal already decided' } as const
 
     if (decision === 'reject') {
       const updated = await tx.chapterProposal.updateMany({
-        where: { id: proposalId, authorId: userId, status: 'PENDING' },
+        where: { id: proposalId, authorId: userId, status: proposal.status },
         data: { status: 'REJECTED' },
       })
       if (updated.count !== 1) return { status: 409, error: 'Proposal already decided' } as const
@@ -49,7 +48,9 @@ export async function decideChapterProposal(
       select: { title: true, content: true, wordCount: true, updatedAt: true },
     })
     if (!current) return { status: 404, error: 'Chapter not found' } as const
-    if (!canApplyChapterProposal(
+    if (decision === 'approve' && proposal.expiresAt <= new Date()) return { status: 410, error: 'Proposal expired' } as const
+    if (current.updatedAt.getTime() !== proposal.expectedUpdatedAt.getTime()) return { status: 409, error: 'Chapter changed since proposal' } as const
+    if (decision === 'approve' && !canApplyChapterProposal(
       proposal.status, proposal.expiresAt, current.updatedAt, proposal.expectedUpdatedAt,
     )) return { status: 409, error: 'Chapter changed since proposal' } as const
 
@@ -68,6 +69,16 @@ export async function decideChapterProposal(
 
     const html = proposalToChapterHtml(checked.value.content)
     if (html === null) return { status: 409, error: 'Unsupported proposal formatting' } as const
+
+    if (decision === 'resubmit') {
+      if (proposal.expiresAt > new Date()) return { status: 409, error: 'Proposal has not expired' } as const
+      const renewed = await tx.chapterProposal.updateMany({
+        where: { id: proposalId, authorId: userId, status: proposal.status, expiresAt: proposal.expiresAt },
+        data: { status: 'PENDING', expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) },
+      })
+      if (renewed.count !== 1) return { status: 409, error: 'Proposal already decided' } as const
+      return { status: 200, proposalId, decision: 'PENDING' } as const
+    }
 
     const claimed = await tx.chapterProposal.updateMany({
       where: { id: proposalId, authorId: userId, status: 'PENDING' },

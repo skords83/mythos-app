@@ -16,7 +16,7 @@ suite('real PostgreSQL proposal approval (isolated local DB)', () => {
   let userId: string | undefined
   let projectId: string | undefined
   let chapterId: string | undefined
-  const oldContent = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Alte Fassung' }] }] }
+  const oldContent = '<p>Alte Fassung</p>'
   const newContent = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Eine ganz neue Fassung' }] }] }
 
   beforeAll(async () => {
@@ -70,7 +70,7 @@ suite('real PostgreSQL proposal approval (isolated local DB)', () => {
     expect(result.decision).toBe('APPLIED')
     const chapter = await prisma.chapter.findUniqueOrThrow({ where: { id: chapterId! } })
     expect(chapter.title).toBe('Genehmigte Fassung')
-    expect(chapter.content).toEqual(newContent)
+    expect(chapter.content).toEqual('<p>Eine ganz neue Fassung</p>')
     expect(chapter.wordCount).toBe(4)
     const backup = await prisma.chapterVersion.findUniqueOrThrow({ where: { id: result.backupId! } })
     expect(backup.content).toEqual(before.content)

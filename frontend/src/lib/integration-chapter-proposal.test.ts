@@ -35,3 +35,7 @@ test('only pending, unexpired, unchanged proposals can be applied', () => {
   expect(canApplyChapterProposal('PENDING', now, revision, revision, now)).toBe(false)
   expect(canApplyChapterProposal('PENDING', expiry, new Date('2026-10-16T10:01:00.000Z'), revision, now)).toBe(false)
 })
+
+test.each(['image', 'table', 'characterMention', 'unknown'])('rejects unsupported %s at creation', type => {
+  expect(validateChapterProposal({ ...proposal, content: { type: 'doc', content: [{ type }] } }).ok).toBe(false)
+})
