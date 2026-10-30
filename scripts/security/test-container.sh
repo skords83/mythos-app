@@ -64,6 +64,27 @@ wait_for_app() {
 }
 wait_for_app
 "$engine" exec "$prefix-app" node -e "const s=require('fs').readFileSync('/proc/1/status','utf8');if(!/CapEff:\\s+0+\\n/.test(s)||!/NoNewPrivs:\\s+1/.test(s))process.exit(1)"
+# Verify image-level mitigation independently of no-new-privileges and confirm
+# mount(2) cannot create even a harmless tmpfs in this disposable namespace.
+"$engine" exec -i "$prefix-app" node --input-type=module <<'NODE'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
+for (const binary of ['/usr/bin/mount', '/usr/bin/umount']) {
+  assert.equal(fs.statSync(binary).mode & 0o6000, 0, `${binary} must not grant SUID/SGID privileges`);
+}
+const target = fs.mkdtempSync('/tmp/mythos-mount-denied-');
+try {
+  const result = spawnSync('/usr/bin/mount', ['-t', 'tmpfs', '-o', 'nosuid,nodev,noexec', 'tmpfs', target], {encoding:'utf8'});
+  assert.ifError(result.error);
+  if (result.status === 0) {
+    spawnSync('/usr/bin/umount', [target]);
+    assert.fail('Container unexpectedly allowed a tmpfs mount');
+  }
+  assert.match(result.stderr, /permission denied|Operation not permitted/i);
+  console.log('PASS: mount helpers have no SUID/SGID privileges; kernel rejected tmpfs mount');
+} finally { fs.rmdirSync(target); }
+NODE
 # Share only the app's network namespace: HTTP stays on localhost:4000, while
 # DB/Redis use internal DNS exactly as the production app does. No Docker socket.
 run_test "container:$prefix-app" frontend/scripts/test-mcp-http.mjs

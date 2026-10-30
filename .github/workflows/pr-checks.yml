@@ -82,6 +82,10 @@ jobs:
             test ! -e /app/node_modules/jest
             test ! -e /app/node_modules/eslint
             test ! -e /usr/local/bin/npm
+            for helper in /usr/bin/mount /usr/bin/umount; do
+              test ! -u "$helper"
+              test ! -g "$helper"
+            done
           '
       - uses: actions/setup-node@v4
         with:
