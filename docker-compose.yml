@@ -33,6 +33,10 @@ services:
   app:
     image: ghcr.io/skords83/mythos-app/app:latest
     container_name: mythos-app
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-mythos}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-mythos}
@@ -74,3 +78,4 @@ networks:
   proxy:
     external: true
   internal:
+    internal: true

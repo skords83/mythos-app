@@ -1,0 +1,54 @@
+
+WARNING: apt does not have a stable CLI interface. Use with caution in scripts.
+
+Listing...
+libc6:
+  Installed: 2.41-12+deb13u4
+  Candidate: 2.41-12+deb13u4
+  Version table:
+ *** 2.41-12+deb13u4 500
+        500 http://deb.debian.org/debian trixie/main amd64 Packages
+        100 /var/lib/dpkg/status
+libstdc++6:
+  Installed: 14.2.0-19
+  Candidate: 14.2.0-19
+  Version table:
+ *** 14.2.0-19 500
+        500 http://deb.debian.org/debian trixie/main amd64 Packages
+        100 /var/lib/dpkg/status
+libacl1:
+  Installed: 2.3.2-2+b1
+  Candidate: 2.3.2-2+b1
+  Version table:
+ *** 2.3.2-2+b1 500
+        500 http://deb.debian.org/debian trixie/main amd64 Packages
+        100 /var/lib/dpkg/status
+util-linux:
+  Installed: 2.41.5-0+deb13u1
+  Candidate: 2.41.5-0+deb13u1
+  Version table:
+ *** 2.41.5-0+deb13u1 500
+        500 http://deb.debian.org/debian trixie/main amd64 Packages
+        500 http://deb.debian.org/debian-security trixie-security/main amd64 Packages
+        100 /var/lib/dpkg/status
+ncurses-bin:
+  Installed: 6.5+20250216-2
+  Candidate: 6.5+20250216-2
+  Version table:
+ *** 6.5+20250216-2 500
+        500 http://deb.debian.org/debian trixie/main amd64 Packages
+        100 /var/lib/dpkg/status
+perl-base:
+  Installed: 5.40.1-6+deb13u1
+  Candidate: 5.40.1-6+deb13u1
+  Version table:
+ *** 5.40.1-6+deb13u1 500
+        500 http://deb.debian.org/debian trixie/main amd64 Packages
+        100 /var/lib/dpkg/status
+zlib1g:
+  Installed: 1:1.3.dfsg+really1.3.1-1+b1
+  Candidate: 1:1.3.dfsg+really1.3.1-1+b1
+  Version table:
+ *** 1:1.3.dfsg+really1.3.1-1+b1 500
+        500 http://deb.debian.org/debian trixie/main amd64 Packages
+        100 /var/lib/dpkg/status

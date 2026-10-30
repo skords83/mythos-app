@@ -1,0 +1,59 @@
+{
+  "published": {
+    "ref": "ghcr.io/skords83/mythos-app/app:latest",
+    "localImageID": "3d50a8f0a2d9cf6d67b8cd8a49b081a0c3a29eeabe26d87f0787ce228037173f",
+    "registryOrLocalManifestDigest": "sha256:c59d32aa31ee0da1ea0b2ecff9893986e4d8894dffe82c15ae6bebb7c8d2d4aa",
+    "repoDigests": [
+      "ghcr.io/skords83/mythos-app/app@sha256:c59d32aa31ee0da1ea0b2ecff9893986e4d8894dffe82c15ae6bebb7c8d2d4aa"
+    ],
+    "scannedOCIConfigDigest": "sha256:1fa52d068336393a636e1349afefd728f2d24ed200094c16ebf9e8812b0ba294",
+    "scannedOCIManifestDigest": "sha256:30ba8b6ee349965a04f5149044da42cec8fb61419118c7a1c5674fa0b5ddfd80",
+    "uncompressedLayerDigests": [
+      "sha256:a5d6d345f6afa08d7c31272055746d60a838b290bfcc82c0a23e8e984d61a933",
+      "sha256:afe0037151a957752fee8884c68a5c91efabc427e4d87e662ceaabb6857bb85b",
+      "sha256:2abb946bb6e607895981eb83d09c8bcb2f191c0549e2d223158149cbac4fe7a0",
+      "sha256:a3dd86e5bcde224fa91009dba004d6c23f9fe3c28b6ae6cdad34f3b2b14cd15d",
+      "sha256:97d0debbdba72deefcb841e17670bd0b8eb7a87a61bf9d13503a61595076959b",
+      "sha256:ae1ee52297e5880e7dcf5d68727ce6f80ab120b69ed9445c7632782cfbac29fd",
+      "sha256:dff8958189da301ff127d062e98a99ede02027bc92948ab64aff6df85adc1f53",
+      "sha256:ce0c67f2dae47b47d2c10b08fa3da4ac87a7beb746424a8833b9dbe1850b2d24",
+      "sha256:0cf85493f678f507576f9e51d9bce49fd1fdb8e03c25dfd609cb821ab8bc370e",
+      "sha256:ed8db381947e9b97668ed853d9914fae38d147fe3b204f676645d7cbabf26b97",
+      "sha256:fb4bed4a71b8e652ef508a4bac5069ce6de17d5070d1772262951b67f10f2c61",
+      "sha256:1d3ec1f3f23c396b216d179b754fd93bd42b97897fd99ae65a72aa8c8a4a1151",
+      "sha256:e45cede2d465f88cfc9f045ea2e1980987b2532970ded3489d2cb76e5465dc11",
+      "sha256:93380abf9a26c2f155af88794e5c36d2641b1144dd14c883592a7c00f53e4673",
+      "sha256:612ba03d4760f5cedca9eb0ecc0600e6fd0f4812e2dd67ebb3ad414954cd000c",
+      "sha256:ab5a9bb0995eeeb5cf5e292b4984b152e75a882a06c98e31f386e014a07edfd3"
+    ],
+    "layerIdentityVerified": true
+  },
+  "candidate": {
+    "ref": "localhost/mythos-hardened:review",
+    "localImageID": "c796819c9341e3e51ea9fdd73000d527d675d067570108a37b5cdcff5119a522",
+    "registryOrLocalManifestDigest": "sha256:61c575e3f9bd8ec26de69a051df9ddc4fe0b2f68799818136dfcae4ac9809f52",
+    "repoDigests": [
+      "localhost/mythos-hardened@sha256:61c575e3f9bd8ec26de69a051df9ddc4fe0b2f68799818136dfcae4ac9809f52"
+    ],
+    "scannedOCIConfigDigest": "sha256:c796819c9341e3e51ea9fdd73000d527d675d067570108a37b5cdcff5119a522",
+    "scannedOCIManifestDigest": "sha256:ac81178f441850e7e709a14fc27bb8c7e5b93271eebddb0b6162902b357c891b",
+    "uncompressedLayerDigests": [
+      "sha256:a5d6d345f6afa08d7c31272055746d60a838b290bfcc82c0a23e8e984d61a933",
+      "sha256:afe0037151a957752fee8884c68a5c91efabc427e4d87e662ceaabb6857bb85b",
+      "sha256:2abb946bb6e607895981eb83d09c8bcb2f191c0549e2d223158149cbac4fe7a0",
+      "sha256:a3dd86e5bcde224fa91009dba004d6c23f9fe3c28b6ae6cdad34f3b2b14cd15d",
+      "sha256:97d0debbdba72deefcb841e17670bd0b8eb7a87a61bf9d13503a61595076959b",
+      "sha256:88f491e79910bbffdb3da557c3d28d1bb29a3359cf40ed9f4f4bae64eac999ec",
+      "sha256:f7b85097e427e9e978ad6b3153eb666e89d9e49965fc2a55b1d3faa401a36d24",
+      "sha256:5c4a51e92804d77ef49cf8ad087e1c45fb5ddaae6a2022126c18212af42eaeff",
+      "sha256:b60ea84090f6464f7f80f78be5afb38e8e476e8b921b504f7e94e199c62622a4",
+      "sha256:b98ba09c600dc1546526d29307bb220e5a3bd1f838454acbe2a9bce010c900c8",
+      "sha256:f34ab36e67e790e33d456f1299049a48d059b6d2da9f7f9317845e5e15d47838",
+      "sha256:2e495b9f00d4648ea18f6df3e2ad77f964bb9b90b83c9bbc6fff13e1ded4900d",
+      "sha256:76df4852ab564d0cdf004154a29c5d36cc5978906033e4b86ad733134415ced8",
+      "sha256:d94f21cfb76efd9b5923737517c162382dfd7ba48bfb2e21413d49875350b320",
+      "sha256:b0e5628775c56937d42f89de94ef036a7ac002abe3e7ce31aa4f91853b87fbcc"
+    ],
+    "layerIdentityVerified": true
+  }
+}

@@ -71,6 +71,17 @@ try {
   check(response.status, 200)
   cookie = response.headers.get('set-cookie')?.split(';')[0]
   assert.ok(cookie?.startsWith('auth-token='), 'Login must issue real session cookie')
+  // Exercise the real upload volume and ownership checks in the running image.
+  const form = new FormData()
+  const uploadBytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])
+  form.set('file', new Blob([uploadBytes], { type: 'image/png' }), 'fixture.png')
+  const uploaded = await request('/api/upload', { method: 'POST', headers: { cookie }, body: form })
+  check(uploaded.status, 200)
+  const uploadUrl = (await uploaded.json()).url
+  const downloaded = await request(uploadUrl, { headers: { cookie } })
+  check(downloaded.status, 200)
+  check(new Uint8Array(await downloaded.arrayBuffer()), uploadBytes)
+  check((await request(uploadUrl)).status, 401)
   response = await request('/api/oauth/authorize?' + new URLSearchParams(authorizeParams()))
   check(response.status, 200)
   check((await response.json()).client_name, 'Local MCP HTTP test')
@@ -98,10 +109,12 @@ try {
   // Official SDK verifies initialization, notifications, schemas and transport interoperability.
   sdk = new Client({ name: 'mythos-http-integration-test', version: '1.0.0' })
   await sdk.connect(new StreamableHTTPClientTransport(new URL(resource), { requestInit: { headers: { authorization: 'Bearer ' + token } } }))
-  check(sdk.getServerVersion().name, 'mythos-readonly')
+  check(sdk.getServerVersion().name, 'mythos')
   const list = await sdk.listTools()
-  check(list.tools.length, 14)
-  check(list.tools.filter(t => t.annotations?.readOnlyHint === true).length, 7)
+  for (const name of ['projects', 'chapters', 'chapter', 'characters', 'places', 'timeline', 'lore']) {
+    check(list.tools.find(t => t.name === 'mythos_' + name)?.annotations?.readOnlyHint, true)
+  }
+  check(new Set(list.tools.map(t => t.name)).size, list.tools.length)
   const projects = await sdk.callTool({ name: 'mythos_projects', arguments: {} })
   check(JSON.parse(projects.content[0].text).map(p => p.id), [project.id])
   check((await tool('chapters', { projectId: project.id })).data[0].id, chapter.id)

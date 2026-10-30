@@ -20,6 +20,9 @@ RUN DATABASE_URL=postgresql://unused:unused@127.0.0.1:55432/unused npm run build
 # Only traced application dependencies and the existing migration tool are shipped.
 # OS compilers, image/database development libraries, tests and untraced sources stay out.
 FROM base AS runtime
+ARG VCS_REF=unknown
+LABEL org.opencontainers.image.source="https://github.com/skords83/mythos-app" \
+      org.opencontainers.image.revision=$VCS_REF
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=4000 \

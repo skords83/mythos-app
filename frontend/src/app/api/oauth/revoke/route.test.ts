@@ -16,6 +16,7 @@ const request = (origin = 'https://mythos.example', tokenId: unknown = 'token-1'
   })
 
 beforeEach(() => {
+  process.env.MYTHOS_OAUTH_ISSUER = 'https://mythos.example'
   jest.clearAllMocks()
   ;(getUserFromRequest as jest.Mock).mockResolvedValue('user-1')
   ;(prisma.oAuthAccessToken.updateMany as jest.Mock).mockResolvedValue({ count: 1 })
@@ -43,4 +44,20 @@ test('rejects invalid token ids', async () => {
 test('does not revoke another user token', async () => {
   ;(prisma.oAuthAccessToken.updateMany as jest.Mock).mockResolvedValue({ count: 0 })
   expect(await (await POST(request())).json()).toEqual({ revoked: false })
+})
+
+test('uses canonical issuer behind a proxy with an internal request URL', async () => {
+  const proxied = new NextRequest('http://0.0.0.0:4000/api/oauth/revoke', {
+    method: 'POST', headers: { origin: 'https://mythos.example', 'content-type': 'application/json' },
+    body: JSON.stringify({ tokenId: 'token-1' }),
+  })
+  expect((await POST(proxied)).status).toBe(200)
+})
+test('does not trust a forged Host or forwarded origin', async () => {
+  const forged = new NextRequest('https://evil.example/api/oauth/revoke', {
+    method: 'POST', headers: { origin: 'https://evil.example', 'x-forwarded-host': 'evil.example', 'content-type': 'application/json' },
+    body: JSON.stringify({ tokenId: 'token-1' }),
+  })
+  expect((await POST(forged)).status).toBe(403)
+  expect(prisma.oAuthAccessToken.updateMany).not.toHaveBeenCalled()
 })
