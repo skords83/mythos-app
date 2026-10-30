@@ -1,12 +1,10 @@
 // Disposable test database only; never run against an installation database.
 import assert from 'node:assert/strict';
+import { assertLocalTestTargets } from '../../frontend/scripts/local-test-targets.mjs';
 import fs from 'node:fs';
 import { createHash, randomUUID } from 'node:crypto';
 import { PrismaClient } from '../../frontend/node_modules/@prisma/client/default.js';
-const url = new URL(process.env.DATABASE_URL);
-assert.equal(url.hostname, '127.0.0.1');
-assert.equal(url.port, '55432');
-assert.equal(url.pathname, '/mythos_integration_test');
+assertLocalTestTargets();
 assert.equal(process.env.MYTHOS_SECURITY_FIXTURE, '1');
 const db = new PrismaClient();
 try {

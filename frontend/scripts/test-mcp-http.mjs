@@ -1,5 +1,6 @@
 /** Real HTTP + PostgreSQL + official MCP SDK. Never runs against a remote database/server. */
 import assert from 'node:assert/strict'
+import { assertLocalTestTargets } from './local-test-targets.mjs'
 import { createHash, randomBytes } from 'node:crypto'
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
@@ -7,14 +8,10 @@ import Redis from 'ioredis'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 
-const dbUrl = new URL(process.env.DATABASE_URL || 'file:///missing')
 const origin = process.env.MYTHOS_OAUTH_ISSUER
 assert.equal(process.env.MYTHOS_RUN_MCP_INTEGRATION, '1', 'Explicit test opt-in required')
-assert.equal(dbUrl.hostname, '127.0.0.1', 'Refusing non-loopback DB')
-assert.equal(dbUrl.port, '55432', 'Refusing non-test DB port')
-assert.equal(dbUrl.pathname, '/mythos_integration_test', 'Refusing non-test database')
+assertLocalTestTargets()
 assert.equal(origin, 'http://localhost:4000', 'Refusing non-local HTTP server')
-assert.equal(process.env.REDIS_URL, 'redis://127.0.0.1:56379', 'Refusing non-test Redis')
 const resource = origin + '/api/integrations/mcp'
 const prisma = new PrismaClient()
 const suffix = randomBytes(10).toString('hex')
