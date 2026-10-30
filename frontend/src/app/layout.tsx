@@ -1,27 +1,32 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
-import { Roboto_Flex, Roboto, IBM_Plex_Mono } from 'next/font/google'
+import localFont from 'next/font/local'
 import './globals.css'
 import 'tippy.js/dist/tippy.css'
 
 // middleware adds a per-request CSP nonce; static HTML cannot carry that nonce.
 export const dynamic = 'force-dynamic'
 
-const robotoFlex = Roboto_Flex({
-  subsets: ['latin'],
-  axes: ['opsz'],
+const robotoFlex = localFont({
+  src: './fonts/RobotoFlex.woff2',
+  weight: '100 1000',
+  display: 'swap',
   variable: '--font-display',
 })
 
-const roboto = Roboto({
-  subsets: ['latin'],
-  weight: ['400', '500', '700'],
+const roboto = localFont({
+  src: './fonts/Roboto.woff2',
+  weight: '400 700',
+  display: 'swap',
   variable: '--font-body',
 })
 
-const ibmPlexMono = IBM_Plex_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500'],
+const ibmPlexMono = localFont({
+  src: [
+    { path: './fonts/IBMPlexMono-Regular.woff2', weight: '400', style: 'normal' },
+    { path: './fonts/IBMPlexMono-Medium.woff2', weight: '500', style: 'normal' },
+  ],
+  display: 'swap',
   variable: '--font-mono',
 })
 
