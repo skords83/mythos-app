@@ -1,0 +1,12 @@
+{
+  "latest": {
+    "digest": "sha256:c59d32aa31ee0da1ea0b2ecff9893986e4d8894dffe82c15ae6bebb7c8d2d4aa",
+    "configDigest": "sha256:3d50a8f0a2d9cf6d67b8cd8a49b081a0c3a29eeabe26d87f0787ce228037173f",
+    "mediaType": "application/vnd.docker.distribution.manifest.v2+json"
+  },
+  "sha-f9fa2e9077447a4dffb459fe6fe1b4609e43a7e0": {
+    "digest": "sha256:c59d32aa31ee0da1ea0b2ecff9893986e4d8894dffe82c15ae6bebb7c8d2d4aa",
+    "configDigest": "sha256:3d50a8f0a2d9cf6d67b8cd8a49b081a0c3a29eeabe26d87f0787ce228037173f",
+    "mediaType": "application/vnd.docker.distribution.manifest.v2+json"
+  }
+}

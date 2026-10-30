@@ -83,6 +83,18 @@ jobs:
             test ! -e /app/node_modules/eslint
             test ! -e /usr/local/bin/npm
           '
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install regression test dependencies
+        run: |
+          cd frontend
+          npm ci
+          npx --no-install prisma generate
+      - name: Test hardened container migration, uploads, auth and MCP
+        run: scripts/security/test-container.sh mythos-security-review:ci
+      - name: Test scan comparison policy
+        run: node --test scripts/security/*.test.mjs
       - name: Export runtime image
         run: docker save --output "${RUNNER_TEMP}/mythos-image.tar" mythos-security-review:ci
       - name: Scan all findings and reject critical vulnerabilities

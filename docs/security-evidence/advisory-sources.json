@@ -1,0 +1,93 @@
+{
+  "checked": "2026-10-30",
+  "advisories": {
+    "CVE-2025-69720": {
+      "debian": "https://security-tracker.debian.org/tracker/CVE-2025-69720",
+      "upstream": [
+        "https://invisible-island.net/ncurses/NEWS.html#index-t20251213"
+      ]
+    },
+    "CVE-2026-102010": {
+      "debian": "https://security-tracker.debian.org/tracker/CVE-2026-102010",
+      "upstream": [
+        "https://gcc.gnu.org/bugzilla/show_bug.cgi?id=127656"
+      ]
+    },
+    "CVE-2026-78409": {
+      "debian": "https://security-tracker.debian.org/tracker/CVE-2026-78409",
+      "upstream": [
+        "https://github.com/util-linux/util-linux/security/advisories/GHSA-8f2p-47x3-43mv"
+      ]
+    },
+    "CVE-2026-85091": {
+      "debian": "https://security-tracker.debian.org/tracker/CVE-2026-85091",
+      "upstream": [
+        "https://github.com/madler/zlib/issues/1310",
+        "https://github.com/madler/zlib/issues/1310#issuecomment-5979623265"
+      ]
+    },
+    "CVE-2026-54369": {
+      "debian": "https://security-tracker.debian.org/tracker/CVE-2026-54369",
+      "upstream": [
+        "https://www.openwall.com/lists/oss-security/2026/06/29/1"
+      ]
+    },
+    "CVE-2026-19499": {
+      "debian": "https://security-tracker.debian.org/tracker/CVE-2026-19499",
+      "upstream": [
+        "https://sourceware.org/git/?p=glibc.git;a=blob;f=advisories/GLIBC-SA-2026-0017"
+      ]
+    },
+    "CVE-2026-76642": {
+      "debian": "https://security-tracker.debian.org/tracker/CVE-2026-76642",
+      "upstream": [
+        "https://github.com/util-linux/util-linux/security/advisories/GHSA-m25x-3hj9-m26f"
+      ]
+    },
+    "CVE-2026-9538": {
+      "debian": "https://security-tracker.debian.org/tracker/CVE-2026-9538",
+      "upstream": [
+        "https://lists.security.metacpan.org/cve-announce/msg/40396448/"
+      ]
+    },
+    "CVE-2026-78410": {
+      "debian": "https://security-tracker.debian.org/tracker/CVE-2026-78410",
+      "upstream": [
+        "https://github.com/util-linux/util-linux/security/advisories/GHSA-rh77-686x-2f2m"
+      ]
+    },
+    "CVE-2026-82560": {
+      "debian": "https://security-tracker.debian.org/tracker/CVE-2026-82560",
+      "upstream": [
+        "https://lists.security.metacpan.org/cve-announce/msg/43682367/"
+      ]
+    },
+    "CVE-2026-5435": {
+      "debian": "https://security-tracker.debian.org/tracker/CVE-2026-5435",
+      "upstream": [
+        "https://sourceware.org/git/?p=glibc.git;a=blob_plain;f=advisories/GLIBC-SA-2026-0011"
+      ]
+    },
+    "CVE-2026-54370": {
+      "debian": "https://security-tracker.debian.org/tracker/CVE-2026-54370",
+      "upstream": [
+        "https://www.openwall.com/lists/oss-security/2026/06/29/1"
+      ]
+    },
+    "CVE-2026-78408": {
+      "debian": "https://security-tracker.debian.org/tracker/CVE-2026-78408",
+      "upstream": [
+        "https://github.com/util-linux/util-linux/security/advisories/GHSA-55fx-f4gg-cfhj"
+      ]
+    },
+    "CVE-2026-95619": {
+      "debian": "https://security-tracker.debian.org/tracker/CVE-2026-95619",
+      "upstream": [
+        "https://github.com/gcc-mirror/gcc/commit/59d235ffa5a69231eb42e5290d52dc8c90d28b7a",
+        "https://github.com/gcc-mirror/gcc/commit/d6f4bc858383e071b1a1e2b303f6622b614c37a1",
+        "https://github.com/gcc-mirror/gcc/commit/638de129df3a22917ff2eda13bd0fd861ca9befc",
+        "https://github.com/gcc-mirror/gcc/commit/200183d4ab5d57575f3dfebc6af3baf649910b9e"
+      ]
+    }
+  }
+}

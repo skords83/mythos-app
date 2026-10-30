@@ -1,0 +1,31 @@
+name: Scheduled container security review
+on:
+  schedule:
+    - cron: '23 5 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rebuild with current stable security updates (no publication)
+        run: docker build --pull --no-cache --build-arg VCS_REF=${{ github.sha }} -t mythos-security:review .
+      - name: Export candidate
+        run: docker save -o "${RUNNER_TEMP}/candidate.tar" mythos-security:review
+      - name: Scan candidate with current vulnerability database
+        run: |
+          docker run --rm -v "${RUNNER_TEMP}:/reports" anchore/grype:v0.121.0 docker-archive:/reports/candidate.tar -o json > "${RUNNER_TEMP}/candidate.json"
+      - name: Compare with retained reviewed baseline
+        run: node scripts/security/compare-scans.mjs docs/security-evidence/pr5-local-grype.json "${RUNNER_TEMP}/candidate.json" "${RUNNER_TEMP}/comparison.json"
+      - name: Retain full evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-review-${{ github.sha }}-${{ github.run_id }}
+          retention-days: 90
+          path: |
+            ${{ runner.temp }}/candidate.json
+            ${{ runner.temp }}/comparison.json
+            docs/security-evidence/pr5-local-grype.json

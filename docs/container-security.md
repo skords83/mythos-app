@@ -104,3 +104,7 @@ findings for the dependency graph; this also includes build-time parts of
 production-listed SDK packages that are absent from the standalone runtime.
 The final image builds successfully. Node, the migration CLI, startup against
 the isolated existing-installation fixture and HTTP `/api/health` were verified.
+
+## Follow-up security audit
+
+See [the 2026-10-30 audit](container-security-audit.md) for registry provenance, all 14 CVE assessments, runtime hardening, regression evidence and Odin/Dockhand operator commands.

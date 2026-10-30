@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
+import { oauthConfig } from '@/lib/oauth-config'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,7 +11,7 @@ export async function POST(request: NextRequest) {
   const userId = await getUserFromRequest(request)
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const origin = request.headers.get('origin')
-  if (!origin || origin !== new URL(request.url).origin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!origin || origin !== oauthConfig().issuer) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const data = await request.json().catch(() => null)
   if (typeof data?.tokenId !== 'string' || data.tokenId.length > 128) return NextResponse.json({ error: 'Invalid tokenId' }, { status: 400 })
   const result = await prisma.oAuthAccessToken.updateMany({
