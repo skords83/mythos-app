@@ -1,0 +1,51 @@
+{
+  "upstream": "https://github.com/google/fonts",
+  "commit": "6157dfaa640ca5738b4d1a7070fe389c3036d7fc",
+  "files": [
+    {
+      "file": "RobotoFlex.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6157dfaa640ca5738b4d1a7070fe389c3036d7fc/ofl/robotoflex/RobotoFlex%5BGRAD%2CXOPQ%2CXTRA%2CYOPQ%2CYTAS%2CYTDE%2CYTFI%2CYTLC%2CYTUC%2Copsz%2Cslnt%2Cwdth%2Cwght%5D.ttf",
+      "upstreamSha256": "9b523f7d82593df0107173849ebb8c817471a1df4b4fb2c3cbf40cfd810c8281",
+      "sha256": "a7e4d4875dc30665b0758521a894c5f23164f3a7dcb9520d737cf01c443ceec5"
+    },
+    {
+      "file": "../../../public/licenses/fonts/robotoflex-OFL.txt",
+      "source": "https://raw.githubusercontent.com/google/fonts/6157dfaa640ca5738b4d1a7070fe389c3036d7fc/ofl/robotoflex/OFL.txt",
+      "sha256": "9cbaed04b20c853f99840efe5dc96956f6f6120ed83a0ade35f9281a2b63e5d0"
+    },
+    {
+      "file": "Roboto.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6157dfaa640ca5738b4d1a7070fe389c3036d7fc/ofl/roboto/Roboto%5Bwdth%2Cwght%5D.ttf",
+      "upstreamSha256": "d7598e12c5dbef095ff8272cfc55da0250bd07fbdecbac8a530b9b277872a134",
+      "sha256": "9e3fb594970f3ba0140aa79b0912fd697606f110f02c78746df47abb1a3f466a"
+    },
+    {
+      "file": "../../../public/licenses/fonts/roboto-OFL.txt",
+      "source": "https://raw.githubusercontent.com/google/fonts/6157dfaa640ca5738b4d1a7070fe389c3036d7fc/ofl/roboto/OFL.txt",
+      "sha256": "061402327a96aadb0bfb694a960ed289ecd38d383e396243831ab81feb109c41"
+    },
+    {
+      "file": "IBMPlexMono-Regular.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6157dfaa640ca5738b4d1a7070fe389c3036d7fc/ofl/ibmplexmono/IBMPlexMono-Regular.ttf",
+      "upstreamSha256": "6a3412f058c7d8dfd9170c41e85ade48e5156ecb89356110ca57a0a27734af46",
+      "sha256": "906eb8301c82b080d374c2298fc6fafa1772a9246d26b36e683904fd253d347a"
+    },
+    {
+      "file": "IBMPlexMono-Medium.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6157dfaa640ca5738b4d1a7070fe389c3036d7fc/ofl/ibmplexmono/IBMPlexMono-Medium.ttf",
+      "upstreamSha256": "a9b4c49bb299e05b5f6c481e7fb5e78943d2793249a0c8874ab574a2d1ea6755",
+      "sha256": "9dbd86eab7a9e172628e8e051b9329df57f5dc268829d761a3cade87c8a025cd"
+    },
+    {
+      "file": "../../../public/licenses/fonts/ibmplexmono-OFL.txt",
+      "source": "https://raw.githubusercontent.com/google/fonts/6157dfaa640ca5738b4d1a7070fe389c3036d7fc/ofl/ibmplexmono/OFL.txt",
+      "sha256": "7e6b2818edbd8f6a01ae80641cc8f16a51080d08fb4e532be3a0b6f74adb07da"
+    }
+  ],
+  "conversion": {
+    "tool": "fontTools",
+    "version": "4.68.0",
+    "operation": "TTFont(input); font.flavor = \"woff2\"; font.save(output)",
+    "changes": "WOFF2 compression only; all glyphs and variable font axes retained"
+  }
+}

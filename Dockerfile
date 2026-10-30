@@ -14,7 +14,8 @@ COPY frontend/ ./
 RUN npx --no-install prisma generate
 ARG NEXT_PUBLIC_SENTRY_DSN
 ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
-RUN DATABASE_URL=postgresql://unused:unused@127.0.0.1:55432/unused npm run build \
+# Keep compilation independent of external font/CDN services.
+RUN --network=none DATABASE_URL=postgresql://unused:unused@127.0.0.1:55432/unused npm run build \
     && mkdir -p public
 
 # Only traced application dependencies and the existing migration tool are shipped.
