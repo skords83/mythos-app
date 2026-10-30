@@ -264,3 +264,7 @@ Die Produktions-Compose-Datei bleibt unverändert. DB und Redis bleiben ausschli
 Zielschutz bleibt strikt: normale lokale Tests akzeptieren weiterhin nur die bisherigen Loopback-Testports und `mythos_integration_test`. Der explizite Containermodus akzeptiert ausschließlich exakt zusammengehörige, eindeutig benannte Wegwerfdienste `mythos-security-<Zeit>-<PID>-db/-redis`, ihre internen Ports und denselben Testdatenbanknamen. Regressionstests lehnen Produktionshosts, falsche Ports, falsche Datenbanknamen, manipulierte Präfixe und fremde Redis-Ziele ab. Der Harness prüft außerdem die tatsächlich konfigurierten Netzanschlüsse und fehlenden Portfreigaben von DB/Redis. Bereitschaftszeitüberschreitungen führen ausdrücklich zum Fehler.
 
 Docker beschreibt [interne Netzwerke und ihre Isolation](https://docs.docker.com/reference/cli/docker/network/create/#network-internal-mode---internal) sowie [geteilte Container-Netzwerkstacks](https://docs.docker.com/engine/network/#container-networks). Der Testzugriff findet jetzt innerhalb dieser Isolation statt; die Isolation wird nicht entfernt, um einen Host-Portzugriff zu ermöglichen.
+
+## Vertiefung der util-linux-Befunde
+
+Die [gezielte Prüfung der vier util-linux-CVEs](util-linux-assessment.md) ergänzt die Versionswidersprüche in den Upstream-Metadaten, die Grenzen von Capability-Drop bei geerbten cgroup-FDs und die zusätzliche SUID-Mitigation für mount/umount. Sie ersetzt keine Prüfung der tatsächlichen Host-Konfiguration auf Odin.

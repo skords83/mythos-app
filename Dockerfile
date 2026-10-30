@@ -39,5 +39,9 @@ COPY --chmod=755 docker-start.sh ./docker-start.sh
 # Startup uses the pinned local Prisma CLI directly; npm/npx are unnecessary here.
 RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
     /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
+# Mythos does not perform privileged mounts. Docker attaches named volumes before
+# the entrypoint starts; Prisma and uploads do not need SUID mount helpers.
+# Keep the Debian libraries/packages intact and retain all CVEs in scan reports.
+RUN chmod a-s /usr/bin/mount /usr/bin/umount
 EXPOSE 4000
 CMD ["/app/docker-start.sh"]
