@@ -6,6 +6,7 @@ import { Chapter, Project } from './types'
 import { extractContent } from '../hooks/useChapters'
 import { parseHtmlToBlocks, blocksToMarkdown, blocksToRtf, buildDocxBlob } from '@/lib/exportConvert'
 import { OVERLAY, MODAL_PANEL, ACCENT, RADIUS, BUTTON_SECONDARY, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED } from '@/lib/theme'
+import { parseExportHtml } from '@/lib/exportHtml'
 import { buildEpubArchive } from '@/lib/exportEpub'
 import { loadProjectExportContent } from '@/lib/exportContent'
 import { MastheadDivider } from './MastheadDivider'
@@ -61,7 +62,7 @@ export function ExportModal({ isOpen, onClose, project, chapters, selectedChapte
     element.innerHTML = `
       <div style="font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto;">
         <h1 style="font-size: 24px; margin-bottom: 20px;">${title}</h1>
-        <div style="line-height: 1.6;">${content}</div>
+        <div style="line-height: 1.6;">${parseExportHtml(content).body.innerHTML}</div>
       </div>
     `
 

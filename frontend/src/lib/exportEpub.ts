@@ -1,3 +1,4 @@
+import { parseExportHtml } from './exportHtml'
 import JSZip from 'jszip'
 
 export function escapeXml(text: string): string {
@@ -41,7 +42,7 @@ async function readImage(src: string): Promise<{ type: string; data: string }> {
 export async function buildEpubArchive(title: string, content: string, coverImage?: string | null): Promise<JSZip> {
     const zip = new JSZip()
     const coverImageData = coverImage ? await readImage(coverImage) : null
-    const doc = new DOMParser().parseFromString(content, 'text/html')
+    const doc = parseExportHtml(content)
     const images: { id: string; type: string; data: string }[] = []
     const sources = new Map<string, string>()
     for (const image of Array.from(doc.body.querySelectorAll('img'))) {

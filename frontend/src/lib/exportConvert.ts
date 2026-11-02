@@ -1,3 +1,4 @@
+import { parseExportHtml } from './exportHtml'
 // C10: shared HTML -> block/run AST used by the Markdown, RTF and DOCX exporters
 // in ExportModal.tsx. All three hand-roll their target format (no turndown/docx/
 // epub-gen dependency), mirroring the project's existing hand-rolled EPUB export
@@ -42,7 +43,7 @@ function collectRuns(node: ParentNode, bold = false, italic = false): TextRun[] 
 }
 
 export function parseHtmlToBlocks(html: string): Block[] {
-  const doc = new DOMParser().parseFromString(html || '', 'text/html')
+  const doc = parseExportHtml(html || '')
   const blocks: Block[] = []
   const walk = (el: ParentNode) => {
     Array.from((el as Element).children ?? []).forEach((child) => {
