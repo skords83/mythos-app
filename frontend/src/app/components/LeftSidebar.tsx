@@ -1,6 +1,6 @@
 'use client'
 
-import { Book, ChevronLeft, ChevronRight, Clock, Download, Flame, Gem, Lightbulb, MapPin, Scroll, Search, Settings, Shield, StickyNote, Users, Home as HomeIcon } from 'lucide-react'
+import { Book, Orbit, ChevronLeft, ChevronRight, Clock, Download, Flame, Gem, Lightbulb, MapPin, Scroll, Search, Settings, Shield, StickyNote, Users, Home as HomeIcon } from 'lucide-react'
 import { NavItem } from './ThemeToggle'
 import { WordProgress } from './WordProgress'
 import { Project } from './types'
@@ -41,7 +41,6 @@ export function LeftSidebar({
     <aside
       className={`${focusMode ? 'w-0 opacity-0 overflow-hidden' : leftSidebarOpen ? 'w-44' : 'w-[72px]'} ${SURFACE_ALT} border-r ${HAIRLINE} flex flex-col transition-[width] duration-200 ${EASE_STANDARD}`}
     >
-      <a href="/universes" className="px-4 pt-3 text-sm underline" title="Gemeinsame Welten und Buchverwendungen">Universen</a>
       <div className={`p-4 border-b ${HAIRLINE}`}>
         {leftSidebarOpen ? (
           <div className="flex items-center justify-between">
@@ -105,6 +104,7 @@ export function LeftSidebar({
       </div>
 
       <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+        {leftSidebarOpen && <p className={`px-4 pb-2 font-mono text-[11px] uppercase tracking-wider ${TEXT_MUTED}`}>Dieses Buch</p>}
         <NavItem icon={Book} label="Manuskript" shortLabel="MANU" active={activeTab === 'manuscript'} onClick={() => setActiveTab('manuscript')} collapsed={!leftSidebarOpen} />
         <NavItem icon={Users} label="Charaktere" shortLabel="CHAR" active={activeTab === 'characters'} onClick={() => setActiveTab('characters')} collapsed={!leftSidebarOpen} />
         <NavItem icon={MapPin} label="Orte" shortLabel="ORTE" active={activeTab === 'places'} onClick={() => setActiveTab('places')} collapsed={!leftSidebarOpen} />
@@ -114,6 +114,10 @@ export function LeftSidebar({
         <NavItem icon={Scroll} label="Lore-Bibel" shortLabel="LORE" active={activeTab === 'lore'} onClick={() => setActiveTab('lore')} collapsed={!leftSidebarOpen} />
         <NavItem icon={Lightbulb} label="Ideenboard" shortLabel="IDEE" active={activeTab === 'ideas'} onClick={() => setActiveTab('ideas')} collapsed={!leftSidebarOpen} />
         <NavItem icon={StickyNote} label="Notizen" shortLabel="NOTE" active={activeTab === 'notes'} onClick={() => setActiveTab('notes')} collapsed={!leftSidebarOpen} />
+        <div className={`pt-3 mt-3 border-t ${HAIRLINE}`}>
+          {leftSidebarOpen && <p className={`px-4 pb-2 font-mono text-[11px] uppercase tracking-wider ${TEXT_MUTED}`}>Buchübergreifend</p>}
+          <NavItem icon={Orbit} label="Universen" shortLabel="UNIV" href={`/universes?projectId=${encodeURIComponent(selectedProject.id)}`} collapsed={!leftSidebarOpen} />
+        </div>
       </nav>
 
       {leftSidebarOpen && selectedProject && (

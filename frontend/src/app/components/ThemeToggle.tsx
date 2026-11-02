@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import React, { useState, useEffect } from 'react'
 import { Moon, Sun, SpellCheck } from 'lucide-react'
 import { RADIUS, HOVER_SURFACE, ACTIVE_SURFACE, HAIRLINE, EASE_STANDARD, ICON_PROPS } from '@/lib/theme'
@@ -92,23 +93,17 @@ interface NavItemProps {
   active?: boolean
   onClick?: () => void
   collapsed?: boolean
+  href?: string
 }
 
-export function NavItem({ icon: Icon, label, shortLabel, active, onClick, collapsed }: NavItemProps) {
-  return (
-    <button
-      onClick={onClick}
-      className={`relative w-full flex items-center ${collapsed ? 'flex-col gap-1 px-2 py-3' : 'gap-3 px-4 py-2.5'} ${RADIUS} transition-colors ${
-        active ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800'
-      }`}
-    >
-      <span
-        className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-indigo-600 origin-center transition-transform duration-200 ${EASE_STANDARD} ${
-          active ? 'scale-y-100' : 'scale-y-0'
-        }`}
-      />
-      <Icon {...ICON_PROPS} />
-      {collapsed ? <MonoLabel muted={!active}>{shortLabel}</MonoLabel> : <span>{label}</span>}
-    </button>
-  )
+export function NavItem({ icon: Icon, label, shortLabel, active, onClick, collapsed, href }: NavItemProps) {
+  const className = `relative w-full flex items-center ${collapsed ? 'flex-col gap-1 px-2 py-3' : 'gap-3 px-4 py-2.5'} ${RADIUS} transition-colors ${active ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800'}`
+  const content = <>
+    <span aria-hidden="true" className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-indigo-600 origin-center transition-transform duration-200 ${EASE_STANDARD} ${active ? 'scale-y-100' : 'scale-y-0'}`} />
+    <Icon {...ICON_PROPS} aria-hidden="true" />
+    {collapsed ? <MonoLabel muted={!active}>{shortLabel}</MonoLabel> : <span>{label}</span>}
+  </>
+  return href
+    ? <Link href={href} onClick={onClick} aria-label={label} aria-current={active ? 'page' : undefined} className={className}>{content}</Link>
+    : <button type="button" onClick={onClick} aria-label={label} className={className}>{content}</button>
 }

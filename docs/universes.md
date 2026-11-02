@@ -206,3 +206,27 @@ Der Browser-Test verwendet denselben Schutz, `JWT_SECRET`, optional
 `MYTHOS_PLAYWRIGHT_MODULE` und `MYTHOS_CHROMIUM_PATH`. Er legt nur eigene Fixtures
 an und entfernt diese anschließend. Playwright/Chromium sind Testwerkzeuge,
 keine zusätzlichen Produktionsabhängigkeiten.
+
+## Gestaltung und Navigation (02.11.2026)
+
+Der Bereich verwendet nun die AppSidebar der Buchübersicht, NavItem (für
+Routen als echte Links), HairlineButton, EmptyState, ThemeToggle und die
+bestehenden Oberflächen-, Eingabe-, Rahmen- und Typografie-Tokens. Im Buch
+steht der Zugang unter „Buchübergreifend“, getrennt von „Dieses Buch“.
+Der optionale `projectId`-Parameter erhält den Rückweg zum geöffneten Buch;
+„Zur Buchübersicht“ führt unabhängig vom Browserverlauf nach `/dashboard`.
+
+Die Universum-Auswahl ist von der Anlage getrennt. „Neues Universum“ öffnet
+einen begrenzten Formularbereich und fokussiert den Titel. Speichern ist per
+Formularabsendung möglich; Fehler erhalten den Entwurf. Die Detailwerkzeuge
+bleiben auf derselben Route unterhalb des ausgewählten Universums. Es gibt
+keine separate bestehende Universum-Detailroute. Fachliche API-Aufrufe und
+Berechtigungen bleiben unverändert.
+
+Zusätzliche Regression: `src/app/universes/__tests__/page.test.tsx` und
+`scripts/test-universe-design.cjs`. Letzteres verwendet ausschließlich
+abgefangene API-Testantworten, prüft Buch-/Dashboard-Rückwege, Anlage,
+Auswahl, Fehler/Wiederholung, Tastaturfokus und beide Themes bei 1440 × 1000
+und 390 × 844. Playwright wird über `MYTHOS_PLAYWRIGHT_MODULE` bereitgestellt;
+Screenshots landen in `MYTHOS_SCREENSHOT_DIR` (Standard
+`/tmp/mythos-universe-design`). Dieser Lauf ersetzt keinen Datenbanktest.
