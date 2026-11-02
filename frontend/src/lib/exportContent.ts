@@ -1,13 +1,13 @@
 import type { Chapter } from '@/app/components/types'
 import { extractContent } from '@/app/hooks/useChapters'
-import { escapeXml } from './exportEpub'
+import { type EpubChapter, escapeXml } from './exportEpub'
 
 // The sidebar list deliberately omits content. Export must load every page and
 // every chapter, independently of which chapters were opened in the editor.
-export async function loadProjectExportContent(
+export async function loadProjectExportChapters(
   projectId: string,
   currentChapter?: { id: string; title: string; content: string },
-): Promise<string> {
+): Promise<EpubChapter[]> {
   const chapters: Chapter[] = []
   let page = 1
   let totalPages = 1
@@ -23,7 +23,7 @@ export async function loadProjectExportContent(
     page++
   } while (page <= totalPages)
 
-  const parts: string[] = []
+  const parts: EpubChapter[] = []
   for (const chapter of chapters.sort((a, b) => a.order - b.order)) {
     let full: Pick<Chapter, 'title' | 'content'>
     if (currentChapter?.id === chapter.id) {
@@ -36,7 +36,15 @@ export async function loadProjectExportContent(
         throw new Error(`Der Inhalt von Kapitel „${chapter.title}“ fehlt beim Export.`)
       }
     }
-    parts.push(`<h2>${escapeXml(full.title)}</h2>${extractContent(full.content)}`)
+    parts.push({ title: full.title, content: extractContent(full.content) })
   }
-  return parts.join('<br/><br/>')
+  return parts
+}
+
+export async function loadProjectExportContent(
+  projectId: string,
+  currentChapter?: { id: string; title: string; content: string },
+): Promise<string> {
+  const chapters = await loadProjectExportChapters(projectId, currentChapter)
+  return chapters.map(chapter => `<h2>${escapeXml(chapter.title)}</h2>${chapter.content}`).join('<br/><br/>')
 }

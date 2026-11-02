@@ -45,3 +45,45 @@ test('exports text-only content as valid XHTML', async () => {
   parseXml(await zip.file('OEBPS/content.xhtml')!.async('string'))
   expect(global.fetch).not.toHaveBeenCalled()
 })
+
+test.each([true, false])('chapter navigation remains complete (visible TOC: %s)', async includeTableOfContents => {
+  const chapters = [
+    { title: 'Ä & <Anfang> "eins"', content: '<p>Erster Text</p>' },
+    { title: 'Gleich', content: '<h2>Keine neue Kapitelgrenze</h2><p>Zweiter Text</p>' },
+    { title: 'Gleich', content: '<p><span data-character-mention="" data-label="Jörg">@Jörg</span></p>' },
+  ]
+  const before = JSON.stringify(chapters)
+  const archive = await buildEpubArchive('Buchtitel', chapters, null, { includeTableOfContents })
+  const bytes = await archive.generateAsync({ type: 'uint8array' })
+  const zip = await (await import('jszip')).default.loadAsync(bytes)
+  const opf = parseXml(await zip.file('OEBPS/content.opf')!.async('string'))
+  expect(opf.documentElement.getAttribute('version')).toBe('2.0')
+  const ncx = parseXml(await zip.file('OEBPS/toc.ncx')!.async('string'))
+  const targets = Array.from(ncx.querySelectorAll('navPoint content')).map(node => node.getAttribute('src')!)
+  expect(Array.from(ncx.querySelectorAll('navLabel text')).map(node => node.textContent)).toEqual(chapters.map(c => c.title))
+  expect(new Set(targets).size).toBe(3)
+  const spine = Array.from(opf.querySelectorAll('itemref')).map(node => node.getAttribute('idref'))
+  expect(spine).toEqual([...(includeTableOfContents ? ['toc'] : []), 'chapter-1', 'chapter-2', 'chapter-3'])
+  for (const [index, target] of targets.entries()) {
+    const [file, id] = target.split('#')
+    const doc = parseXml(await zip.file(`OEBPS/${file}`)!.async('string'))
+    expect(doc.getElementById(id)?.textContent).toBe(chapters[index].title)
+    expect(opf.querySelector(`item[id="chapter-${index + 1}"]`)?.getAttribute('href')).toBe(file)
+  }
+  expect(zip.file('OEBPS/toc.xhtml') !== null).toBe(includeTableOfContents)
+  expect(opf.querySelector('reference[type="toc"]') !== null).toBe(includeTableOfContents)
+  if (includeTableOfContents) {
+    const toc = parseXml(await zip.file('OEBPS/toc.xhtml')!.async('string'))
+    expect(Array.from(toc.querySelectorAll('a')).map(a => a.getAttribute('href'))).toEqual(targets)
+  }
+  expect(await zip.file('OEBPS/chapter-3.xhtml')!.async('string')).toContain('<p xmlns="http://www.w3.org/1999/xhtml">Jörg</p>')
+  expect(JSON.stringify(chapters)).toBe(before)
+  if (process.env.EPUB_NAV_ARTIFACT_DIR) require('node:fs').writeFileSync(`${process.env.EPUB_NAV_ARTIFACT_DIR}/mythos-toc-${includeTableOfContents}.epub`, bytes)
+})
+
+test.each([true, false])('one chapter works and an empty project fails clearly (TOC: %s)', async includeTableOfContents => {
+  const zip = await buildEpubArchive('Buch', [{ title: 'Leer', content: '' }], null, { includeTableOfContents })
+  const ncx = parseXml(await zip.file('OEBPS/toc.ncx')!.async('string'))
+  expect(ncx.querySelectorAll('navPoint')).toHaveLength(1)
+  await expect(buildEpubArchive('Buch', [], null, { includeTableOfContents })).rejects.toThrow('keine Kapitel')
+})

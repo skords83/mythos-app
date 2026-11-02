@@ -39,31 +39,55 @@ async function readImage(src: string): Promise<{ type: string; data: string }> {
   }
 }
 
-export async function buildEpubArchive(title: string, content: string, coverImage?: string | null): Promise<JSZip> {
+export interface EpubChapter {
+  title: string
+  content: string
+}
+
+export async function buildEpubArchive(
+  title: string,
+  content: string | EpubChapter[],
+  coverImage?: string | null,
+  { includeTableOfContents = true }: { includeTableOfContents?: boolean } = {},
+): Promise<JSZip> {
+    const chapters = typeof content === 'string' ? [{ title, content }] : content
+    if (!chapters.length) throw new Error('Es sind keine Kapitel für den EPUB-Export vorhanden.')
+    // IDs and filenames depend on position, never on potentially duplicate titles.
+    const entries = chapters.map((chapter, index) => ({
+      ...chapter, id: `chapter-${index + 1}`, href: index === 0 ? 'content.xhtml' : `chapter-${index + 1}.xhtml`,
+    }))
     const zip = new JSZip()
     const coverImageData = coverImage ? await readImage(coverImage) : null
-    const doc = parseExportHtml(content)
     const images: { id: string; type: string; data: string }[] = []
     const sources = new Map<string, string>()
-    for (const image of Array.from(doc.body.querySelectorAll('img'))) {
-      const src = image.getAttribute('src') || ''
-      let path = sources.get(src)
-      if (!path) {
-        const asset = { id: `img${images.length}`, ...await readImage(src) }
-        images.push(asset)
-        path = `images/${asset.id}.${asset.type}`
-        sources.set(src, path)
+    for (const entry of entries) {
+      const doc = parseExportHtml(entry.content)
+      for (const image of Array.from(doc.body.querySelectorAll('img'))) {
+        const src = image.getAttribute('src') || ''
+        let path = sources.get(src)
+        if (!path) {
+          const asset = { id: `img${images.length}`, ...await readImage(src) }
+          images.push(asset)
+          path = `images/${asset.id}.${asset.type}`
+          sources.set(src, path)
+        }
+        image.setAttribute('src', path)
+        image.removeAttribute('srcset')
+        image.removeAttribute('loading')
+        if (!image.hasAttribute('alt')) image.setAttribute('alt', 'Bild')
+        image.style.maxWidth = '100%'
+        image.style.height = 'auto'
       }
-      image.setAttribute('src', path)
-      image.removeAttribute('srcset')
-      image.removeAttribute('loading')
-      if (!image.hasAttribute('alt')) image.setAttribute('alt', 'Bild')
-      image.style.maxWidth = '100%'
-      image.style.height = 'auto'
+      // HTML serialization leaves img/br tags open and named entities invalid in XML.
+      const serializer = new XMLSerializer()
+      const processedContent = Array.from(doc.body.childNodes).map(node => serializer.serializeToString(node)).join('')
+      const coverHtml = coverImageData && entry === entries[0] ? `<div style="text-align: center; margin: 20px 0;"><img src="cover.${coverImageData.type}" alt="Cover" style="max-width: 200px;"/></div>` : ''
+      const bookHeading = entry === entries[0] && title !== entry.title ? `<h1>${escapeXml(title)}</h1>` : ''
+      entry.content = `${bookHeading}${coverHtml}<h1 id="${entry.id}">${escapeXml(entry.title)}</h1>${processedContent}`
     }
-    // HTML serialization leaves img/br tags open and named entities invalid in XML.
-    const serializer = new XMLSerializer()
-    const processedContent = Array.from(doc.body.childNodes).map(node => serializer.serializeToString(node)).join('')
+    const xhtml = (pageTitle: string, body: string) => `<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="de">
+<head><title>${escapeXml(pageTitle)}</title></head><body>${body}</body></html>`
     zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' })
     zip.file('META-INF/container.xml', `<?xml version="1.0"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
@@ -82,14 +106,17 @@ export async function buildEpubArchive(title: string, content: string, coverImag
     <dc:identifier id="BookId">${bookId}</dc:identifier>
   </metadata>
   <manifest>
-    <item id="content" href="content.xhtml" media-type="application/xhtml+xml"/>
+    ${entries.map(entry => `<item id="${entry.id}" href="${entry.href}" media-type="application/xhtml+xml"/>`).join('\n    ')}
+    ${includeTableOfContents ? '<item id="toc" href="toc.xhtml" media-type="application/xhtml+xml"/>' : ''}
     <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
     ${images.map(img => `<item id="${img.id}" href="images/${img.id}.${img.type}" media-type="image/${img.type}"/>`).join('\n    ')}
     ${coverImageData ? `<item id="cover-image" href="cover.${coverImageData.type}" media-type="image/${coverImageData.type}"/>` : ''}
   </manifest>
   <spine toc="ncx">
-    <itemref idref="content"/>
+    ${includeTableOfContents ? '<itemref idref="toc"/>' : ''}
+    ${entries.map(entry => `<itemref idref="${entry.id}"/>`).join('\n    ')}
   </spine>
+  ${includeTableOfContents ? '<guide><reference type="toc" title="Inhaltsverzeichnis" href="toc.xhtml"/></guide>' : ''}
 </package>`
 
     const tocNcx = `<?xml version="1.0" encoding="UTF-8"?>
@@ -102,24 +129,12 @@ export async function buildEpubArchive(title: string, content: string, coverImag
   </head>
   <docTitle><text>${escapeXml(title)}</text></docTitle>
   <navMap>
-    <navPoint id="navpoint-1" playOrder="1">
-      <navLabel><text>${escapeXml(title)}</text></navLabel>
-      <content src="content.xhtml"/>
-    </navPoint>
+    ${entries.map((entry, index) => `<navPoint id="navpoint-${index + 1}" playOrder="${index + 1}">
+      <navLabel><text>${escapeXml(entry.title)}</text></navLabel>
+      <content src="${entry.href}#${entry.id}"/>
+    </navPoint>`).join('\n    ')}
   </navMap>
 </ncx>`
-
-    const coverHtml = coverImageData ? `<div style="text-align: center; margin: 20px 0;"><img src="cover.${coverImageData.type}" alt="Cover" style="max-width: 200px;"/></div>` : ''
-
-    const contentXhtml = `<?xml version="1.0" encoding="UTF-8"?>
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head><title>${escapeXml(title)}</title></head>
-<body>
-<h1>${escapeXml(title)}</h1>
-${coverHtml}
-${processedContent}
-</body>
-</html>`
 
     // Cover-Bild hinzufügen
     if (coverImageData) {
@@ -143,7 +158,10 @@ ${processedContent}
 
     zip.file('OEBPS/content.opf', contentOpf)
     zip.file('OEBPS/toc.ncx', tocNcx)
-    zip.file('OEBPS/content.xhtml', contentXhtml)
+    for (const entry of entries) zip.file(`OEBPS/${entry.href}`, xhtml(entry.title, entry.content))
+    if (includeTableOfContents) {
+      zip.file('OEBPS/toc.xhtml', xhtml('Inhaltsverzeichnis', `<h1>Inhaltsverzeichnis</h1><ol>${entries.map(entry => `<li><a href="${entry.href}#${entry.id}">${escapeXml(entry.title)}</a></li>`).join('')}</ol>`))
+    }
 
     return zip
 }

@@ -7,8 +7,8 @@ import { extractContent } from '../hooks/useChapters'
 import { parseHtmlToBlocks, blocksToMarkdown, blocksToRtf, buildDocxBlob } from '@/lib/exportConvert'
 import { OVERLAY, MODAL_PANEL, ACCENT, RADIUS, BUTTON_SECONDARY, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED } from '@/lib/theme'
 import { parseExportHtml } from '@/lib/exportHtml'
-import { buildEpubArchive } from '@/lib/exportEpub'
-import { loadProjectExportContent } from '@/lib/exportContent'
+import { type EpubChapter, buildEpubArchive } from '@/lib/exportEpub'
+import { loadProjectExportContent, loadProjectExportChapters } from '@/lib/exportContent'
 import { MastheadDivider } from './MastheadDivider'
 
 interface ExportModalProps {
@@ -50,6 +50,7 @@ function downloadTextFile(filename: string, mimeType: string, text: string) {
 export function ExportModal({ isOpen, onClose, project, chapters, selectedChapter, editorContent }: ExportModalProps) {
   const [exportType, setExportType] = useState<'project' | 'chapter'>(selectedChapter ? 'chapter' : 'project')
   const [format, setFormat] = useState<ExportFormat>('pdf')
+  const [includeTableOfContents, setIncludeTableOfContents] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
 
@@ -77,8 +78,8 @@ export function ExportModal({ isOpen, onClose, project, chapters, selectedChapte
     await html2pdf().set(opt).from(element).save()
   }
 
-  const exportEpub = async (title: string, content: string) => {
-    const zip = await buildEpubArchive(title, content, project!.coverImage)
+  const exportEpub = async (title: string, content: EpubChapter[]) => {
+    const zip = await buildEpubArchive(title, content, project!.coverImage, { includeTableOfContents })
     downloadBlob(`${sanitizeFilename(title)}.epub`, await zip.generateAsync({ type: 'blob', mimeType: 'application/epub+zip' }))
   }
 
@@ -98,13 +99,17 @@ export function ExportModal({ isOpen, onClose, project, chapters, selectedChapte
     setIsExporting(true)
     setExportError(null)
     try {
+      if (format === 'epub') {
+        const current = selectedChapter ? { id: selectedChapter.id, title: selectedChapter.title, content: editorContent ?? extractContent(selectedChapter.content) } : undefined
+        const entries = exportType === 'chapter' && current ? [current] : await loadProjectExportChapters(project!.id, current)
+        await exportEpub(exportType === 'chapter' && current ? current.title : project!.title, entries)
+        return
+      }
       const { title, html } = await gatherContent()
 
       if (format === 'pdf') {
         const coverImg = project!.coverImage ? `<img src="${project!.coverImage}" style="max-width: 300px; float: right; margin-left: 20px;"/>` : ''
         await exportPDF(title, `${coverImg}${html}`)
-      } else if (format === 'epub') {
-        await exportEpub(title, html)
       } else if (format === 'markdown') {
         const blocks = parseHtmlToBlocks(html)
         downloadTextFile(`${sanitizeFilename(title)}.md`, 'text/markdown', blocksToMarkdown(blocks, title))
@@ -189,6 +194,13 @@ export function ExportModal({ isOpen, onClose, project, chapters, selectedChapte
               ))}
             </div>
           </div>
+
+          {format === 'epub' && (
+            <label className={`flex items-center gap-2 text-sm ${TEXT_SECONDARY}`}>
+              <input type="checkbox" checked={includeTableOfContents} onChange={event => setIncludeTableOfContents(event.target.checked)} />
+              Inhaltsverzeichnis einfügen
+            </label>
+          )}
 
           {exportError && (
             <p className="text-sm text-red-600 dark:text-red-400">{exportError}</p>
