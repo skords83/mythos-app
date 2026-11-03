@@ -1,3 +1,4 @@
+import { inspectChapter } from '@/lib/chapter-text-edits'
 import { bookEntityScope } from '@/lib/universe-scope'
 import type { RelatableEntityType } from '@prisma/client'
 import { readMcpRelations } from '@/lib/mcp-relations'
@@ -63,7 +64,11 @@ export async function GET(request: NextRequest) {
         where: { id, projectId },
         select: { id: true, title: true, content: true, order: true, updatedAt: true },
       })
-      return chapter ? ok(chapter) : error('Kapitel nicht gefunden', 404)
+      if (!chapter) return error('Kapitel nicht gefunden', 404)
+      let document
+      try { document = inspectChapter(chapter.content) }
+      catch (cause) { return error((cause as Error).message, 422) }
+      return ok({ ...chapter, contentFormat: document.format, text: document.text, segments: document.segments })
     }
     const kind = ({ items: 'ITEM', factions: 'FACTION', characters: 'CHARACTER', places: 'PLACE', lore: 'LORE_ENTRY' } as Record<string, RelatableEntityType>)[action ?? '']
     const scope = kind ? await bookEntityScope(prisma, projectId, kind) : { projectId }

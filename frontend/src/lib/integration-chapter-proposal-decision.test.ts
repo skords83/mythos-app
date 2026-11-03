@@ -71,3 +71,30 @@ test('approval preserves metadata in legacy HTML chapter wrappers', async () => 
   expect((await decideChapterProposal('u', 'p', 'approve')).status).toBe(200)
   expect(tx.chapter.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ content: { content: '<p>Neu</p>', metadata: { layout: 'legacy' } } }) }))
 })
+
+test('targeted approval recomputes edits and preserves anchors instead of trusting preview', async () => {
+  const original = '<p>Alt <mark data-comment-id="c">Anker</mark> Ende.</p>'
+  const { proposal, tx } = setup('PENDING', original)
+  proposal.expiresAt = new Date('2099-01-01')
+  ;(proposal as { content: unknown }).content = { type: 'chapterTextEdits', edits: [
+    { nodeId: 'html.0.0', before: 'Alt ', after: 'Neu ' },
+    { nodeId: 'html.0.2', before: ' Ende.', after: ' Schluss.' },
+  ], preview: 'Do not trust this preview' }
+  expect((await decideChapterProposal('u', 'p', 'approve')).status).toBe(200)
+  expect(tx.chapter.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+    where: { id: 'c', updatedAt: revision },
+    data: expect.objectContaining({ content: '<p>Neu <mark data-comment-id="c">Anker</mark> Schluss.</p>' }),
+  }))
+})
+test('targeted approval rechecks protected ranges and exact before text', async () => {
+  for (const edit of [
+    { nodeId: 'html.0.1.0', before: 'Anker', after: 'Neu' },
+    { nodeId: 'html.0.0', before: 'Wrong', after: 'Neu' },
+  ]) {
+    const { proposal, tx } = setup('PENDING', '<p>Alt <mark data-comment-id="c">Anker</mark></p>')
+    proposal.expiresAt = new Date('2099-01-01')
+    ;(proposal as { content: unknown }).content = { type: 'chapterTextEdits', edits: [edit] }
+    expect((await decideChapterProposal('u', 'p', 'approve')).status).toBe(409)
+    expect(tx.chapter.updateMany).not.toHaveBeenCalled()
+  }
+})

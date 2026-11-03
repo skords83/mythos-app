@@ -24,7 +24,7 @@ const tools = actions.map((action) => ({
   description: ({
     projects: 'List your Mythos projects',
     chapters: 'List chapter metadata for a project',
-    chapter: 'Read a chapter with its Tiptap JSON content',
+    chapter: 'Read the current saved chapter (not an older version): full readable text, original content, contentFormat, revision-local text segments with protected flags. Large results return serialized JSON chunks: concatenate chunk in page order and JSON.parse; use nextPage and expectedUpdatedAt for continuation. Never treat a chunk as a complete chapter.',
     characters: 'List visible characters for a project',
     places: 'List visible places for a project',
     timeline: 'List visible timeline events with IDs, updatedAt, all editable fields, chapterId and visible relations. Paginated in manual order then ID. Read evidence separately with entityType EVENT.',
@@ -36,7 +36,7 @@ const tools = actions.map((action) => ({
     type: 'object',
     properties: {
       ...(action === 'projects' ? {} : { projectId: { type: 'string' } }),
-      ...(action === 'chapter' ? { id: { type: 'string' } } : {}),
+      ...(action === 'chapter' ? { id: { type: 'string' }, expectedUpdatedAt: { type: 'string', format: 'date-time' } } : {}),
       page: { type: 'integer', minimum: 1, maximum: 10000 },
       limit: { type: 'integer', minimum: 1, maximum: 100 },
     },
@@ -47,7 +47,7 @@ const tools = actions.map((action) => ({
 
 const proposalTool = {
   name: 'mythos_propose_chapter_update',
-  description: 'Propose a replacement title and Tiptap document for an owned chapter. Read the chapter first and pass its updatedAt as expectedUpdatedAt. Creates a pending proposal only; the user must review and approve it in Mythos before the chapter changes. Proposals expire after 24 hours.',
+  description: 'Propose a title and content for an owned chapter. Prefer content {type: chapterTextEdits, edits: [{nodeId, before, after}]} using exact segments from mythos_chapter; preserves existing storage, formatting and metadata. after must be nonempty. Protected segments require editing in Mythos; edits outside them are allowed. Legacy full replacement accepts only restricted Tiptap prose and rejects protected chapters. Read the chapter first and pass its updatedAt as expectedUpdatedAt. Creates a pending proposal only; the user must review and approve it in Mythos before the chapter changes. Proposals expire after 24 hours.',
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
   securitySchemes: [{ type: 'oauth2', scopes: ['mythos:read', 'mythos:write'] }],
   _meta: { securitySchemes: [{ type: 'oauth2', scopes: ['mythos:read', 'mythos:write'] }] },
@@ -58,7 +58,10 @@ const proposalTool = {
       chapterId: { type: 'string', minLength: 1, maxLength: 128 },
       expectedUpdatedAt: { type: 'string', format: 'date-time' },
       title: { type: 'string', minLength: 1, maxLength: 300 },
-      content: { type: 'object', properties: { type: { const: 'doc' }, content: { type: 'array', items: { type: 'object' } } }, required: ['type', 'content'] },
+      content: { oneOf: [
+        { type: 'object', additionalProperties: false, properties: { type: { const: 'doc' }, content: { type: 'array', items: { type: 'object' } } }, required: ['type', 'content'] },
+        { type: 'object', additionalProperties: false, properties: { type: { const: 'chapterTextEdits' }, edits: { type: 'array', minItems: 1, maxItems: 1000, items: { type: 'object', additionalProperties: false, properties: { nodeId: { type: 'string' }, before: { type: 'string' }, after: { type: 'string', minLength: 1 } }, required: ['nodeId', 'before', 'after'] } } }, required: ['type', 'edits'] },
+      ] },
     },
     required: ['projectId', 'chapterId', 'expectedUpdatedAt', 'title', 'content'],
   },
@@ -153,7 +156,7 @@ export async function POST(request: NextRequest) {
   if (typeof name !== 'string'  || !name.startsWith('mythos_') || !actions.includes(name.slice(7) as Action)) return fail(msg.id, -32602, 'Unknown tool')
   if (!args || typeof args !== 'object' || Array.isArray(args)) return fail(msg.id, -32602, 'Invalid arguments')
   const action = name.slice(7) as Action
-  const allowed = action === 'projects' ? ['page', 'limit'] : action === 'chapter' ? ['projectId', 'id', 'page', 'limit'] : ['projectId', 'page', 'limit']
+  const allowed = action === 'projects' ? ['page', 'limit'] : action === 'chapter' ? ['projectId', 'id', 'page', 'limit', 'expectedUpdatedAt'] : ['projectId', 'page', 'limit']
   if (Object.keys(args).some((k) => !allowed.includes(k))) return fail(msg.id, -32602, 'Unexpected argument')
   if (action !== 'projects' && (typeof args.projectId !== 'string' || !args.projectId)) return fail(msg.id, -32602, 'projectId required')
   if (action === 'chapter' && (typeof args.id !== 'string' || !args.id)) return fail(msg.id, -32602, 'id required')
@@ -166,9 +169,23 @@ export async function POST(request: NextRequest) {
   let response: Response
   try { response = await readIntegration(new NextRequest(url, { headers: { authorization: request.headers.get('authorization') || '' } })) } catch { return fail(msg.id, -32603, 'Data service unavailable') }
   if (response.status === 401) return new NextResponse(null, { status: 401, headers: { 'Cache-Control': 'no-store', 'WWW-Authenticate': `Bearer resource_metadata="${oauthConfig().metadata}", error="invalid_token"` } })
-  const raw = await response.text()
+  let raw = await response.text()
+  if (!raw.trim()) return rpc(msg.id, { content: [{ type: 'text', text: 'Chapter data service returned an empty response; retry or report this error.' }], isError: true })
+  if (action === 'chapter' && response.ok) {
+    let data
+    try { data = JSON.parse(raw) } catch { return fail(msg.id, -32603, 'Invalid chapter response') }
+    if (!data || typeof data !== 'object' || typeof data.id !== 'string' || typeof data.updatedAt !== 'string') return fail(msg.id, -32603, 'Invalid chapter response: missing identity or revision')
+    if (args.expectedUpdatedAt !== undefined && args.expectedUpdatedAt !== data.updatedAt) return rpc(msg.id, { content: [{ type: 'text', text: 'Chapter revision changed; restart the read at page 1.' }], isError: true })
+    if (raw.length > 16000 || (args.page ?? 1) > 1) {
+      const page = args.page ?? 1
+      if (page > 1 && typeof args.expectedUpdatedAt !== 'string') return fail(msg.id, -32602, 'Continuation requires expectedUpdatedAt from page 1')
+      const totalPages = Math.ceil(raw.length / 16000)
+      if (page > totalPages) return fail(msg.id, -32602, 'Chapter page out of range')
+      raw = JSON.stringify({ id: data.id, updatedAt: data.updatedAt, serialization: 'json-chunks', page, totalPages, nextPage: page < totalPages ? page + 1 : null, chunk: raw.slice((page - 1) * 16000, page * 16000) })
+    }
+  }
   const tooLarge = () => rpc(msg.id, {
-    content: [{ type: 'text', text: 'Result exceeds 256 KiB. Reduce limit for lists; oversized single chapters cannot be returned.' }],
+    content: [{ type: 'text', text: 'Result exceeds 256 KiB. Reduce limit for lists; read chapters using the documented page continuation.' }],
     isError: true,
   })
   if (Buffer.byteLength(raw, 'utf8') > 262144) return tooLarge()

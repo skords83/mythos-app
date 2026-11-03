@@ -189,3 +189,25 @@ test('registers all universe tools with their schemas and OAuth capabilities', a
  const tools=(await response.json()).result.tools
  for(const tool of universeTools) expect(tools.find((t:{name:string})=>t.name===tool.name)).toEqual(tool)
 })
+
+test('chapter chunks reconstruct all Unicode and markup with revision-bound continuation', async () => {
+  const chapter = { id: 'c', updatedAt: '2026-01-01T00:00:00.000Z', content: '<p>Ä 🦉 &amp; </p>'.repeat(20000) }
+  read.mockImplementation(async () => Response.json(chapter))
+  const call = async (args: object) => (await POST(request({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'mythos_chapter', arguments: { projectId: 'p', id: 'c', ...args } } }))).json()
+  let page = JSON.parse((await call({})).result.content[0].text)
+  let all = page.chunk
+  expect((await call({ page: 2 })).error.message).toMatch(/expectedUpdatedAt/)
+  expect((await call({ page: 2, expectedUpdatedAt: 'old' })).result.isError).toBe(true)
+  while (page.nextPage) {
+    const response = await call({ page: page.nextPage, expectedUpdatedAt: chapter.updatedAt })
+    expect(Buffer.byteLength(JSON.stringify(response))).toBeLessThan(262144)
+    page = JSON.parse(response.result.content[0].text)
+    all += page.chunk
+  }
+  expect(JSON.parse(all)).toEqual(chapter)
+})
+test('empty upstream response is an explicit tool error', async () => {
+  read.mockResolvedValueOnce(new Response(''))
+  const response = await POST(request({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'mythos_chapter', arguments: { projectId: 'p', id: 'c' } } }))
+  expect((await response.json()).result).toMatchObject({ isError: true, content: [{ type: 'text', text: expect.stringContaining('empty response') }] })
+})

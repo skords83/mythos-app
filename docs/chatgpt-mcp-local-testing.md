@@ -154,3 +154,13 @@ Projekten. Erfolgsantworten enthalten `id` und `updatedAt`. Bestehende Scopes
 bleiben unverändert. Zum Einsatz muss die neue Serverversion deployt werden;
 eine neue OAuth-Autorisierung ist nur für bisher reine Lese-Grants notwendig.
 Clients müssen ihre Werkzeugliste aktualisieren.
+
+### Kapitel lesen und strukturerhaltend ändern
+
+Für Kapitel mit Verknüpfungen oder Kommentaren den neuen Modus
+`content: {type: "chapterTextEdits", edits: [{nodeId, before, after}]}` verwenden.
+`mythos_chapter` liefert dafür revisionsgebundene `segments` sowie expliziten
+Lesetext. Große Antworten sind vollständig über revisionierte Chunks abrufbar.
+Details, Grenzen und Fehlerdiagnose: [Kapitel-MCP-Vertrag](chapter-mcp-repair.md).
+Zusätzlicher echter HTTP-/SDK-Test: `scripts/test-chapter-mcp-http.mjs` (gleiche
+isolierte Umgebung und Opt-in wie oben).
