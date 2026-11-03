@@ -15,6 +15,7 @@ trap cleanup EXIT
 password=$(node -e "console.log(require('crypto').randomBytes(24).toString('hex'))")
 export DATABASE_URL="postgresql://mythos_test:$password@$prefix-db:5432/mythos_integration_test"
 export REDIS_URL="redis://$prefix-redis:6379"
+export JWT_SECRET="$password"
 export MYTHOS_OAUTH_ISSUER=http://localhost:4000
 export MYTHOS_RUN_MCP_INTEGRATION=1
 export MYTHOS_SECURITY_CONTAINER_TEST=1
@@ -42,7 +43,7 @@ run_test() {
     -v "$PWD/frontend/prisma:/tests/frontend/prisma:ro" \
     -v "$PWD/frontend/scripts:/tests/frontend/scripts:ro" \
     -v "$PWD/scripts/security:/tests/scripts/security:ro" \
-    -e DATABASE_URL -e REDIS_URL -e MYTHOS_OAUTH_ISSUER -e MYTHOS_RUN_MCP_INTEGRATION \
+    -e DATABASE_URL -e REDIS_URL -e JWT_SECRET -e MYTHOS_OAUTH_ISSUER -e MYTHOS_RUN_MCP_INTEGRATION \
     -e MYTHOS_SECURITY_CONTAINER_TEST -e MYTHOS_SECURITY_TEST_PREFIX \
     -e MYTHOS_SECURITY_FIXTURE=1 -e CHECKPOINT_DISABLE=1 "$image" "$@"
 }
@@ -88,6 +89,7 @@ NODE
 # Share only the app's network namespace: HTTP stays on localhost:4000, while
 # DB/Redis use internal DNS exactly as the production app does. No Docker socket.
 run_test "container:$prefix-app" frontend/scripts/test-mcp-http.mjs
+run_test "container:$prefix-app" frontend/scripts/test-chapter-mcp-http.mjs
 "$engine" exec "$prefix-app" node -e "require('fs').writeFileSync('/app/public/uploads/restart-fixture','persisted',{mode:0o600})"
 "$engine" restart "$prefix-app"
 wait_for_app

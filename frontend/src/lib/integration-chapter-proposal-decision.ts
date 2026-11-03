@@ -1,3 +1,4 @@
+import { inspectChapter, isTextEdits } from './chapter-text-edits'
 import { ChapterWriteConflict, isChapterWriteConflict, nextChapterRevision } from './chapter-write-conflict'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
@@ -63,13 +64,19 @@ export async function decideChapterProposal(
         title: proposal.title,
         content: proposal.content,
       })
-      if (!checked.ok) return { status: 409, error: 'Stored proposal is invalid' } as const
+      if (!checked.ok) return { status: 409, error: 'Stored proposal is invalid: ' + checked.error } as const
 
-      if (hasProtectedChapterContent(current.content)) {
-        return { status: 409, error: 'Chapter contains protected mentions or comments' } as const
+      const targeted = isTextEdits(checked.value.content)
+      if (!targeted && hasProtectedChapterContent(current.content)) {
+        return { status: 409, error: 'Full replacement would discard protected mentions or comments. Create a new chapterTextEdits proposal using current chapter segments.' } as const
       }
 
-      const html = proposalToChapterHtml(checked.value.content)
+      let patched: unknown
+      if (isTextEdits(checked.value.content)) {
+        try { patched = inspectChapter(current.content).apply(checked.value.content.edits) }
+        catch (error) { return { status: 409, error: (error as Error).message } as const }
+      }
+      const html = targeted ? '' : proposalToChapterHtml(checked.value.content)
       if (html === null) return { status: 409, error: 'Unsupported proposal formatting' } as const
 
       if (decision === 'resubmit') {
@@ -87,7 +94,7 @@ export async function decideChapterProposal(
         data: { status: 'APPLIED', appliedAt: new Date() },
       })
       if (claimed.count !== 1) return { status: 409, error: 'Proposal already decided' } as const
-      const storedContent = current.content && typeof current.content === 'object' && !Array.isArray(current.content) && typeof current.content.content === 'string'
+      const storedContent = targeted ? patched as Prisma.InputJsonValue : current.content && typeof current.content === 'object' && !Array.isArray(current.content) && typeof current.content.content === 'string'
         ? { ...current.content, content: html } : html
       const changed = await tx.chapter.updateMany({
         where: { id: proposal.chapterId, updatedAt: proposal.expectedUpdatedAt },
@@ -95,7 +102,7 @@ export async function decideChapterProposal(
           title: proposal.title,
           updatedAt: nextChapterRevision(current.updatedAt),
           content: storedContent,
-          wordCount: countTiptapWords(checked.value.content),
+          wordCount: (isTextEdits(checked.value.content) ? inspectChapter(storedContent).text.trim().split(/\s+/).filter(Boolean).length : countTiptapWords(checked.value.content)),
         },
       })
       if (changed.count !== 1) throw new ChapterWriteConflict('Concurrent chapter update; transaction rolled back')

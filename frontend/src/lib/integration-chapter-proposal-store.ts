@@ -1,3 +1,4 @@
+import { inspectChapter, isTextEdits } from './chapter-text-edits'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { hashCredential } from '@/lib/oauth-credentials'
@@ -12,7 +13,7 @@ import { validateChapterProposal } from '@/lib/integration-chapter-proposal'
 export async function createPendingChapterProposal(bearer: string | null, input: unknown):
   Promise<{ status: 201; proposalId: string } | { status: 400 | 401 | 403 | 404 | 409; error: string }> {
   const parsed = validateChapterProposal(input)
-  if (!parsed.ok) return { status: 400, error: 'Invalid proposal' }
+  if (!parsed.ok) return { status: 400, error: parsed.error }
   if (!bearer || !/^Bearer /i.test(bearer) || bearer.length > 519) return { status: 401, error: 'Unauthorized' }
   const token = bearer.slice(7)
   if (!token) return { status: 401, error: 'Unauthorized' }
@@ -37,8 +38,12 @@ export async function createPendingChapterProposal(bearer: string | null, input:
   if (chapter.updatedAt.getTime() !== new Date(expectedUpdatedAt).getTime()) {
     return { status: 409, error: 'Chapter changed since last read' }
   }
-  if (hasProtectedChapterContent(chapter.content)) {
-    return { status: 409, error: 'Chapter contains protected mentions or comments' }
+  let storedProposal = content
+  if (isTextEdits(content)) {
+    try { storedProposal = { ...content, preview: inspectChapter(chapter.content).apply(content.edits) } }
+    catch (error) { return { status: 409, error: (error as Error).message } }
+  } else if (hasProtectedChapterContent(chapter.content)) {
+    return { status: 409, error: 'Full replacement would discard protected mentions or comments. Read chapter segments and submit content.type=chapterTextEdits for changes outside protected segments.' }
   }
   const owner = await prisma.user.findUnique({
     where: { id: auth.userId }, select: { familyId: true },
@@ -48,7 +53,7 @@ export async function createPendingChapterProposal(bearer: string | null, input:
   const proposal = await prisma.chapterProposal.create({
     data: {
       chapterId, authorId: auth.userId, familyId: owner.familyId,
-      title, content: content as Prisma.InputJsonValue,
+      title, content: storedProposal as Prisma.InputJsonValue,
       expectedUpdatedAt: new Date(expectedUpdatedAt),
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       status: 'PENDING',

@@ -7,6 +7,7 @@ export function reviewText(node: ReviewNode | string | null | undefined): string
     return element.textContent || ''
   }
   if (!node || typeof node !== 'object') return ''
+  if (node.type === 'chapterTextEdits') return reviewText((node as ReviewNode & { preview?: ReviewNode | string }).preview)
   if (node.type === 'text') return node.text ?? ''
   if (node.type === 'hardBreak') return '\n'
   if (node.type === 'characterMention' || node.type === 'entityMention') return `@${node.attrs?.label ?? ''}`

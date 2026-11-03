@@ -47,3 +47,11 @@ test('never silently drops unsupported content or anchor metadata', () => {
     { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Text', attrs: { commentId: 'c' } }] }] },
   ]) expect(validateChapterProposal({ ...proposal, content }).ok).toBe(false)
 })
+
+test.each(['2026-10-16T10:00:00Z', '2026-10-16T12:00:00+02:00'])('accepts schema-compatible ISO revision %s', expectedUpdatedAt => {
+  expect(validateChapterProposal({ ...proposal, expectedUpdatedAt }).ok).toBe(true)
+})
+test('rejects date-only revisions and gives actionable errors for HTML', () => {
+  expect(validateChapterProposal({ ...proposal, expectedUpdatedAt: '2026-10-16' }).ok).toBe(false)
+  expect(validateChapterProposal({ ...proposal, content: '<p>Text</p>' })).toMatchObject({ ok: false, error: expect.stringContaining('HTML strings') })
+})
