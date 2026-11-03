@@ -40,6 +40,10 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U mythos_test -d mythos_integration_test"
           --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 56379:6379
     env:
       DATABASE_URL: postgresql://mythos_test:mythos_local_test_2026@127.0.0.1:55432/mythos_integration_test?schema=public
     defaults:
@@ -58,6 +62,21 @@ jobs:
       - run: npm test -- --runInBand --testPathPatterns='integration-chapter-.*db.test|proposal-integrity.db.test'
         env:
           MYTHOS_RUN_DB_INTEGRATION: '1'
+      - name: Chapter MCP discovery, pagination, proposals and session approval
+        env:
+          REDIS_URL: redis://127.0.0.1:56379
+          JWT_SECRET: isolated-ci-chapter-mcp-test-secret-not-for-production
+          MYTHOS_OAUTH_ISSUER: http://localhost:4000
+          MYTHOS_RUN_MCP_INTEGRATION: '1'
+        run: |
+          npm run dev > "$RUNNER_TEMP/chapter-mcp-server.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail http://localhost:4000/.well-known/oauth-authorization-server > /dev/null; then break; fi
+            sleep 1
+          done
+          node scripts/test-chapter-mcp-http.mjs
       - run: npx prisma db push --skip-generate
         env:
           DATABASE_URL: postgresql://mythos_test:mythos_local_test_2026@127.0.0.1:55432/mythos_integration_test?schema=universe_acceptance

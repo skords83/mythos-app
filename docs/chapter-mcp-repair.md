@@ -21,6 +21,7 @@ Schreibfehler sind dagegen im Code reproduzierbar:
 
 - `contentFormat`: `html`, `html-wrapper`, `tiptap` oder `empty`.
 - `text`: dekodierter Lesetext einschließlich Absatzumbrüchen und Mention-Labels.
+- `blocks`: Absatzvorlagen `{nodeId, editable, text, tokens}` für zusammenhängende Überarbeitungen; siehe [neuen Bearbeitungsvertrag](chapter-mcp-text-edits.md).
 - `segments`: `{nodeId, text, protected}` für adressierbare Textknoten. IDs sind ausschließlich für diese Revision gültig, keine Entitäts-IDs.
 
 Der vollständige strukturierte Inhalt bleibt unter `content` erhalten. Leerer Inhalt liefert ein erfolgreiches Objekt mit leerem Text; nicht gefunden/fremdes Projekt liefert einen Fehler (404 ohne Offenlegung fremder Daten), unbekannte/defekte Speicherformate einen Verarbeitungsfehler (422), Authentifizierungsfehler 401/403. Ein leerer Upstream-Body wird als MCP-Toolfehler ausgegeben.
@@ -42,7 +43,7 @@ Ab mehr als 16000 JSON-Zeichen wird die vollständige serialisierte Antwort in `
 }
 ```
 
-`nodeId` und `before` exakt aus `segments` übernehmen. Pro Knoten höchstens eine Änderung, 1–1000 Änderungen, nichtleeres `after`, maximal 500000 JSON-Zeichen für die Änderungsdaten. `after` ist Text, kein HTML. Der Modus ersetzt Text innerhalb bestehender Textknoten; strukturelle Umbauten, das vollständige Entfernen eines Textknotens und Änderungen direkt an geschützten Knoten erfolgen im Mythos-Editor. Änderungen innerhalb eines ungeschützten Knotens dürfen beliebig kurz oder lang sein.
+`nodeId` und `before` exakt aus `segments` übernehmen. Pro Knoten höchstens eine Änderung, 1–1000 Änderungen, maximal 500000 JSON-Zeichen für die Änderungsdaten. Ein leeres `after` entfernt jetzt ungeschützten Text. `after` ist Text, kein HTML. Textknoten können ersetzt oder entfernt werden. Das explizite Werkzeug `mythos_propose_chapter_text_edits` unterstützt außerdem Absatzbereiche einschließlich Teilen, Zusammenführen, Einfügen und Umstellen. Geschützte Inline-Inhalte bleiben dabei als eindeutige Platzhalter erhalten; Details und Grenzen stehen im [Bearbeitungsvertrag](chapter-mcp-text-edits.md). Änderungen innerhalb eines ungeschützten Knotens dürfen beliebig kurz oder lang sein.
 
 HTML wird mit Quellpositionen geparst. Nur die gewählten Textstellen werden HTML-escaped ersetzt, von hinten nach vorne; jedes andere Byte einschließlich IDs, Ziele, Markup und Kommentaranker bleibt unverändert. Wrapper-Metadaten bleiben erhalten. Bei Tiptap werden nur die ausgewählten `text`-Felder in einer Kopie geändert; Attribute, Markierungen und die übrigen Knoten bleiben erhalten. Namen werden niemals zur Identitätszuordnung verwendet. Kommentare sind per `commentId`-Markierung im Kapitel verankert, nicht über externe numerische Offsets; Kommentar-Datensätze werden nicht geändert.
 
@@ -60,7 +61,7 @@ MYTHOS_RUN_MCP_INTEGRATION=1 node --env-file=.env.local scripts/test-chapter-mcp
 
 Der Test verwendet den offiziellen MCP-SDK-Client über Streamable HTTP, echte PostgreSQL-Datensätze und den Sitzungspfad für Abruf/Freigabe. Er prüft Formate, Unicode, Chunks, Schutzkonflikte, Änderungen, Backup, Kommentare, ungültige/abgelaufene/veraltete Vorschläge und Berechtigungen. Er erzeugt ausschließlich eigene synthetische Fixtures und entfernt sie danach. Produktionskapitel werden nicht geändert.
 
-## Tatsächlich ausgeführt / Auslieferungsstand
+## Historischer Prüfstand der ersten Reparatur (vor dieser Erweiterung)
 
 - Produktionsreferenz rein lesend über den verbundenen Mythos-MCP-Connector: Übersicht und vollständiges Kapitel 25 erfolgreich, keine produktiven Änderungen.
 - Neuer HTTP-Test über offiziellen MCP-SDK: erster Lauf 354 Prüfungen (sehr große Chunk-Fixture), abschließender erweiterter Lauf 130 Prüfungen mit kleinerer, weiterhin mehrseitiger Fixture und zusätzlicher Übernahme je Speicherformat. Beide erfolgreich. Freigabe und erneuter Vorschlagsabruf bewusst über die vorhandenen Sitzungsschnittstellen, nicht per MCP-Berechtigung.

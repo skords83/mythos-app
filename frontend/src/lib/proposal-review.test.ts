@@ -8,3 +8,9 @@ test('comparison retains every changed and unchanged line', () => {
   expect(reviewDiff('Start\nAlt\nEnde', 'Start\nNeu\nEnde')).toEqual({ opening: 'Start', removed: 'Alt', added: 'Neu', ending: 'Ende' })
   expect(reviewDiff('Text', 'Text').removed).toBe('')
 })
+test('paragraph rewrite previews expose the real text and boundaries rather than opaque edit tokens', () => {
+  const preview = '<p>Neu <span data-character-mention="" data-character-id="a">@Ada</span></p><p><mark data-comment-id="c">Anker</mark> ergänzt.</p>'
+  const proposal = { type: 'chapterTextEdits', preview }
+  expect(reviewText(proposal)).toBe('Neu @Ada\n\nAnker ergänzt.\n\n')
+  expect(reviewDiff('Alt @Ada\n\nAnker', reviewText(proposal)).added).toContain('Anker ergänzt.')
+})

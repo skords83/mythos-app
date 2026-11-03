@@ -1,3 +1,5 @@
+import { assertChapterEvidencePreserved, chapterEvidenceSelection } from './chapter-evidence-guard'
+import { proposalToChapterHtml } from './integration-proposal-html'
 import { inspectChapter, isTextEdits } from './chapter-text-edits'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
@@ -32,7 +34,7 @@ export async function createPendingChapterProposal(bearer: string | null, input:
   if (!project) return { status: 404, error: 'Project not found' }
   const chapter = await prisma.chapter.findFirst({
     where: { id: chapterId, projectId },
-    select: { updatedAt: true, content: true },
+    select: { updatedAt: true, content: true, sourceEvidence: { select: chapterEvidenceSelection } },
   })
   if (!chapter) return { status: 404, error: 'Chapter not found' }
   if (chapter.updatedAt.getTime() !== new Date(expectedUpdatedAt).getTime()) {
@@ -45,6 +47,9 @@ export async function createPendingChapterProposal(bearer: string | null, input:
   } else if (hasProtectedChapterContent(chapter.content)) {
     return { status: 409, error: 'Full replacement would discard protected mentions or comments. Read chapter segments and submit content.type=chapterTextEdits for changes outside protected segments.' }
   }
+  try {
+    assertChapterEvidencePreserved(chapter.content, isTextEdits(storedProposal) ? storedProposal.preview : proposalToChapterHtml(content), chapter.sourceEvidence)
+  } catch (error) { return { status: 409, error: (error as Error).message } }
   const owner = await prisma.user.findUnique({
     where: { id: auth.userId }, select: { familyId: true },
   })

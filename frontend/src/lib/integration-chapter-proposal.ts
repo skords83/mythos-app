@@ -25,7 +25,7 @@ export function validateChapterProposal(input: unknown):
   if (!content || typeof content !== 'object' || Array.isArray(content)) return { ok: false, error: 'Invalid content: use chapterTextEdits with edits, or a supported Tiptap doc; HTML strings are not accepted' }
   const document = content as Record<string, unknown>
   if (isTextEdits(content)) {
-    if (!validTextEdits(content) || JSON.stringify({ type: content.type, edits: content.edits }).length > 500_000) return { ok: false, error: 'Invalid text edits: supply 1–1000 unique nodeId/before/after entries with nonempty after text (maximum 500000 characters)' }
+    if (!validTextEdits(content) || JSON.stringify({ type: content.type, edits: content.edits }).length > 500_000) return { ok: false, error: 'Invalid text edits: supply 1–1000 unique nodeId/before/after entries with string after text (empty deletes) (maximum 500000 characters)' }
     return { ok: true, value: { projectId: data.projectId, chapterId: data.chapterId, expectedUpdatedAt: new Date(data.expectedUpdatedAt).toISOString(), title: data.title.trim(), content } }
   }
   if (document.type !== 'doc' || !Array.isArray(document.content)) return { ok: false, error: 'content must be a Tiptap doc with a content array, or chapterTextEdits with an edits array' }

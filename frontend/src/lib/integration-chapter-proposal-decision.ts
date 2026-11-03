@@ -1,3 +1,4 @@
+import { assertChapterEvidencePreserved, chapterEvidenceSelection } from './chapter-evidence-guard'
 import { inspectChapter, isTextEdits } from './chapter-text-edits'
 import { ChapterWriteConflict, isChapterWriteConflict, nextChapterRevision } from './chapter-write-conflict'
 import { Prisma } from '@prisma/client'
@@ -48,7 +49,7 @@ export async function decideChapterProposal(
 
       const current = await tx.chapter.findUnique({
         where: { id: proposal.chapterId },
-        select: { title: true, content: true, wordCount: true, updatedAt: true },
+        select: { title: true, content: true, wordCount: true, updatedAt: true, sourceEvidence: { select: chapterEvidenceSelection } },
       })
       if (!current) return { status: 404, error: 'Chapter not found' } as const
       if (decision === 'approve' && proposal.expiresAt <= new Date()) return { status: 410, error: 'Proposal expired' } as const
@@ -78,6 +79,9 @@ export async function decideChapterProposal(
       }
       const html = targeted ? '' : proposalToChapterHtml(checked.value.content)
       if (html === null) return { status: 409, error: 'Unsupported proposal formatting' } as const
+
+      try { assertChapterEvidencePreserved(current.content, targeted ? patched : html, current.sourceEvidence) }
+      catch (error) { return { status: 409, error: (error as Error).message } as const }
 
       if (decision === 'resubmit') {
         if (proposal.expiresAt > new Date()) return { status: 409, error: 'Proposal has not expired' } as const

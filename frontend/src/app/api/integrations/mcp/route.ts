@@ -24,7 +24,7 @@ const tools = actions.map((action) => ({
   description: ({
     projects: 'List your Mythos projects',
     chapters: 'List chapter metadata for a project',
-    chapter: 'Read the current saved chapter (not an older version): full readable text, original content, contentFormat, revision-local text segments with protected flags. Large results return serialized JSON chunks: concatenate chunk in page order and JSON.parse; use nextPage and expectedUpdatedAt for continuation. Never treat a chunk as a complete chapter.',
+    chapter: 'Read the current saved chapter (not an older version): full readable text, original content, contentFormat, revision-local text segments with protected flags and paragraph blocks with opaque inline tokens for safe structural rewrites. Large results return serialized JSON chunks: concatenate chunk in page order and JSON.parse; use nextPage and expectedUpdatedAt for continuation. Never treat a chunk as a complete chapter.',
     characters: 'List visible characters for a project',
     places: 'List visible places for a project',
     timeline: 'List visible timeline events with IDs, updatedAt, all editable fields, chapterId and visible relations. Paginated in manual order then ID. Read evidence separately with entityType EVENT.',
@@ -47,7 +47,7 @@ const tools = actions.map((action) => ({
 
 const proposalTool = {
   name: 'mythos_propose_chapter_update',
-  description: 'Propose a title and content for an owned chapter. Prefer content {type: chapterTextEdits, edits: [{nodeId, before, after}]} using exact segments from mythos_chapter; preserves existing storage, formatting and metadata. after must be nonempty. Protected segments require editing in Mythos; edits outside them are allowed. Legacy full replacement accepts only restricted Tiptap prose and rejects protected chapters. Read the chapter first and pass its updatedAt as expectedUpdatedAt. Creates a pending proposal only; the user must review and approve it in Mythos before the chapter changes. Proposals expire after 24 hours.',
+  description: 'Propose a title and content for an owned chapter. Prefer content {type: chapterTextEdits, edits: [{nodeId, before, after}]} using exact segments from mythos_chapter; preserves existing storage, formatting and metadata. Empty after deletes unprotected text. For paragraph restructuring prefer mythos_propose_chapter_text_edits. Protected segments require editing in Mythos; edits outside them are allowed. Legacy full replacement accepts only restricted Tiptap prose and rejects protected chapters. Read the chapter first and pass its updatedAt as expectedUpdatedAt. Creates a pending proposal only; the user must review and approve it in Mythos before the chapter changes. Proposals expire after 24 hours.',
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
   securitySchemes: [{ type: 'oauth2', scopes: ['mythos:read', 'mythos:write'] }],
   _meta: { securitySchemes: [{ type: 'oauth2', scopes: ['mythos:read', 'mythos:write'] }] },
@@ -60,10 +60,37 @@ const proposalTool = {
       title: { type: 'string', minLength: 1, maxLength: 300 },
       content: { oneOf: [
         { type: 'object', additionalProperties: false, properties: { type: { const: 'doc' }, content: { type: 'array', items: { type: 'object' } } }, required: ['type', 'content'] },
-        { type: 'object', additionalProperties: false, properties: { type: { const: 'chapterTextEdits' }, edits: { type: 'array', minItems: 1, maxItems: 1000, items: { type: 'object', additionalProperties: false, properties: { nodeId: { type: 'string' }, before: { type: 'string' }, after: { type: 'string', minLength: 1 } }, required: ['nodeId', 'before', 'after'] } } }, required: ['type', 'edits'] },
+        { type: 'object', additionalProperties: false, properties: { type: { const: 'chapterTextEdits' }, edits: { type: 'array', minItems: 1, maxItems: 1000, items: { type: 'object', additionalProperties: false, properties: { nodeId: { type: 'string' }, before: { type: 'string' }, after: { type: 'string' } }, required: ['nodeId', 'before', 'after'] } } }, required: ['type', 'edits'] },
       ] },
     },
     required: ['projectId', 'chapterId', 'expectedUpdatedAt', 'title', 'content'],
+  },
+}
+
+const textEditsTool = {
+  ...proposalTool,
+  name: 'mythos_propose_chapter_text_edits',
+  description: 'Propose targeted chapter edits; never applies without user approval in Mythos (expires in 24 hours). Read ALL mythos_chapter pages first; pass updatedAt as expectedUpdatedAt. For text edits use exact segments: {nodeId, before: segment.text, after}; empty after deletes unprotected text. For substantial rewrites use editable blocks: nodeId "blocks.START-END" (inclusive indices from block IDs), before = block.text joined with two newlines, after = rewritten paragraphs separated by two newlines; empty after removes the range. This supports insertion, deletion, splitting, merging and reordering paragraphs. Copy EVERY opaque inline token exactly once within its range, including formatting, mentions and comment anchors. tokens contains readable labels. Never replace tokens with labels or invent tokens. Unchanged paragraphs are reused automatically. Multiple disjoint ranges can be bundled, but do not mix block ranges with text node edits. Noneditable block structures require text node edits. Conflicts return an error without changing the chapter. Requires read and write scopes.',
+  inputSchema: {
+    type: 'object', additionalProperties: false,
+    properties: {
+      projectId: proposalTool.inputSchema.properties.projectId,
+      chapterId: proposalTool.inputSchema.properties.chapterId,
+      expectedUpdatedAt: proposalTool.inputSchema.properties.expectedUpdatedAt,
+      title: proposalTool.inputSchema.properties.title,
+      edits: { type: 'array', minItems: 1, maxItems: 1000, items: {
+        type: 'object', additionalProperties: false,
+        properties: { nodeId: { type: 'string' }, before: { type: 'string' }, after: { type: 'string' } },
+        required: ['nodeId', 'before', 'after'],
+      } },
+    },
+    required: ['projectId', 'chapterId', 'expectedUpdatedAt', 'title', 'edits'],
+  },
+  outputSchema: {
+    type: 'object', properties: {
+      status: { type: 'integer' }, proposalId: { type: 'string' }, state: { const: 'PENDING' },
+      approvalUrl: { type: 'string' }, message: { type: 'string' }, error: { type: 'string' },
+    }, required: ['status'],
   },
 }
 
@@ -108,11 +135,11 @@ export async function POST(request: NextRequest) {
     return rpc(msg.id, {
       protocolVersion: VERSIONS.includes(requestedVersion) ? requestedVersion : VERSION,
       capabilities: { tools: {} },
-      serverInfo: { name: 'mythos', version: '0.4.0' },
+      serverInfo: { name: 'mythos', version: '0.5.0' },
     })
   }
   if (msg.method === 'ping') return rpc(msg.id, {})
-  if (msg.method === 'tools/list') return rpc(msg.id, { tools: [...tools, proposalTool, ...entityWriteTools, ...storyTools, ...universeTools] })
+  if (msg.method === 'tools/list') return rpc(msg.id, { tools: [...tools, proposalTool, textEditsTool, ...entityWriteTools, ...storyTools, ...universeTools] })
   if (msg.method !== 'tools/call') return fail(msg.id, -32601, 'Method not found')
 
   const name = msg.params?.name
@@ -136,19 +163,25 @@ export async function POST(request: NextRequest) {
       return rpc(msg.id, { content: [{ type: 'text', text: JSON.stringify(outcome) }], isError: outcome.status >= 400 })
     } catch { return fail(msg.id, -32603, 'Write service unavailable') }
   }
-  if (name === proposalTool.name) {
+  if (name === proposalTool.name || name === textEditsTool.name) {
+    const definition = name === textEditsTool.name ? textEditsTool : proposalTool
     try {
       const denied = await authenticateMcp(request, 'mythos:write')
       if (denied) return denied
       if (!args || typeof args !== 'object' || Array.isArray(args) ||
-          Object.keys(args).some(key => !proposalTool.inputSchema.required.includes(key))) {
+          Object.keys(args).some(key => !definition.inputSchema.required.includes(key))) {
         return fail(msg.id, -32602, 'Invalid proposal arguments')
       }
-      const outcome = await createPendingChapterProposal(request.headers.get('authorization'), args)
+      const input = name === textEditsTool.name
+        ? { projectId: args.projectId, chapterId: args.chapterId, expectedUpdatedAt: args.expectedUpdatedAt, title: args.title, content: { type: 'chapterTextEdits', edits: args.edits } }
+        : args
+      const outcome = await createPendingChapterProposal(request.headers.get('authorization'), input)
+      const result = outcome.status === 201
+        ? { ...outcome, state: 'PENDING', approvalUrl: oauthConfig().issuer + '/integrations/approvals', message: 'Review and approve this proposal in Mythos before it is applied.' }
+        : outcome
       return rpc(msg.id, {
-        content: [{ type: 'text', text: JSON.stringify(outcome.status === 201
-          ? { ...outcome, state: 'PENDING', approvalUrl: oauthConfig().issuer + '/integrations/approvals', message: 'Review and approve this proposal in Mythos before it is applied.' }
-          : outcome) }],
+        ...(name === textEditsTool.name ? { structuredContent: result } : {}),
+        content: [{ type: 'text', text: JSON.stringify(result) }],
         isError: outcome.status !== 201,
       })
     } catch { return fail(msg.id, -32603, 'Proposal service unavailable') }
