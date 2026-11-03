@@ -211,3 +211,36 @@ test('empty upstream response is an explicit tool error', async () => {
   const response = await POST(request({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'mythos_chapter', arguments: { projectId: 'p', id: 'c' } } }))
   expect((await response.json()).result).toMatchObject({ isError: true, content: [{ type: 'text', text: expect.stringContaining('empty response') }] })
 })
+
+test('publishes explicit text edits schema and routes it through pending proposal service with structured output', async () => {
+  const list = (await (await POST(request({ jsonrpc: '2.0', id: 1, method: 'tools/list' }))).json()).result.tools
+  const tool = list.find((t: any) => t.name === 'mythos_propose_chapter_text_edits')
+  expect(tool.inputSchema.required).toEqual(['projectId', 'chapterId', 'expectedUpdatedAt', 'title', 'edits'])
+  expect(tool.inputSchema.properties.edits.items.properties.after).toEqual({ type: 'string' })
+  expect(tool.outputSchema.required).toContain('status')
+  expect(tool.securitySchemes[0].scopes).toEqual(['mythos:read', 'mythos:write'])
+  const { content, ...common } = proposalCall.params.arguments
+  const edits = [{ nodeId: 'blocks.0-2', before: 'Alt', after: 'Neu\n\nAbsatz' }]
+  ;(createPendingChapterProposal as jest.Mock).mockResolvedValueOnce({ status: 201, proposalId: 'proposal' })
+  const response = await POST(request({ ...proposalCall, params: { name: tool.name, arguments: { ...common, edits } } }))
+  const result = (await response.json()).result
+  expect(result.structuredContent).toEqual(JSON.parse(result.content[0].text))
+  expect(result.structuredContent).toMatchObject({ status: 201, state: 'PENDING', proposalId: 'proposal' })
+  expect(createPendingChapterProposal).toHaveBeenCalledWith('Bearer test', { ...common, content: { type: 'chapterTextEdits', edits } })
+})
+test('explicit text edits cannot bypass write permission or smuggle full replacement content', async () => {
+  const params = { ...proposalCall.params, name: 'mythos_propose_chapter_text_edits' }
+  ;(authenticateMcp as jest.Mock).mockResolvedValueOnce(null).mockResolvedValueOnce(new Response(null, { status: 403 }))
+  expect((await POST(request({ ...proposalCall, params }))).status).toBe(403)
+  const result = await (await POST(request({ ...proposalCall, params }))).json()
+  expect(result.error.code).toBe(-32602)
+  expect(createPendingChapterProposal).not.toHaveBeenCalled()
+})
+test('chapter schema publishes expectedUpdatedAt and forwards it on continuation', async () => {
+  const list = (await (await POST(request({ jsonrpc: '2.0', id: 1, method: 'tools/list' }))).json()).result.tools
+  expect(list.find((t: any) => t.name === 'mythos_chapter').inputSchema.properties.expectedUpdatedAt).toEqual({ type: 'string', format: 'date-time' })
+  const updatedAt = '2026-11-03T10:00:00.000Z'
+  read.mockResolvedValueOnce(Response.json({ id: 'c', updatedAt, content: 'x'.repeat(20000) }))
+  await POST(request({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'mythos_chapter', arguments: { projectId: 'p', id: 'c', page: 2, expectedUpdatedAt: updatedAt } } }))
+  expect(read.mock.calls[0][0].nextUrl.searchParams.get('expectedUpdatedAt')).toBe(updatedAt)
+})

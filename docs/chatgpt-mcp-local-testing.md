@@ -164,3 +164,15 @@ Lesetext. Große Antworten sind vollständig über revisionierte Chunks abrufbar
 Details, Grenzen und Fehlerdiagnose: [Kapitel-MCP-Vertrag](chapter-mcp-repair.md).
 Zusätzlicher echter HTTP-/SDK-Test: `scripts/test-chapter-mcp-http.mjs` (gleiche
 isolierte Umgebung und Opt-in wie oben).
+
+### Explizites Kapitelwerkzeug und große Überarbeitungen
+
+`mythos_propose_chapter_text_edits` veröffentlicht die bestehende sichere
+Vorschlagslogik mit einem flachen `edits`-Schema. `mythos_chapter` liefert zusätzlich
+`blocks` mit Absatzvorlagen und geschützten Inline-Platzhaltern. Vollständiger
+Vertrag, Beispiele, Grenzen und Diagnose veralteter Connector-Schemas:
+[Kapitel-Textbearbeitung](chapter-mcp-text-edits.md).
+
+Der HTTP-Test läuft nun auch im CI-Job `isolated-postgres` mit PostgreSQL und Redis.
+Er prüft `tools/list` und die neue Funktion mit dem offiziellen MCP-SDK sowie die
+separate, sitzungsgebundene Freigabe. Produktionsdaten werden nicht verwendet.

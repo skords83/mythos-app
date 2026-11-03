@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
       let document
       try { document = inspectChapter(chapter.content) }
       catch (cause) { return error((cause as Error).message, 422) }
-      return ok({ ...chapter, contentFormat: document.format, text: document.text, segments: document.segments })
+      return ok({ ...chapter, contentFormat: document.format, text: document.text, segments: document.segments, blocks: document.blocks })
     }
     const kind = ({ items: 'ITEM', factions: 'FACTION', characters: 'CHARACTER', places: 'PLACE', lore: 'LORE_ENTRY' } as Record<string, RelatableEntityType>)[action ?? '']
     const scope = kind ? await bookEntityScope(prisma, projectId, kind) : { projectId }

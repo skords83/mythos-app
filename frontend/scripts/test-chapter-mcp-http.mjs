@@ -45,12 +45,18 @@ try {
     check(response.status, status)
     return response.json()
   }
+  const listed = await sdk.listTools()
+  const editsTool = listed.tools.find(t => t.name === 'mythos_propose_chapter_text_edits')
+  check(editsTool.inputSchema.required, ['projectId', 'chapterId', 'expectedUpdatedAt', 'title', 'edits'])
+  check(editsTool.outputSchema.required, ['status'])
+  check(listed.tools.find(t => t.name === 'mythos_chapter').inputSchema.properties.expectedUpdatedAt.format, 'date-time')
   const scope = { authorId: user.id, familyId: family.id, projectId: project.id }
   const character = await db.character.create({ data: { ...scope, name: 'Ada' } })
   const place = await db.place.create({ data: { ...scope, name: 'Hafen' } })
   const item = await db.item.create({ data: { ...scope, name: 'Ring' } })
   const chapter = await db.chapter.create({ data: { projectId: project.id, title: 'Protected fixture', content: '' } })
   const comment = await db.comment.create({ data: { authorId: user.id, familyId: family.id, chapterId: chapter.id, content: 'Kommentar bleibt.' } })
+  const evidence = await db.sourceEvidence.create({ data: { chapterId: chapter.id, entityType: 'CHARACTER', entityId: character.id, statement: 'Synthetic quote anchor', quote: 'Öl 🦉', sourceHash: 'test', sourceUpdatedAt: new Date(), authorId: user.id, familyId: family.id } })
   const html = `<p class="original">Früh &amp; <strong>schön</strong> <span data-character-mention="" data-character-id="${character.id}">Ada</span> <span data-entity-mention="" data-entity-kind="PLACE" data-entity-id="${place.id}">Hafen</span> <span data-entity-mention="" data-entity-kind="ITEM" data-entity-id="${item.id}">Ring</span><mark data-comment-id="${comment.id}" data-comment-resolved="false">Anker</mark> danach.</p><p>Öl 🦉</p>`
   const tiptap = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Äpfel ', marks: [{ type: 'bold' }] }, { type: 'entityMention', attrs: { id: item.id, kind: 'ITEM', label: 'Ring' } }, { type: 'text', text: 'Anker', marks: [{ type: 'comment', attrs: { commentId: comment.id } }] }, { type: 'text', text: ' Ende.' }] }] }
   for (const content of ['', {}, { type: 'doc', content: [] }, '<p>Äpfel &amp; Öl</p><p>Absatz 🦉</p>', html, { content: html, metadata: { keep: true } }, tiptap, '<p>Ä 🦉</p>'.repeat(3000)]) {
@@ -70,6 +76,52 @@ try {
       assert.ok(edited.text.includes(segment.text + ' Neu'))
     }
   }
+  // A long chapter, including live comment records, rewritten through the NEW
+  // published tool, reviewed over the session API and approved transactionally.
+  const original = html.replace('<p class="original">', '<p>') + '<p>' + 'Ausführliche alte Passage. '.repeat(500) + '</p><p>Unverändert &#38; Ende.</p>'
+  for (const content of [original, { content: original, metadata: { keep: true } }, tiptap]) {
+    await db.chapter.update({ where: { id: chapter.id }, data: { content } })
+    const beforeRead = await read(chapter.id)
+    const before = beforeRead.blocks.map(b => b.text).join('\n\n')
+    const rewritten = content === tiptap ? before.replace(' Ende.', ' Neuer Schluss.') : before.replace('Früh & ', 'Später & ').replace('Ausführliche alte Passage. '.repeat(500), 'Gekürzt.')
+    const after = rewritten + '\n\n' + 'Neu hinzugefügt. '.repeat(250)
+    const args = { projectId: project.id, chapterId: chapter.id, title: chapter.title, expectedUpdatedAt: beforeRead.updatedAt, edits: [{ nodeId: `blocks.0-${beforeRead.blocks.length - 1}`, before, after }] }
+    if (content !== tiptap) {
+      const unsafe = await call('propose_chapter_text_edits', { ...args, edits: [{ ...args.edits[0], after: after.replace('Öl 🦉', 'Entfernt') }] }, true)
+      check(unsafe.status, 409)
+      assert.ok(unsafe.error.includes(evidence.id))
+    }
+    const proposed = await call('propose_chapter_text_edits', args)
+    check(proposed.state, 'PENDING')
+    check((await read(chapter.id)).content, content)
+    const review = await fetch(origin + '/api/integrations/approvals', { headers: { cookie } })
+    const pending = (await review.json()).proposals.find(p => p.id === proposed.proposalId)
+    check(pending.canApply, true)
+    assert.ok(pending.content.preview)
+    if (typeof content === 'string') {
+      const late = await db.sourceEvidence.create({ data: { chapterId: chapter.id, entityType: 'CHARACTER', entityId: character.id, statement: 'Anchor added after proposal', quote: 'Früh &', sourceHash: 'test', sourceUpdatedAt: new Date(), authorId: user.id, familyId: family.id } })
+      const rejected = await approve(proposed.proposalId, 409)
+      assert.ok(rejected.error.includes(late.id))
+      check((await read(chapter.id)).content, content)
+      check((await db.chapterProposal.findUnique({ where: { id: proposed.proposalId } })).status, 'PENDING')
+      await db.sourceEvidence.delete({ where: { id: late.id } })
+    }
+    const accepted = await approve(proposed.proposalId)
+    check(accepted.decision, 'APPLIED')
+    check((await db.chapterVersion.findUnique({ where: { id: accepted.backupId } })).content, content)
+    const final = await read(chapter.id)
+    check(final.segments.filter(s => s.protected).map(s => s.text), beforeRead.segments.filter(s => s.protected).map(s => s.text))
+    check(await db.comment.findUnique({ where: { id: comment.id } }), comment)
+    check(await db.sourceEvidence.findUnique({ where: { id: evidence.id } }), evidence)
+    if (typeof content === 'string' || typeof content.content === 'string') {
+      const finalHtml = typeof final.content === 'string' ? final.content : final.content.content
+      check(finalHtml.match(/<(?:span|mark)\b[^>]*>.*?<\/(?:span|mark)>/g), original.match(/<(?:span|mark)\b[^>]*>.*?<\/(?:span|mark)>/g))
+      assert.ok(finalHtml.includes('<p>Unverändert &#38; Ende.</p>'))
+      assert.ok(!finalHtml.includes('Ausführliche alte Passage'))
+    }
+    check((await call('propose_chapter_text_edits', args, true)).status, 409)
+    await approve(proposed.proposalId, 409)
+  }
   await db.chapter.update({ where: { id: chapter.id }, data: { content: { content: html, metadata: { keep: true } } } })
   let current = await read(chapter.id)
   const propose = (content, revision = current.updatedAt) => call('propose_chapter_update', { projectId: project.id, chapterId: chapter.id, title: 'Proposed', expectedUpdatedAt: revision, content })
@@ -83,11 +135,12 @@ try {
   const stored = (await listing.json()).proposals.find(p => p.id === proposal.proposalId)
   check(stored.content.edits, edits.edits)
   check(stored.canApply, true)
-  check((await approve(proposal.proposalId)).decision, 'APPLIED')
+  const applied = await approve(proposal.proposalId)
+  check(applied.decision, 'APPLIED')
   const updated = await read(chapter.id)
   check(updated.content, { content: html.replace('Früh &amp; ', 'Später &amp; ').replace(' danach.', ' zuletzt.'), metadata: { keep: true } })
   check(await db.comment.findUnique({ where: { id: comment.id } }), comment)
-  check((await db.chapterVersion.findFirst({ where: { chapterId: chapter.id } })).content, current.content)
+  check((await db.chapterVersion.findUnique({ where: { id: applied.backupId } })).content, current.content)
   await approve(proposal.proposalId, 409)
   const common = { projectId: project.id, chapterId: chapter.id, expectedUpdatedAt: updated.updatedAt, title: 'Invalid' }
   const protectedSegment = updated.segments.find(s => s.protected)
@@ -114,6 +167,7 @@ try {
   assert.match((await call('chapter', { projectId: project.id, id: chapter.id }, true)).error, /Unsupported/)
   await db.oAuthAccessToken.updateMany({ where: { clientId }, data: { scope: 'mythos:read' } })
   await assert.rejects(() => sdk.callTool({ name: 'mythos_propose_chapter_update', arguments: { ...common, content: edits } }))
+  await assert.rejects(() => sdk.callTool({ name: 'mythos_propose_chapter_text_edits', arguments: { ...common, edits: edits.edits } }))
   console.log(`PASS: chapter MCP SDK/HTTP, PostgreSQL, session review/approval: ${checks} assertions`)
 } finally {
   if (sdk) await sdk.close()
