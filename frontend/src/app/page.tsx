@@ -496,6 +496,8 @@ export default function Page() {
 
           {activeTab === 'characters' && (
             <CharactersView
+              projectId={selectedProject?.id}
+              universeId={selectedProject?.universeId}
               characters={characters}
               onAddClick={() => setShowCharacterModal(true)}
               onEdit={setEditingCharacter}

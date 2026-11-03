@@ -165,7 +165,7 @@ function ProjectCard({ project, onDelete, onOpen }: {
         </div>
         <div className="flex items-center gap-1">
           <Users size={16} />
-          <span>{project._count?.characters || 0} Charaktere</span>
+          <span>{project._count?.characters || 0} Charaktere in diesem Buch</span>
         </div>
       </div>
 

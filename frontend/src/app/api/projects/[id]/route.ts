@@ -1,3 +1,4 @@
+import { bookCharacterCount } from '@/lib/universe-scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
@@ -29,6 +30,7 @@ export async function GET(
       return NextResponse.json({ error: 'Projekt nicht gefunden' }, { status: 404 })
     }
 
+    project._count.characters = await bookCharacterCount(prisma, project.id, userId)
     return NextResponse.json(project)
   } catch (error) {
     logger.error(error, { route: 'GET /api/projects/[id]', userId })

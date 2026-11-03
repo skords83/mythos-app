@@ -3,6 +3,7 @@ import { TEXT_PRIMARY, ICON_PROPS } from '@/lib/theme'
 import { HairlineButton } from './HairlineButton'
 
 interface ViewHeaderProps {
+  className?: string
   title: string
   actionLabel: string
   actionIcon: LucideIcon
@@ -10,9 +11,9 @@ interface ViewHeaderProps {
   actionDisabled?: boolean
 }
 
-export function ViewHeader({ title, actionLabel, actionIcon: ActionIcon, onAction, actionDisabled }: ViewHeaderProps) {
+export function ViewHeader({ title, actionLabel, actionIcon: ActionIcon, onAction, actionDisabled, className = '' }: ViewHeaderProps) {
   return (
-    <div className="flex items-center justify-between mb-8">
+    <div className={`flex items-center justify-between mb-8 ${className}`}>
       <h2 className={`text-3xl font-display font-light ${TEXT_PRIMARY}`}>{title}</h2>
       <HairlineButton
         emphasised

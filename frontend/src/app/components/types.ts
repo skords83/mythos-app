@@ -1,4 +1,5 @@
 export interface Project {
+  universeId?: string | null
   totalWordGoal?: number | null
   id: string
   title: string
