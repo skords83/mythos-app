@@ -1,3 +1,4 @@
+import { visibilityWhere } from './visibility'
 import type { Prisma, RelatableEntityType } from '@prisma/client'
 /** Extend a book query only by its explicit usages, never the whole universe. */
 export async function bookEntityScope(db: Pick<Prisma.TransactionClient,'entityUsage'|'project'>, projectId:string, entityType:RelatableEntityType) {
@@ -5,4 +6,16 @@ export async function bookEntityScope(db: Pick<Prisma.TransactionClient,'entityU
  if(!project?.universeId) return {projectId}
  const usages=await db.entityUsage.findMany({where:{projectId,entityType},select:{entityId:true}})
  return {OR:[{projectId},{universeId:project.universeId,id:{in:usages.map(u=>u.entityId)}}]}
+}
+
+/** Use the same scope and visibility as the book's character list. */
+export async function bookCharacterCount(
+ db: Pick<Prisma.TransactionClient, 'entityUsage' | 'project' | 'character'>,
+ projectId: string,
+ userId: string,
+) {
+ return db.character.count({where:{AND:[
+  await bookEntityScope(db,projectId,'CHARACTER'),
+  {OR:visibilityWhere({userId})},
+ ]}})
 }

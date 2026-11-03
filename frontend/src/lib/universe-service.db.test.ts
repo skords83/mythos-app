@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto'
 import { prisma } from './prisma'
 import { runUniverseAction } from './universe-service'
 import { runStoryAction } from './story-service'
-import { bookEntityScope } from './universe-scope'
+import { bookCharacterCount, bookEntityScope } from './universe-scope'
 import { sourceHash } from './evidence-anchor'
 import type { AuthContext } from './auth'
 const suite=process.env.MYTHOS_RUN_UNIVERSE_TEST==='1'?describe:describe.skip
@@ -45,6 +45,30 @@ suite('universes on isolated PostgreSQL (no user data)',()=>{
   u=await good('attach_universe_book',{universeId:u.id,projectId:b2.id,expectedUpdatedAt:versions(u),projectExpectedUpdatedAt:versions(b2)})
   expect((await prisma.item.findUniqueOrThrow({where:{id:item.id}})).projectId).toBe(b1.id)
   expect((await good('universe_entries',{universeId:u.id,entityType:'ITEM'})).entries).toEqual([])
+ })
+ test('character list and count follow explicit usage, deduplicate references and retain shared identity',async()=>{
+  let person=await good('create_universe_entry',{universeId:u.id,entityType:'CHARACTER',fields:{name:'Usage fixture'}})
+  const args=()=>({universeId:u.id,entityType:'CHARACTER',entityId:person.id,expectedUpdatedAt:versions(person)})
+  const check=async(bookId:string,expected:number)=>{
+   const rows=await prisma.character.findMany({where:await bookEntityScope(prisma,bookId,'CHARACTER')})
+   expect(rows).toHaveLength(expected)
+   expect(await bookCharacterCount(prisma,bookId,auth.userId)).toBe(expected)
+  }
+  await check(b1.id,0);await check(b2.id,0)
+  const use=async(bookId:string,remove=false)=>{const result=await good('use_universe_entry',{...args(),projectId:bookId,remove});person=result.entry}
+  await use(b1.id);await use(b1.id)
+  await check(b1.id,1);await check(b2.id,0)
+  await use(b2.id);await check(b1.id,1);await check(b2.id,1)
+  const chapter=await prisma.chapter.create({data:{projectId:b1.id,title:'Repeated references',content:`<p><span data-type="mention" data-id="${person.id}">Usage fixture</span> and <span data-type="mention" data-id="${person.id}">Usage fixture</span></p>`}})
+  await check(b1.id,1)
+  expect((await run('use_universe_entry',{...args(),projectId:b1.id,remove:true})).status).toBe(409)
+  await prisma.chapter.delete({where:{id:chapter.id}})
+  await use(b1.id,true);await check(b1.id,0);await check(b2.id,1)
+  expect(await prisma.character.findUnique({where:{id:person.id}})).not.toBeNull()
+  await use(b2.id,true);await check(b2.id,0)
+  const standalone=await prisma.project.create({data:{title:'Standalone count fixture',userId:auth.userId}})
+  await prisma.character.create({data:{name:'Local fixture',projectId:standalone.id,authorId:auth.userId,familyId:auth.familyId}})
+  await check(standalone.id,1)
  })
  test('promotion retains identity, prose, relations and sources; same names never merge',async()=>{
   await good('create_universe_entry',{universeId:u.id,entityType:'ITEM',fields:{name:item.name}})

@@ -1,3 +1,4 @@
+import { bookCharacterCount } from '@/lib/universe-scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
@@ -30,6 +31,10 @@ export async function GET(request: NextRequest) {
       }),
       prisma.project.count({ where: { userId } })
     ])
+
+    await Promise.all(projects.map(async project => {
+      project._count.characters = await bookCharacterCount(prisma, project.id, userId!)
+    }))
 
     return NextResponse.json({
       projects,
