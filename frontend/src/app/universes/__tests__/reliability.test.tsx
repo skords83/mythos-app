@@ -118,3 +118,12 @@ it('switches universes atomically and ignores a late universe response',async()=
  await screen.findByRole('button',{name:'Anna'});await act(async()=>delayed.otheruniverse())
  expect(screen.getByLabelText('Titel')).toHaveValue('Welt');expect(screen.getByRole('button',{name:'Anna'})).toBeInTheDocument()
 })
+
+it('only discards drafts belonging to the changed editor context',async()=>{
+ await openAnna();fireEvent.change(screen.getByLabelText('Titel'),{target:{value:'Universumsentwurf'}})
+ fireEvent.click(screen.getByRole('button',{name:'Berta'}));await waitFor(()=>expect(screen.getByLabelText('Name')).toHaveValue('Berta'))
+ expect(screen.queryByText('Ungespeicherte Eingaben verwerfen?')).not.toBeInTheDocument()
+ expect(screen.getByLabelText('Titel')).toHaveValue('Universumsentwurf')
+ fireEvent.click(screen.getByRole('button',{name:'Neues Universum'}));expect(screen.getByText('Ungespeicherte Eingaben verwerfen?')).toBeInTheDocument()
+ fireEvent.click(screen.getByRole('button',{name:'Abbrechen'}));expect(screen.getByLabelText('Titel')).toHaveValue('Universumsentwurf')
+})
