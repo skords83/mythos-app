@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { INPUT, BUTTON_SECONDARY, TEXT_SECONDARY, TEXT_MUTED } from '@/lib/theme'
 import { sourceText } from '@/lib/evidence-text'
 
@@ -21,17 +21,19 @@ async function allPages(url: string, key: string): Promise<Entry[]> {
 export function SourceEvidencePanel({ entityType, entityId, projectId }: { entityType: string; entityId: string; projectId: string | null }) {
   const [open, setOpen] = useState(false), [rows, setRows] = useState<Evidence[]>([]), [error, setError] = useState(''), [busy, setBusy] = useState(false)
   const [projects, setProjects] = useState<Entry[]>([]), [project, setProject] = useState(projectId ?? ''), [chapters, setChapters] = useState<Entry[]>([])
-  const [chapterId, setChapterId] = useState(''), [chapter, setChapter] = useState<{ content: unknown; updatedAt: string } | null>(null), [scenes, setScenes] = useState<Entry[]>([])
+  const [chapterId, setChapterId] = useState(''), [chapter, setChapter] = useState<{ content: unknown; updatedAt: string; projectId?: string } | null>(null), [scenes, setScenes] = useState<Entry[]>([])
   const [editing, setEditing] = useState<Evidence | null>(null), [draft, setDraft] = useState(empty), [reanchor, setReanchor] = useState(false)
-  const load = async () => {
+  const [revision,setRevision]=useState(0),[loading,setLoading]=useState(false)
+  const lock=useRef(false)
+  const load = async (active:()=>boolean=()=>true) => {
     const result: Evidence[] = []
     for (let page = 1; ; page++) { const data = await request('evidence', { entityType, entityId, page, limit: 100 }); result.push(...data.entries); if (!data.hasMore) break }
-    setRows(result)
+    if(active())setRows(result)
   }
-  useEffect(() => { if (!open) return; let active = true; load().catch(e => active && setError(e.message)); allPages('/api/projects?limit=100', 'projects').then(p => active && setProjects(p)).catch(e => active && setError(e.message)); return () => { active = false } }, [open, entityType, entityId])
-  useEffect(() => { if (!open || !project) return; let active = true; setChapters([]); allPages(`/api/chapters?projectId=${encodeURIComponent(project)}&limit=200`, 'chapters').then(c => active && setChapters(c)).catch(e => active && setError(e.message)); return () => { active = false } }, [open, project])
-  useEffect(() => { setChapter(null); setScenes([]); if (!chapterId) return; let active = true; Promise.all([get(`/api/chapters/${encodeURIComponent(chapterId)}`), get(`/api/scenes?chapterId=${encodeURIComponent(chapterId)}`)]).then(([c, s]) => { if (active) { setChapter(c); setScenes(s) } }).catch(e => active && setError(e.message)); return () => { active = false } }, [chapterId])
-  const perform = async (fn: () => Promise<unknown>) => { setBusy(true); setError(''); try { await fn(); await load() } catch (e) { setError((e as Error).message) } finally { setBusy(false) } }
+  useEffect(() => { if (!open) return; let active = true; setLoading(true);setError('');load(()=>active).catch(e => active && setError(e.message)).finally(()=>{if(active)setLoading(false)}); allPages('/api/projects?limit=100', 'projects').then(p => active && setProjects(p)).catch(e => active && setError(e.message)); return () => { active = false } }, [open, entityType, entityId,revision])
+  useEffect(() => { setChapters([]);if (!open || !project) return; let active = true; allPages(`/api/chapters?projectId=${encodeURIComponent(project)}&limit=200`, 'chapters').then(c => active && setChapters(c)).catch(e => active && setError(e.message)); return () => { active = false } }, [open, project,revision])
+  useEffect(() => { setChapter(null); setScenes([]); if (!chapterId) return; let active = true; Promise.all([get(`/api/chapters/${encodeURIComponent(chapterId)}`), get(`/api/scenes?chapterId=${encodeURIComponent(chapterId)}`)]).then(([c, s]) => { if (active) { setChapter(c);if(c.projectId)setProject(c.projectId); setScenes(s) } }).catch(e => active && setError(e.message)); return () => { active = false } }, [chapterId,revision])
+  const perform = async (fn: () => Promise<unknown>) => { if(lock.current)return;lock.current=true;setBusy(true); setError(''); try { await fn(); await load() } catch (e) { setError((e as Error).message) } finally { lock.current=false;setBusy(false) } }
   const edit = (row: Evidence) => { setEditing(row); setChapterId(row.chapterId); setDraft({ field: row.field ?? '', statement: row.statement, quote: row.quote, prefix: row.prefix, suffix: row.suffix, commentId: row.commentId ?? '', sceneId: row.sceneId ?? '' }); setReanchor(false) }
   const save = () => perform(async () => {
     const metadata = { field: draft.field || null, statement: draft.statement }
@@ -46,8 +48,8 @@ export function SourceEvidencePanel({ entityType, entityId, projectId }: { entit
     <button type="button" className={BUTTON_SECONDARY} aria-expanded={open} onClick={() => setOpen(!open)}>Quellenbelege {open ? 'schließen' : 'anzeigen und pflegen'}</button>
     {open && <div className="space-y-4 mt-3">
       <p className={`text-xs ${TEXT_MUTED}`}>Belege werden separat gespeichert. Sie ändern keinen Kapiteltext. Quellen aus eigenen Kapiteln sind nur für deren Besitzer lesbar.</p>
-      {error && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error} <button type="button" disabled={busy} onClick={() => perform(load)}>Neu laden</button></p>}
-      {rows.length === 0 && <p className={`text-sm ${TEXT_SECONDARY}`}>Noch keine zugänglichen Quellenbelege.</p>}
+      {error && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error} <button type="button" disabled={busy} onClick={() => setRevision(v=>v+1)}>Neu laden</button></p>}
+      {loading&&<p role="status">Quellenbelege werden geladen …</p>}{!loading&&!error&&rows.length === 0 && <p className={`text-sm ${TEXT_SECONDARY}`}>Noch keine zugänglichen Quellenbelege.</p>}
       {rows.map(row => <article key={row.id} className="border border-zinc-200 dark:border-zinc-700 rounded p-3 space-y-2">
         <p className="text-sm font-medium">{row.field ? `${row.field}: ` : ''}{row.statement}</p>
         <blockquote className={`text-sm ${TEXT_SECONDARY}`}>„{row.quote}“</blockquote>
@@ -63,8 +65,8 @@ export function SourceEvidencePanel({ entityType, entityId, projectId }: { entit
         <h3 className="text-sm font-medium">{editing ? 'Quellenbeleg bearbeiten' : 'Quellenbeleg hinzufügen'}</h3>
         <label className={`block text-sm ${TEXT_SECONDARY}`}>Belegtes Feld (optional)<input className={INPUT} value={draft.field} maxLength={128} onChange={e => change('field', e.target.value)} placeholder="z. B. Aussehen oder Herkunft" /></label>
         <label className={`block text-sm ${TEXT_SECONDARY}`}>Konkrete Aussage<input className={INPUT} value={draft.statement} maxLength={2000} onChange={e => change('statement', e.target.value)} /></label>
-        <label className={`block text-sm ${TEXT_SECONDARY}`}>Quellprojekt<select className={INPUT} value={project} onChange={e => { setProject(e.target.value); setChapterId(''); setReanchor(true) }}><option value="">Projekt wählen</option>{projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label>
-        <label className={`block text-sm ${TEXT_SECONDARY}`}>Kapitel<select className={INPUT} value={chapterId} onChange={e => { setChapterId(e.target.value); change('sceneId', '') }}><option value="">Kapitel wählen</option>{chapterId && !chapters.some(c => c.id === chapterId) && <option value={chapterId}>{editing?.chapterTitle ?? chapterId}</option>}{chapters.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}</select></label>
+        <label className={`block text-sm ${TEXT_SECONDARY}`}>Quellprojekt<select className={INPUT} value={project} onChange={e => { setProject(e.target.value); setChapterId('');setDraft(d=>({...d,sceneId:'',commentId:''})); setReanchor(true) }}><option value="">Projekt wählen</option>{projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label>
+        <label className={`block text-sm ${TEXT_SECONDARY}`}>Kapitel<select className={INPUT} value={chapterId} onChange={e => { setChapterId(e.target.value);setDraft(d=>({...d,sceneId:'',commentId:''}));setReanchor(true) }}><option value="">Kapitel wählen</option>{chapterId && !chapters.some(c => c.id === chapterId) && <option value={chapterId}>{editing?.chapterTitle ?? chapterId}</option>}{chapters.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}</select></label>
         {chapter && <details className="text-sm"><summary>Aktuellen Kapiteltext zum Prüfen öffnen</summary><p className="max-h-56 overflow-auto whitespace-pre-wrap p-2 border border-zinc-200 dark:border-zinc-700 mt-2">{sourceText(chapter.content)}</p></details>}
         <label className={`block text-sm ${TEXT_SECONDARY}`}>Szene (optionale Planungszuordnung)<select className={INPUT} value={draft.sceneId} onChange={e => change('sceneId', e.target.value)}><option value="">Nur Kapitel</option>{scenes.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
         <label className={`block text-sm ${TEXT_SECONDARY}`}>Exaktes kurzes Zitat<textarea className={INPUT} value={draft.quote} maxLength={1000} onChange={e => change('quote', e.target.value)} rows={3} /></label>
