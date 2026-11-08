@@ -28,3 +28,12 @@ test('empty form cannot create speculative evidence', async () => {
   fireEvent.click(screen.getByText('Quellenbelege anzeigen und pflegen'))
   await waitFor(() => expect(screen.getByText('Quellenbeleg speichern')).toBeDisabled())
 })
+test('load failures are not empty states and retry reloads the evidence', async () => {
+ const original=global.fetch
+ let fail=true
+ global.fetch=jest.fn((url,options)=>url==='/api/story'&&fail?response({error:'Quelle nicht erreichbar'},false):original(url,options))
+ render(<SourceEvidencePanel entityType="CHARACTER" entityId="a" projectId={null} />)
+ fireEvent.click(screen.getByText('Quellenbelege anzeigen und pflegen'))
+ await screen.findByRole('alert');expect(screen.queryByText('Noch keine zugänglichen Quellenbelege.')).not.toBeInTheDocument()
+ fail=false;fireEvent.click(screen.getByText('Neu laden'));await screen.findByText('„grün“');expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+})
